@@ -89,7 +89,7 @@ At the latest Phase 0.87 snapshot:
 2. Health Care — COMPLETE
 3. Energy — COMPLETE
 4. Materials — COMPLETE
-5. Information Technology — QUEUED / READY
+5. Information Technology — COMPLETE
 6. Communication Services — QUEUED / READY
 7. Financials — QUEUED / READY
 8. Industrials — QUEUED / READY
@@ -127,25 +127,75 @@ Root definition blockers created:
 
 These are `MANUAL` system-development blockers. Scheduled blocker automation must not redesign the production model registry automatically.
 
-## Information Technology next-run requirement
+## Latest Information Technology run
 
-Before starting Information Technology:
+Run ID: `SECTOR-IT-FULL-20260904-01`
 
-1. documentation handshake must be PASS;
-2. live foundation must still be compatible with contract 0.87.0;
-3. central blocker queue must be read;
-4. current portfolio must be re-read because NVDA/MSFT exposure makes portfolio-fit gating especially important;
-5. each IT archetype must use its current `Sector_Criteria` contract exactly as defined;
-6. any missing or unimplemented valuation model must fail closed rather than falling back to a generic multiple.
-
-Current Information Technology archetypes in the live queue include:
+Information Technology completed a 20-name full-sector screen across:
 
 - IT Services / Hardware
 - SaaS / Application Software
 - Semiconductor Designer
 - Semiconductor Equipment / Foundry
 
-Configured model IDs exist for SaaS, Semiconductor Designer and Semiconductor Equipment / Foundry, but those routes are not listed among the Phase 0.87 implemented production models. Discovery and evidence collection may proceed, while production promotion must remain blocked until model readiness is explicitly implemented and regression-tested. Any archetype without a complete model/metric contract must create a root definition blocker instead of receiving an improvised valuation.
+Deep research / sector shortlist:
+
+1. ADBE
+2. ACN
+3. CRM
+4. QCOM
+5. AMAT
+
+Each shortlisted name has five fresh, verified Tier-A evidence rows and passes the research evidence gate. The run produced **no actionable opportunity** because production valuation is not available for any of the four IT routes:
+
+- IT Services / Hardware — production valuation contract is incomplete / undefined.
+- SaaS / Application Software — `SAAS_EV_FCF_REVERSE_DCF_V1` is configured but not implemented.
+- Semiconductor Designer — `SEMIS_MIDCYCLE_DCF_V1` is configured but not implemented.
+- Semiconductor Equipment / Foundry — `SEMICAP_MIDCYCLE_FCF_V1` is configured but not implemented.
+
+The system failed closed rather than using a generic P/E, EV/EBITDA, FCF yield, or unsupported AI fair-value estimate.
+
+Root blockers created:
+
+- `BLK-IT-HW-DEF-001` — IT Services / Hardware valuation contract definition
+- `BLK-IT-SAAS-MDL-001` — SaaS valuation model implementation
+- `BLK-IT-SEMI-MDL-001` — Semiconductor Designer valuation model implementation
+- `BLK-IT-SEMICAP-MDL-001` — Semiconductor Equipment / Foundry valuation model implementation
+
+These are `MANUAL` system-development blockers. Scheduled blocker automation must skip them until an explicit production-model development run is requested.
+
+### Portfolio-fit result
+
+The live portfolio was re-read before promotion. NVDA represented approximately **41.4%** of the portfolio and MSFT approximately **6.0%** at the run snapshot. Correlated AI / mega-cap / semiconductor names were therefore explicitly penalized. NVDA remains a stop-add concentration case rather than a new-capital candidate, and MSFT was not promoted merely because it belongs to a high-quality IT archetype.
+
+No IT name entered the immediate-buy set. The global active research set remains:
+
+- ISRG
+- EOG
+- BKR
+- CAVA
+- TPR
+
+No portfolio holdings or transactions were changed.
+
+## Communication Services next-run requirement
+
+Before starting Communication Services:
+
+1. documentation handshake must be PASS;
+2. live foundation must still be compatible with contract 0.87.0;
+3. central blocker queue must be read;
+4. current portfolio must be re-read before portfolio-fit promotion;
+5. each Communication Services archetype must use its current `Sector_Criteria` contract exactly as defined;
+6. any missing or unimplemented valuation model must fail closed rather than falling back to a generic multiple.
+
+Current Communication Services archetypes in the live queue include:
+
+- Digital Advertising Platform
+- Streaming / Media
+- Telecom
+
+The live `Sector_Criteria` model/metric contracts must be re-read when the run begins. Documentation must not assume implementation status from memory.
 
 ## Run completion
 
