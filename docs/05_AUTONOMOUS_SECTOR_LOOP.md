@@ -83,34 +83,69 @@ This matters especially for sectors that overlap heavily with existing exposures
 
 ## Current queue snapshot
 
-At the Phase 0.87 snapshot:
+At the latest Phase 0.87 snapshot:
 
 1. Consumer Discretionary — COMPLETE
 2. Health Care — COMPLETE
 3. Energy — COMPLETE
-4. Materials — QUEUED / READY
+4. Materials — COMPLETE
 5. Information Technology — QUEUED / READY
 6. Communication Services — QUEUED / READY
+7. Financials — QUEUED / READY
+8. Industrials — QUEUED / READY
+9. Real Estate — QUEUED / READY
+10. Utilities — QUEUED / READY
+11. Consumer Staples — QUEUED / READY
 
 The live sheet must always be checked again before executing. This snapshot is documentation, not a substitute for current state.
 
-## Materials-specific next-run requirement
+## Latest Materials run
 
-Before starting Materials:
+Run ID: `SECTOR-MAT-FULL-20260904-01`
 
-1. documentation handshake must be PASS;
-2. live foundation must still be compatible with contract 0.87.0;
-3. central blocker queue must be read;
-4. Materials archetypes in `Sector_Criteria` must be used exactly as currently defined;
-5. any missing archetype valuation implementation must fail closed rather than using a generic model.
-
-Current Materials archetypes:
+Materials completed a 20-name full-sector screen across:
 
 - Mining / Commodities
 - Packaging
 - Specialty Chemicals / Industrial Gases
 
-Not all Materials archetypes currently have an implemented production valuation model. Discovery may proceed, but production promotion must respect model readiness.
+Deep research / sector shortlist:
+
+1. BALL
+2. ALB
+3. LIN
+4. MP
+5. PPG
+
+The run produced **no actionable opportunity** because all three Materials archetypes still lack explicit production valuation contracts. The system therefore failed closed rather than using generic P/E, current commodity prices, or an unsupported AI fair-value estimate.
+
+Root definition blockers created:
+
+- `BLK-MAT-MIN-DEF-001` — Mining / Commodities valuation contract
+- `BLK-MAT-PACK-DEF-001` — Packaging valuation contract
+- `BLK-MAT-CHEM-DEF-001` — Specialty Chemicals / Industrial Gases valuation contract
+
+These are `MANUAL` system-development blockers. Scheduled blocker automation must not redesign the production model registry automatically.
+
+## Information Technology next-run requirement
+
+Before starting Information Technology:
+
+1. documentation handshake must be PASS;
+2. live foundation must still be compatible with contract 0.87.0;
+3. central blocker queue must be read;
+4. current portfolio must be re-read because NVDA/MSFT exposure makes portfolio-fit gating especially important;
+5. each IT archetype must use its current `Sector_Criteria` contract exactly as defined;
+6. any missing or unimplemented valuation model must fail closed rather than falling back to a generic multiple.
+
+Current Information Technology archetypes in the live queue include:
+
+- IT Services / Hardware
+- SaaS / Application Software
+- Semiconductor Designer
+- Semiconductor Equipment / Foundry
+
+Configured model IDs exist for SaaS, Semiconductor Designer and Semiconductor Equipment / Foundry, but those routes are not listed among the Phase 0.87 implemented production models. Discovery and evidence collection may proceed, while production promotion must remain blocked until model readiness is explicitly implemented and regression-tested. Any archetype without a complete model/metric contract must create a root definition blocker instead of receiving an improvised valuation.
 
 ## Run completion
 
