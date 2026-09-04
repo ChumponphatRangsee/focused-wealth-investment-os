@@ -40,7 +40,11 @@ The live foundation currently reports **PHASE 0.87 OPERATIONAL** with:
 - maximum 5 active candidates and maximum 3 immediate buy candidates;
 - human execution only — the system never auto-buys or auto-sells.
 
-The current autonomous sector queue has **Materials** next after Energy. Before a sector run, the executor must confirm the documentation handshake in `System_Foundation` is PASS and then re-read the current live state; this repository never overrides newer live sheet state.
+### Latest sector snapshot
+
+Materials run `SECTOR-MAT-FULL-20260904-01` completed with a 20-name universe and five deep-research names: **BALL, ALB, LIN, MP, PPG**. Research evidence passed, but production expected return remains fail-closed because all three Materials archetypes still lack explicit production valuation contracts. Three root definition blockers are recorded in the central queue. No Materials name was promoted as an actionable opportunity.
+
+The next queued autonomous sector is **Information Technology**. Before any sector run, the executor must confirm the documentation handshake in `System_Foundation` is PASS and re-read the live sheet; this repository never overrides newer live system state.
 
 ## Source precedence
 
