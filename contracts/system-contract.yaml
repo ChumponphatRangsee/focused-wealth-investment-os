@@ -1,7 +1,7 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.0
+  id: FWIOS-CONTRACT-0.87.1
   foundation_compatibility: "0.87"
-  snapshot_date: "2026-09-04"
+  snapshot_date: "2026-09-05"
   timezone: Asia/Bangkok
   execution_mode: human_execution_only
 
@@ -85,7 +85,7 @@ sector_loop:
   max_global_active: 5
   run_unit: one_full_sector
   resume_running_sector_before_new: true
-  next_sector_snapshot: Materials
+  next_sector_snapshot: Communication Services
 
 blocked_orchestrator:
   sheet: Data_Quality_Gates
@@ -122,7 +122,24 @@ documentation_handshake:
     - AGENTS.md
     - contracts/system-contract.yaml
     - VERSION
+    - docs/00_SYSTEM_ROADMAP.md
   block_new_sector_on_version_mismatch: true
+  roadmap_required_before_material_work: true
+  roadmap_update_after_material_change: true
+
+roadmap_governance:
+  file: docs/00_SYSTEM_ROADMAP.md
+  role: persistent_project_status_index
+  live_state_overrides_roadmap: true
+  update_on:
+    - milestone_status_change
+    - system_capability_change
+    - blocker_or_bottleneck_change
+    - authority_or_cutover_change
+    - next_action_change
+    - contract_or_foundation_change
+  drift_failure_status: "BLOCKED - DOCUMENTATION DRIFT"
+  main_roadmap_precedes_side_quests_unless_hard_blocked: true
 
 regressions:
   reference_tickers:
