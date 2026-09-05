@@ -4,7 +4,7 @@ Contract version: **FWIOS-CONTRACT-0.87.0**
 
 ## System of record
 
-The live research engine is the Google Sheet `US_Stock_Sector_Business_Model_Screener`. This repository documents its operating contract; it does not replace the live sheet.
+The live control room is `US_Stock_Sector_Business_Model_Screener`. Supabase owns migrated research evidence/canonical/normalized records and native valuation compute records. Sheets still owns the downstream production decision compatibility layer. See the master roadmap and migration notes for cutover boundaries. This repository documents operating contracts and contains read-only reconciliation tools; it does not replace live sources.
 
 The separate `Investment Portfolio Tracker - Chumponphat` remains the source of truth for current holdings, allocation and transaction state.
 

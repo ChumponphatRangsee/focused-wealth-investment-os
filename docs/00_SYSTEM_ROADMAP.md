@@ -27,14 +27,15 @@ This roadmap is **not allowed to override live state**. Before acting, always re
 |---|---|
 | Foundation | 0.87 |
 | Contract | FWIOS-CONTRACT-0.87.1 |
-| Operating mode | DISCOVERY |
-| Evidence-ready candidates | 15 |
+| Operating mode | MODEL_FACTORY_AFTER_CURRENT_SECTOR |
+| Evidence-ready candidates | 18 |
 | Valuation-ready candidates | 11 |
-| Decision coverage | 73.3% |
-| Open root model blockers | 4 |
+| Decision coverage | 61.1% |
+| Open root model blockers | 7 |
 | Current sector | Communication Services |
-| Current sector stage | READY |
+| Current sector stage | DONE — research closeout |
 | Run lock | IDLE |
+| Sector automation | PAUSED — controller-required model work |
 | Current run ID | none |
 | Supabase authority | RESEARCH + VALUATION COMPUTE CONTROL PLANE |
 | Portfolio execution | Human only; no auto-buy / auto-sell |
@@ -49,21 +50,32 @@ Main Roadmap work directly advances the system toward a complete research → va
 
 ## M1 — Research Pipeline v2
 
-**Status: NEXT / ACTIVE PRIORITY**
+**Status: RESEARCH RUN COMPLETE / HARDENING OPEN**
 
 Goal: reduce full-sector discovery/research latency without weakening evidence lineage, source quality or fail-closed behavior.
 
-- [ ] Research Run Telemetry: persist stage `started_at`, `completed_at`, `duration_seconds`, candidates in/out, sources checked, evidence created/reused, cache-hit rate and failure reason.
-- [ ] Fast Discovery stage: universe up to 20 → approximately 8 candidates using only high-signal screening data.
-- [ ] Light Research stage: approximately 8 → maximum 5 candidates using Business Quality, Growth, rough Valuation, Downside and Portfolio Fit.
-- [ ] Deep Research stage: production-grade evidence collection for the strongest approximately 3 candidates first; expand to candidates 4–5 only when justified.
+- [x] Research Run Telemetry: persist stage `started_at`, `completed_at`, `duration_seconds`, candidates in/out, sources checked, evidence created/reused, cache-hit rate and failure reason.
+- [x] Fast Discovery stage: universe up to 20 → approximately 8 candidates using only high-signal screening data.
+- [x] Light Research stage: approximately 8 → maximum 5 candidates using Business Quality, Growth, rough Valuation, Downside and Portfolio Fit.
+- [x] Deep Research stage: production-grade evidence collection for the strongest approximately 3 candidates first; expand to candidates 4–5 only when justified.
 - [ ] Evidence cache / delta refresh: reuse fresh verified evidence and refresh only stale, missing, conflicting or materially changed inputs.
-- [ ] Deterministic Source Router: route filings, guidance, balance-sheet facts, technical reports, market quotes and material news to defined source classes.
+- [x] Deterministic Source Router: route filings, guidance, balance-sheet facts, technical reports, market quotes and material news to defined source classes.
 - [ ] Model-debt decoupling: a missing valuation model must create/update persistent Model Debt and mark valuation pending, but must not stop the rest of sector discovery while the Operating Controller remains `DISCOVERY`.
 - [ ] Parallel top-candidate research where source/dependency ordering permits it.
 - [ ] Add regression/acceptance checks proving the staged funnel does not bypass Tier A/B evidence requirements or fail-closed gates.
 
 Target after instrumentation: **approximately 12–20 minutes per normal full-sector discovery/research run when reusable models exist**. This is a target, not a guaranteed SLA; telemetry must replace estimates once enough runs are measured.
+
+### Closeout findings — 2026-09-05
+
+Communication Services completed the recorded 20→8→5→3 funnel in 863.729 seconds. Six stored pipeline checks and eleven stored model regressions report PASS. This is recorded evidence, not a fresh independent retest of every model. Cache hits were zero; no live reuse speedup or parallel-execution benefit was measured.
+
+Two M1 implementation gaps remain before a full completion claim:
+
+- `v_latest_reusable_evidence` relies on persisted freshness labels and does not recompute age or detect a later earnings event. Implement deterministic date parsing (including legacy Sheet serial dates), source provenance checks, age/event invalidation and behavioral negative tests before enabling unattended reuse.
+- `v_research_pipeline_controller` reports `model_debt_blocks_sector_completion=true` for `MODEL_FACTORY_AFTER_CURRENT_SECTOR`, whereas the operating controller says to finish the current sector first. Correct the boundary and test coverage crossing below 70% during a run; new-sector discovery must remain blocked.
+
+The source router and parallelizability flags are configured. Parallel worker behavior and enforcement are not proven merely by those flags. See [closeout report](07_RESEARCH_CLOSEOUT.md).
 
 ### M1 exit criteria
 
@@ -128,14 +140,21 @@ Goal: automate monitoring and research refresh while keeping final portfolio exe
 
 Side Quests improve coverage, ergonomics or specialist depth but should not interrupt the active Main Roadmap unless the Operating Controller or a hard dependency explicitly promotes one into the main path.
 
-## Current model-debt side quests
+## Current model debt — promoted to the main execution queue
 
-1. `BLK-IT-SEMI-MDL-001` — QCOM / Semiconductor Designer — model resolution value **73.80**.
-2. `BLK-MAT-PACK-DEF-001` — BALL / Materials Packaging — **73.45**.
-3. `BLK-IT-SEMICAP-MDL-001` — AMAT / Semiconductor Equipment / Foundry — **72.00**.
-4. `BLK-MP-MAGNETICS-NAV-001` — MP Materials Magnetics full-company NAV bridge — **71.55**.
+The live controller has promoted model work ahead of additional discovery. Priority values are snapshots of the controller, not investment scores.
 
-These remain fail-closed. They do not block broader sector discovery while live decision coverage remains at or above the controller threshold.
+| Rank | Blocker | Scope | Resolution value |
+|---|---|---|---:|
+| 1 | BLK-COMM-DADS-MDL-001 | RDDT / PINS digital advertising | 88.40 |
+| 2 | BLK-IT-SEMI-MDL-001 | QCOM semiconductor designer | 73.80 |
+| 3 | BLK-COMM-STREAM-DEF-001 | Streaming / Media | 73.70 |
+| 4 | BLK-MAT-PACK-DEF-001 | BALL packaging | 73.45 |
+| 5 | BLK-IT-SEMICAP-MDL-001 | AMAT semiconductor equipment | 72.00 |
+| 6 | BLK-MP-MAGNETICS-NAV-001 | MP full-company NAV bridge | 71.55 |
+| 7 | BLK-COMM-TELCO-DEF-001 | Telecom | 12.00 |
+
+All remain fail-closed. A configured model or existing generic kernel cannot close a blocker without normalized inputs, explicit assumptions and model regressions.
 
 ## Other side quests
 
@@ -153,22 +172,16 @@ These remain fail-closed. They do not block broader sector discovery while live 
 
 ## Immediate next action
 
-**Implement M1 Research Pipeline v2 before starting the Communication Services full-sector run.**
+**Repair the two M1 hardening gaps, then execute the controller-required model sprint, starting with Digital Advertising.**
 
-Initial implementation order:
+1. Preserve Communication Services research completion and its central blockers; do not repeat the sector.
+2. Make cache eligibility recompute freshness and invalidate evidence after a later material event.
+3. Correct the current-sector completion boundary without allowing a new sector below the coverage threshold.
+4. Complete the Digital Advertising normalization/model contract for RDDT/PINS with independent regression anchors; keep production valuation blocked until every requirement passes.
+5. Recompute coverage and re-read the controller. Financials stays queued until discovery is permitted.
+6. Implement M2 price/mispricing and portfolio-fit parity, then M3 and M4 against their exit criteria.
 
-1. Research Run Telemetry.
-2. Fast Discovery → Light Research → Deep Research staged funnel.
-3. Evidence reuse / delta-refresh rules.
-4. Explicit model-debt decoupling from sector completion.
-5. Parallel top-candidate research and deterministic source routing.
-6. Regression / acceptance test.
-7. Re-read controller and run lock.
-8. Start Communication Services under the new pipeline if live state still permits it.
-
-## After Communication Services
-
-Return to the live Operating Controller. If it remains `DISCOVERY`, continue the sector queue; if controller state or a hard dependency changes, current live state wins. Build M2 Market Price / Mispricing next as the primary decision-intelligence bottleneck unless the controller requires another blocking task first.
+The closeout utility checks recorded no-promotion run consistency; it is not a substitute for the remaining implementation or independent investment-source verification.
 
 ---
 
@@ -212,6 +225,15 @@ If live state conflicts with this roadmap:
 ---
 
 # Change Log
+
+## 2026-09-05 — Recover Communication Services closeout
+
+- Reconciled completed Supabase research with the previously RUNNING Sheets controller.
+- Restored the 20-name universe, run history and three Communication Services blockers.
+- Corrected coverage to 61.1%, root blockers to seven and next action to controller-required model work.
+- Added a read-only closeout checker and failure-case tests.
+- Kept M1 hardening, M2, M3 and M4 open; no claim of whole-project completion.
+
 
 ## 2026-09-05 — Master roadmap introduced
 

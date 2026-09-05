@@ -1,65 +1,48 @@
 # Focused Wealth Investment OS
 
-Canonical documentation and execution contract for the **Portfolio investment** project.
+Operating contract and reconciliation tools for the Portfolio investment system.
 
-**Live foundation:** Phase **0.87**  
-**Source system:** `US_Stock_Sector_Business_Model_Screener`  
-**Strategy:** Focused Wealth-Building  
-**Primary Phase-1 objective:** grow the portfolio toward **THB 1,000,000** through aggressive but disciplined capital growth.
+**Foundation:** 0.87
+
+**Contract:** FWIOS-CONTRACT-0.87.1
+
+**Project:** ACTIVE — research is operational; decision and allocation cutovers remain incomplete.
 
 > Focus creates upside. Position sizing creates survival. Valuation creates margin of safety.
 
-## What this repository is
+## Start here
 
-This repository is the durable operating contract for AI-assisted investment research. It documents how the live Google Sheet system is allowed to collect evidence, canonicalize metrics, normalize data, run model-specific valuation, score opportunities, resolve blockers, and progress through sector research.
+1. [AGENTS.md](AGENTS.md)
+2. [Master roadmap](docs/00_SYSTEM_ROADMAP.md)
+3. [System contract](contracts/system-contract.yaml) and [VERSION](VERSION)
+4. Live `System_Foundation`, `Sector_Run_Control`, and Supabase controller views
+5. [Research closeout and recovery](docs/07_RESEARCH_CLOSEOUT.md)
 
-It is **not** a replacement for live portfolio data or live market data. Current portfolio holdings, transactions, prices, financials and material news must still be read from their live sources before any investment decision.
+Current live data overrides documentation. The portfolio tracker remains the authority for holdings and transactions. Supabase owns migrated research evidence and valuation compute records; Sheets remains the operational control room and downstream decision compatibility layer. This is not yet a standalone application.
 
-## Mandatory read order for an AI executor
+## Latest reconciled run — 2026-09-05
 
-1. [`AGENTS.md`](AGENTS.md) — hard execution contract.
-2. [`docs/01_SYSTEM_ARCHITECTURE.md`](docs/01_SYSTEM_ARCHITECTURE.md) — source-of-truth and data flow.
-3. [`docs/02_SCORING_AND_GATES.md`](docs/02_SCORING_AND_GATES.md) — Focused Wealth-Building scoring and fail-closed rules.
-4. [`docs/03_VALUATION_CONTRACTS.md`](docs/03_VALUATION_CONTRACTS.md) — archetype model registry and model boundaries.
-5. [`docs/04_BLOCKED_ORCHESTRATOR.md`](docs/04_BLOCKED_ORCHESTRATOR.md) — root-cause resolution protocol.
-6. [`docs/05_AUTONOMOUS_SECTOR_LOOP.md`](docs/05_AUTONOMOUS_SECTOR_LOOP.md) — sector-run state machine.
-7. [`docs/06_CHANGE_MANAGEMENT.md`](docs/06_CHANGE_MANAGEMENT.md) — versioning and regression requirements.
-8. [`contracts/system-contract.yaml`](contracts/system-contract.yaml) — machine-readable system contract.
+Communication Services `SECTOR-CS-FULL-20260905-01` has completed research:
 
-## Phase 0.87 live state
+- Fast Discovery: 20 → 8; Light Research: 8 → 5; Deep Research: 5 → 3.
+- RDDT, PINS and NFLX have 25 persisted Tier-A evidence records in total.
+- TMUS and WMG remain deferred after light research.
+- Measured stage time: 863.729 seconds (14.4 minutes), one run only.
+- No new production promotion or immediate-buy candidate.
+- Valuation coverage: 11 / 18 evidence-ready candidates (61.1%); seven root model blockers.
+- Controller: `MODEL_FACTORY_AFTER_CURRENT_SECTOR`. Finish reconciliation, then model sprint; do not start Financials automatically.
 
-The live foundation currently reports **PHASE 0.87 OPERATIONAL** with:
+Read [closeout findings](docs/07_RESEARCH_CLOSEOUT.md) for the remaining M1 hardening issues. M2–M4 are still pending. A completed research run does not mean the whole project is complete.
 
-- canonical evidence path through `Evidence_Ledger` and `Company_Metrics_v2`;
-- model-input normalization through `Normalized_Metrics_v1`;
-- 17 configured archetype valuation contracts;
-- production valuation routes currently live for MEDTECH, E&P, Restaurant, Branded Retail and OFS;
-- dependency-aware `Blocked Resolution Queue` / orchestrator;
-- Focused Wealth-Building production scoring **30 / 30 / 25 / 15**;
-- fail-closed Chase/FOMO gating;
-- maximum 5 active candidates and maximum 3 immediate buy candidates;
-- human execution only — the system never auto-buys or auto-sells.
+## Verification
 
-### Latest sector snapshot
+Python 3 standard library only:
 
-Materials run `SECTOR-MAT-FULL-20260904-01` completed with a 20-name universe and five deep-research names: **BALL, ALB, LIN, MP, PPG**. Research evidence passed, but production expected return remains fail-closed because all three Materials archetypes still lack explicit production valuation contracts. Three root definition blockers are recorded in the central queue. No Materials name was promoted as an actionable opportunity.
+```bash
+python -m unittest discover -s tests -v
+python scripts/check_closeout.py /absolute/path/to/private-snapshot.json
+```
 
-The next queued autonomous sector is **Information Technology**. Before any sector run, the executor must confirm the documentation handshake in `System_Foundation` is PASS and re-read the live sheet; this repository never overrides newer live system state.
+The checker is read-only and designed for a run with **zero new promotions**. It blocks when evidence, run lineage, history, locks or controller handoff disagree. It does not independently verify financial disclosures, current prices, or investment eligibility. Do not commit live snapshots or private portfolio data.
 
-## Source precedence
-
-1. Latest portfolio holdings / transactions / allocation
-2. Focused Wealth-Building rules
-3. Personal Investment Strategist framework
-4. Screener / system contract
-5. Current primary-source research
-6. Wall Street consensus
-7. News / social narratives
-
-If current portfolio data conflicts with an older assumption or document, **current portfolio data wins**.
-
-## Repository version
-
-Documentation contract version: **FWIOS-CONTRACT-0.87.0**  
-Live foundation compatibility: **0.87**  
-Snapshot date: **2026-09-04 Asia/Bangkok**
+Human execution only. No automatic buys, sells or portfolio transaction writes.
