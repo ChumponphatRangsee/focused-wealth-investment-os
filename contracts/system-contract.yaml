@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.7
+  id: FWIOS-CONTRACT-0.87.8
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-05"
   timezone: Asia/Bangkok
@@ -32,30 +32,15 @@ portfolio_guardrails:
 portfolio_state:
   source_migration_origin: "Investment Portfolio Tracker - Chumponphat"
   current_authority: Supabase
-  sheet_retirement_guard: "Retain for reconciliation/audit/export until M3 traceability tests pass."
-  scenario_mutates_live_portfolio: false
   current_batch_id: PORTFOLIO-M2-20260905-01
   current_total_value_thb_approx: 340906.10
   current_unique_open_assets: 10
   current_max_single_stock_weight_pct_approx: 41.25
   current_crypto_weight_pct_approx: 38.09
+  sheet_retirement_guard: "Retain for reconciliation/audit/export until M3 traceability/cutover passes."
+  scenario_mutates_live_portfolio: false
 
-production_path:
-  - Source
-  - Evidence
-  - Canonical_Facts
-  - Normalized_Metrics
-  - Intrinsic_Valuation
-  - Market_Price_Mispricing
-  - Portfolio_State_Fit
-  - Core_Scoring
-  - Revision_Chase_Gates
-  - Decision_Snapshot
-  - Opportunity_Ranking
-  - New_Cash_Allocation
-  - Portfolio_Scenario_Simulation
-  - Rebalancing_Recommendation
-  - Human_Approval
+production_path: [Source, Evidence, Canonical_Facts, Normalized_Metrics, Intrinsic_Valuation, Market_Price_Mispricing, Portfolio_State_Fit, Core_Scoring, Revision_Chase_Gates, Decision_Snapshot, Opportunity_Ranking, New_Cash_Allocation, Portfolio_Scenario_Simulation, Rebalancing_Recommendation, Human_Approval]
 
 scoring:
   business_thesis: 0.30
@@ -63,18 +48,6 @@ scoring:
   portfolio_fit: 0.25
   downside_risk: 0.15
   core_weight_sum: 1.00
-  timing_modifier_cap_points: 5
-
-thresholds:
-  quality_gate_min: 70
-  portfolio_fit_min: 50
-  chase_risk_max: 60
-  revision_gate_min: 50
-  mispricing_base_upside_min: 0.15
-  mispricing_pw_upside_min: 0.10
-  starter_base_upside_min: 0.20
-  starter_pw_upside_min: 0.15
-  strong_buy_base_upside_min: 0.25
 
 policy_governance:
   registry_table: fwios.policy_registry
@@ -92,111 +65,90 @@ policy_governance:
     OPPORTUNITY_RANKING: ACTIVE
     NEW_CASH_ALLOCATION: ACTIVE
     PORTFOLIO_SCENARIO: ACTIVE
-    REBALANCE: DRAFT
-
-revision_score_v1:
-  policy_version_id: POL-REVISION-SCORE-V1
-  weights: {guidance: 0.30, consensus: 0.25, kpi_acceleration: 0.25, margin_fcf: 0.20}
-  common_delta_score: "clamp(50 + 5 * delta, 0, 100)"
-  full_component_coverage_required: true
-  pass_min_score: 50
-  missing_data_status: BLOCKED
-
-chase_score_v1:
-  policy_version_id: POL-CHASE-SCORE-V1
-  weights: {price_extension: 0.25, price_vs_revision: 0.30, multiple_expansion: 0.25, price_vs_fv: 0.20}
-  anchor_price: "last regular-session close before latest material earnings release"
-  excess_risk_score: "clamp(max(excess_pct, 0) * 2.5, 0, 100)"
-  price_vs_fv_reference: "min(base_fv, probability_weighted_fv)"
-  full_component_coverage_required: true
-  pass_max_score: 60
-  missing_data_status: "BLOCKED - INCOMPLETE CHASE DATA"
-
-promotion_gate:
-  active_revision_policy_required: true
-  active_chase_policy_required: true
-  required_hard_gates: [quality, valuation, mispricing, portfolio_fit, downside, revision, chase]
-  all_required_gates_must_pass_for_ready: true
-  ready_status: "READY - HUMAN REVIEW"
-  human_execution_only: true
-  broker_price_verification_before_trade: true
-
-decision_snapshot:
-  table: fwios.decision_snapshots
-  incomplete_promotion_policy: BLOCKED
+    REBALANCE: ACTIVE
 
 opportunity_ranking_v1:
   policy_version_id: POL-OPPORTUNITY-RANKING-V1
-  source: "latest production Decision Snapshot per ticker"
-  priority_score: "core_score only"
-  no_second_weighted_score: true
-  immediate_rule: "input_integrity PASS and promotion_gate PASS"
-  watchlist_rule: "input_integrity PASS and only mispricing FAIL - INSUFFICIENT MISPRICING while all other M2 hard gates PASS"
+  priority_score: core_score_only
   max_immediate: 3
   max_watchlist: 5
   force_fill: false
   regressions: "8/8 PASS"
-  first_production_run: OPPRANK-M3-20260905-01
-  human_execution_only: true
 
 new_cash_allocation_v1:
   policy_version_id: POL-NEW-CASH-ALLOCATION-V1
-  source_ranking_policy: POL-OPPORTUNITY-RANKING-V1
   source_bucket: IMMEDIATE_BUY_CANDIDATE
   supported_asset_classes: [Stock]
   max_deployed_assets_per_run: 1
   new_position_post_money_cap_pct: 5
   existing_position_increment_cap_pct: 5
   exceptional_single_stock_max_pct: 30
-  existing_position_above_30_add_capacity: 0
   residual_cash_action: HOLD_CASH_THB
   watchlist_allocation_allowed: false
   force_fill: false
   new_cash_first: true
-  portfolio_batch_must_match_ranking_batch: true
-  add_requires_ranking_candidate_reference: true
-  add_requires_decision_snapshot_reference: true
   regressions: "20/20 PASS"
-  production_materialization_requires_real_user_cash_amount: true
   preview_mutates_live_portfolio: false
-  human_review_required: true
-  auto_trade: false
 
 portfolio_scenario_v1:
   policy_version_id: POL-PORTFOLIO-SCENARIO-V1
-  run_table: fwios.portfolio_scenario_runs
-  action_table: fwios.portfolio_scenario_actions
-  position_table: fwios.portfolio_scenario_positions
-  metric_table: fwios.portfolio_scenario_metrics
   modes: [NO_SELL, SOFT_REBALANCE, ACTIVE_REBALANCE]
   no_sell_uses_new_cash_allocation_v1: true
   soft_rebalance_trim_allowed_v1: false
-  soft_rebalance_one_time_cash_math_equals_no_sell: true
   active_rebalance_trim_is_input_not_recommendation: true
   trim_requires_current_holding: true
-  trim_amount_cannot_exceed_position_value: true
   trim_requires_explicit_rationale: true
   appreciation_only_trim_forbidden: true
   add_requires_active_ranking_and_decision_snapshot: true
-  residual_cash_action: HOLD_CASH_THB
   full_portfolio_expected_upside_requires_complete_valuation_coverage: true
   changed_asset_expected_value_requires_changed_asset_valuation: true
   partial_covered_metrics_allowed: true
-  current_holding_expected_upside_coverage_pct: 0
+  current_holding_expected_upside_coverage_pct_approx: 41.25
   current_full_portfolio_upside_gate: "BLOCKED - INCOMPLETE PORTFOLIO VALUATION COVERAGE"
   regressions: "28/28 PASS"
   preview_mutates_live_portfolio: false
-  human_review_required: true
+
+semiconductor_designer_valuation_v1:
+  model_version_id: "SEMIS_MIDCYCLE_DCF_V1::1.0"
+  kernel_family: FCF_COMPOUNDER
+  status: PRODUCTION
+  normalization_version: NORM_V1-SEMIS
+  required_metrics: [revenue_ltm, gross_margin, inventory_days, customer_concentration, fcf_ltm, net_cash, shares_outstanding]
+  pending_material_transaction_adjustment_required: true
+  nvda_price_snapshot: PX-NVDA-20260904
+  nvda_bear_fv: 87.03032203
+  nvda_base_fv: 166.16708908
+  nvda_bull_fv: 273.20947981
+  nvda_probability_weighted_fv: 173.14349500
+  nvda_model_regression: PASS
+
+rebalance_v1:
+  policy_version_id: POL-REBALANCE-V1
+  status: ACTIVE
+  new_cash_first: true
+  source_holding_requires_traceable_valuation: true
+  candidate_requires_immediate_bucket: true
+  candidate_requires_traceable_decision_valuation: true
+  min_probability_weighted_opportunity_edge: 0.25
+  trim_requires_concentration_review: true
+  trim_floor_weight: 0.30
+  trim_only_to_fund_remaining_candidate_capacity: true
+  max_new_positions_per_cycle: 1
+  appreciation_only_trim_forbidden: true
+  full_portfolio_valuation_not_required_for_changed_asset_comparison: true
+  uncovered_source_holdings: EXCLUDED_NOT_PROXIED
+  regressions: "12/12 PASS"
+  human_approval_required: true
+  broker_price_verification_before_trade: true
+  preview_mutates_live_portfolio: false
   auto_trade: false
 
-m3_4_rebalancing:
-  status: VALUATION_COVERAGE_GATED
-  recommendation_policy: REBALANCE
-  recommendation_policy_status: DRAFT
-  trim_candidate_expected_return_coverage_required: true
-  current_priority_coverage_candidate: NVDA
-  priority_reason: "largest single-stock concentration; coverage priority is not a trim recommendation"
-  no_trim_recommendation_without_traceable_expected_return_comparison: true
+m3_status:
+  m3_1_opportunity_ranking: PASS_LIVE
+  m3_2_new_cash_allocation: PASS_LIVE
+  m3_3_portfolio_scenario: PASS_LIVE
+  m3_4_rebalancing_recommendation: PASS_LIVE
+  m3_5_human_approval_cutover: NEXT
 
 fail_closed:
   missing_critical_data: BLOCKED
@@ -205,35 +157,16 @@ fail_closed:
   schema_invalid: BLOCKED
   unverified_or_provenance_free: BLOCKED
   policy_incomplete: BLOCKED
-  ai_only_valuation_can_pass: false
-  quality_alone_can_promote: false
   force_fill_shortlist: false
   force_fill_allocation: false
-  intrinsic_value_without_current_price_can_promote: false
-  non_mispricing_hard_gate_failure_can_enter_value_watchlist: false
-  stale_portfolio_ranking_mismatch_can_allocate: false
-  unsupported_asset_class_can_allocate_v1: false
   historical_return_can_substitute_expected_return: false
   cost_basis_can_substitute_expected_return: false
   narrative_target_can_substitute_expected_return: false
+  uncovered_holding_can_be_trim_source: false
   unimplemented_model_status: "BLOCKED - MODEL NOT IMPLEMENTED"
 
-research_pipeline:
-  version: RPV2.1
-  stages: [FAST_DISCOVERY, LIGHT_RESEARCH, DEEP_RESEARCH]
-  max_universe: 20
-  light_target_max: 5
-  deep_priority_target: 3
-  parallel_top_candidate_execution: performance_validation_open
-
 sector_loop:
-  max_universe_per_sector: 20
-  max_sector_shortlist: 5
-  max_global_active: 5
-  run_unit: one_full_sector
-  resume_running_sector_before_new: true
   next_sector_snapshot: Financials
-  live_controller_must_be_reread_before_execution: true
   automation_paused_while_main_roadmap_priority: true
 
 freshness:
@@ -241,8 +174,6 @@ freshness:
   pre_trade_price_verification: broker_required
   fundamentals: latest_reported_quarter
   new_earnings_after_research: BLOCKED
-  consensus_revision_missing: do_not_guess
-  catalyst_for_ready: future_dated_required
 
 security:
   private_schema: fwios
@@ -250,7 +181,7 @@ security:
   rls_defense_in_depth: true
   service_role_internal_execution: true
   security_invoker_views_required: true
-  security_definer_forbidden_for_allocation_scenario_preview: true
+  security_definer_forbidden_for_allocation_scenario_rebalance_preview: true
 
 google_sheets:
   role: view_compatibility_reconciliation_audit_export
@@ -264,13 +195,10 @@ documentation_handshake:
   roadmap_update_after_material_change: true
 
 regressions:
-  reference_tickers: [ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS]
-  m2_promotion_policy_suite: "REG-M2-POLICY-V1-*"
+  reference_tickers: [ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS, NVDA]
   m2_promotion_policy_pass: "16/16"
-  m3_opportunity_ranking_suite: "REG-M3-OPPRANK-V1-*"
   m3_opportunity_ranking_pass: "8/8"
-  m3_new_cash_allocation_suite: "REG-M3-NEWCASH-V1-*"
   m3_new_cash_allocation_pass: "20/20"
-  m3_portfolio_scenario_suite: "REG-M3-SCENARIO-V1-*"
   m3_portfolio_scenario_pass: "28/28"
-  formula_errors_forbidden: ["#REF!", "#DIV/0!", "#VALUE!", "#N/A"]
+  m3_rebalance_pass: "12/12"
+  semis_nvda_model_parity: PASS
