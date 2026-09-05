@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.8
+  id: FWIOS-CONTRACT-0.87.9
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-05"
   timezone: Asia/Bangkok
@@ -37,7 +37,8 @@ portfolio_state:
   current_unique_open_assets: 10
   current_max_single_stock_weight_pct_approx: 41.25
   current_crypto_weight_pct_approx: 38.09
-  sheet_retirement_guard: "Retain for reconciliation/audit/export until M3 traceability/cutover passes."
+  m3_cutover_status: PASS
+  legacy_sheet_retirement_guard: "M3 cutover passed; retain legacy/audit surface until the new dashboard read model is handed off."
   scenario_mutates_live_portfolio: false
 
 production_path: [Source, Evidence, Canonical_Facts, Normalized_Metrics, Intrinsic_Valuation, Market_Price_Mispricing, Portfolio_State_Fit, Core_Scoring, Revision_Chase_Gates, Decision_Snapshot, Opportunity_Ranking, New_Cash_Allocation, Portfolio_Scenario_Simulation, Rebalancing_Recommendation, Human_Approval]
@@ -66,6 +67,7 @@ policy_governance:
     NEW_CASH_ALLOCATION: ACTIVE
     PORTFOLIO_SCENARIO: ACTIVE
     REBALANCE: ACTIVE
+    HUMAN_APPROVAL: ACTIVE
 
 opportunity_ranking_v1:
   policy_version_id: POL-OPPORTUNITY-RANKING-V1
@@ -143,12 +145,35 @@ rebalance_v1:
   preview_mutates_live_portfolio: false
   auto_trade: false
 
+human_approval_v1:
+  policy_version_id: POL-HUMAN-APPROVAL-V1
+  status: ACTIVE
+  recommendation_snapshot_immutable: true
+  approval_packet_immutable: true
+  approval_events_append_only: true
+  approvable_scope: PRODUCTION_USER_REQUESTED
+  nonactionable_scopes: [CUTOVER_VALIDATION, SYNTHETIC_TEST]
+  terminal_states: [APPROVED, REJECTED, EXPIRED, STALE]
+  approval_requires_freshness_revalidation: true
+  approval_requires_same_portfolio_batch: true
+  approval_requires_same_active_ranking: true
+  approval_requires_fingerprint_match: true
+  stale_or_expired_requires_new_packet: true
+  approval_places_broker_order: false
+  approval_mutates_portfolio: false
+  cutover_validation_id: CUTOVER-M3-20260905-01
+  cutover_traceability_layers: "9/9 PASS"
+  regressions: "30/30 PASS"
+  production_user_recommendations_at_cutover: 0
+  human_approval_events_at_cutover: 0
+
 m3_status:
   m3_1_opportunity_ranking: PASS_LIVE
   m3_2_new_cash_allocation: PASS_LIVE
   m3_3_portfolio_scenario: PASS_LIVE
   m3_4_rebalancing_recommendation: PASS_LIVE
-  m3_5_human_approval_cutover: NEXT
+  m3_5_human_approval_cutover: PASS_LIVE
+  m3_overall: COMPLETE_CUTOVER_PASS
 
 fail_closed:
   missing_critical_data: BLOCKED
@@ -163,17 +188,22 @@ fail_closed:
   cost_basis_can_substitute_expected_return: false
   narrative_target_can_substitute_expected_return: false
   uncovered_holding_can_be_trim_source: false
+  stale_approval_can_execute: false
+  rejected_approval_can_execute: false
+  expired_approval_can_execute: false
+  validation_scope_can_be_approved: false
   unimplemented_model_status: "BLOCKED - MODEL NOT IMPLEMENTED"
 
 sector_loop:
   next_sector_snapshot: Financials
-  automation_paused_while_main_roadmap_priority: true
+  automation_paused_while_dashboard_priority: true
 
 freshness:
   stock_market_data: latest_market_session_for_screening
   pre_trade_price_verification: broker_required
   fundamentals: latest_reported_quarter
   new_earnings_after_research: BLOCKED
+  approval_packet: min_changed_asset_price_freshness
 
 security:
   private_schema: fwios
@@ -181,12 +211,18 @@ security:
   rls_defense_in_depth: true
   service_role_internal_execution: true
   security_invoker_views_required: true
-  security_definer_forbidden_for_allocation_scenario_rebalance_preview: true
+  security_definer_forbidden_for_allocation_scenario_rebalance_approval: true
 
 google_sheets:
-  role: view_compatibility_reconciliation_audit_export
-  during_m3_2_to_m3_5_write_scope: [System_Foundation, Audit_Status]
-  new_production_logic_or_config_writes_forbidden: true
+  legacy_role: view_compatibility_reconciliation_audit_export
+  m3_cutover_passed: true
+  next_surface: new_monitoring_dashboard
+  dashboard_rule: "Consume Supabase read models; do not duplicate production scoring/allocation/rebalancing logic in Sheets."
+  legacy_surface_reduction_allowed_after_dashboard_handoff: true
+
+post_m3_next_action:
+  id: BUILD_DASHBOARD_READ_MODEL_AND_MONITORING_SHEET
+  scope: "Create stable Supabase dashboard views, then a new read-only Google Sheet monitoring dashboard."
 
 documentation_handshake:
   repository: ChumponphatRangsee/focused-wealth-investment-os
@@ -201,4 +237,5 @@ regressions:
   m3_new_cash_allocation_pass: "20/20"
   m3_portfolio_scenario_pass: "28/28"
   m3_rebalance_pass: "12/12"
+  m3_human_approval_cutover_pass: "30/30"
   semis_nvda_model_parity: PASS
