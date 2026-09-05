@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.9
+  id: FWIOS-CONTRACT-0.87.10
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-05"
   timezone: Asia/Bangkok
@@ -38,7 +38,8 @@ portfolio_state:
   current_max_single_stock_weight_pct_approx: 41.25
   current_crypto_weight_pct_approx: 38.09
   m3_cutover_status: PASS
-  legacy_sheet_retirement_guard: "M3 cutover passed; retain legacy/audit surface until the new dashboard read model is handed off."
+  dashboard_handoff_status: PASS
+  legacy_sheet_retirement_guard: "Dashboard read-model handoff passed; retain legacy/audit surface until refresh workflow and reduction plan are explicitly verified."
   scenario_mutates_live_portfolio: false
 
 production_path: [Source, Evidence, Canonical_Facts, Normalized_Metrics, Intrinsic_Valuation, Market_Price_Mispricing, Portfolio_State_Fit, Core_Scoring, Revision_Chase_Gates, Decision_Snapshot, Opportunity_Ranking, New_Cash_Allocation, Portfolio_Scenario_Simulation, Rebalancing_Recommendation, Human_Approval]
@@ -175,6 +176,31 @@ m3_status:
   m3_5_human_approval_cutover: PASS_LIVE
   m3_overall: COMPLETE_CUTOVER_PASS
 
+dashboard_read_model_v1:
+  status: PASS_LIVE
+  source_of_truth: Supabase
+  views:
+    - fwios.v_dashboard_holdings
+    - fwios.v_dashboard_account_summary
+    - fwios.v_dashboard_opportunities
+    - fwios.v_dashboard_current_action
+    - fwios.v_dashboard_alerts
+    - fwios.v_dashboard_system_health
+  google_sheet_id: 17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8
+  google_sheet_title: "Focused Wealth Dashboard - Chumponphat"
+  visible_tabs: [Dashboard]
+  hidden_tabs: [_Data]
+  account_views: [All Accounts, Best, Loan Money, Mom]
+  account_filter_scope: [Portfolio_Value, Total_PnL, Unrealized_PnL, Realized_PnL, Holdings]
+  decision_risk_scope: CONSOLIDATED_PORTFOLIO_ALWAYS
+  total_pnl_definition: "latest-batch realized P&L + current open-position unrealized P&L"
+  sheet_contains_production_policy_logic: false
+  auto_trade: false
+  human_execution_only: true
+  regressions: "17/17 PASS"
+  security_advisor_new_warn_error: 0
+  current_surface_refresh_mode: CONTROLLED_SNAPSHOT_EXPORT
+
 fail_closed:
   missing_critical_data: BLOCKED
   stale_critical_data: BLOCKED
@@ -204,6 +230,7 @@ freshness:
   fundamentals: latest_reported_quarter
   new_earnings_after_research: BLOCKED
   approval_packet: min_changed_asset_price_freshness
+  dashboard_snapshot: must_show_source_observed_at_and_batch_status
 
 security:
   private_schema: fwios
@@ -216,13 +243,16 @@ security:
 google_sheets:
   legacy_role: view_compatibility_reconciliation_audit_export
   m3_cutover_passed: true
-  next_surface: new_monitoring_dashboard
+  monitoring_dashboard: "Focused Wealth Dashboard - Chumponphat"
+  monitoring_dashboard_id: 17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8
+  dashboard_handoff: PASS
   dashboard_rule: "Consume Supabase read models; do not duplicate production scoring/allocation/rebalancing logic in Sheets."
   legacy_surface_reduction_allowed_after_dashboard_handoff: true
+  legacy_surface_reduced: false
 
 post_m3_next_action:
-  id: BUILD_DASHBOARD_READ_MODEL_AND_MONITORING_SHEET
-  scope: "Create stable Supabase dashboard views, then a new read-only Google Sheet monitoring dashboard."
+  id: VERIFY_DASHBOARD_REFRESH_WORKFLOW_AND_PLAN_LEGACY_REDUCTION
+  scope: "Keep the new dashboard as the primary monitoring surface, define the controlled refresh workflow, then plan legacy Sheet reduction without deleting audit history."
 
 documentation_handshake:
   repository: ChumponphatRangsee/focused-wealth-investment-os
@@ -238,4 +268,5 @@ regressions:
   m3_portfolio_scenario_pass: "28/28"
   m3_rebalance_pass: "12/12"
   m3_human_approval_cutover_pass: "30/30"
+  dashboard_read_model_pass: "17/17"
   semis_nvda_model_parity: PASS
