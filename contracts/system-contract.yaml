@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.6
+  id: FWIOS-CONTRACT-0.87.7
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-05"
   timezone: Asia/Bangkok
@@ -34,6 +34,11 @@ portfolio_state:
   current_authority: Supabase
   sheet_retirement_guard: "Retain for reconciliation/audit/export until M3 traceability tests pass."
   scenario_mutates_live_portfolio: false
+  current_batch_id: PORTFOLIO-M2-20260905-01
+  current_total_value_thb_approx: 340906.10
+  current_unique_open_assets: 10
+  current_max_single_stock_weight_pct_approx: 41.25
+  current_crypto_weight_pct_approx: 38.09
 
 production_path:
   - Source
@@ -86,6 +91,7 @@ policy_governance:
     CHASE_SCORE: ACTIVE
     OPPORTUNITY_RANKING: ACTIVE
     NEW_CASH_ALLOCATION: ACTIVE
+    PORTFOLIO_SCENARIO: ACTIVE
     REBALANCE: DRAFT
 
 revision_score_v1:
@@ -117,29 +123,15 @@ promotion_gate:
 
 decision_snapshot:
   table: fwios.decision_snapshots
-  required_references:
-    - portfolio_batch
-    - price_snapshot
-    - valuation_run
-    - mispricing_snapshot
-    - portfolio_fit_snapshot
-    - revision_snapshot
-    - chase_snapshot
-    - score_snapshot
-    - policy_versions
   incomplete_promotion_policy: BLOCKED
 
 opportunity_ranking_v1:
   policy_version_id: POL-OPPORTUNITY-RANKING-V1
-  run_table: fwios.opportunity_ranking_runs
-  candidate_table: fwios.opportunity_ranked_candidates
-  current_view: fwios.v_opportunity_ranking_current
   source: "latest production Decision Snapshot per ticker"
   priority_score: "core_score only"
   no_second_weighted_score: true
   immediate_rule: "input_integrity PASS and promotion_gate PASS"
   watchlist_rule: "input_integrity PASS and only mispricing FAIL - INSUFFICIENT MISPRICING while all other M2 hard gates PASS"
-  tie_break_order: [expected_return_score_desc, portfolio_fit_score_desc, downside_risk_score_desc, business_thesis_score_desc, ticker_asc]
   max_immediate: 3
   max_watchlist: 5
   force_fill: false
@@ -149,13 +141,6 @@ opportunity_ranking_v1:
 
 new_cash_allocation_v1:
   policy_version_id: POL-NEW-CASH-ALLOCATION-V1
-  run_table: fwios.capital_allocation_runs
-  action_table: fwios.capital_allocation_actions
-  metric_table: fwios.capital_allocation_metrics
-  context_view: fwios.v_new_cash_allocation_current_context
-  candidate_preview_function: fwios.preview_new_cash_candidates_v1
-  allocation_preview_function: fwios.preview_new_cash_allocation_v1
-  metric_preview_function: fwios.preview_new_cash_metrics_v1
   source_ranking_policy: POL-OPPORTUNITY-RANKING-V1
   source_bucket: IMMEDIATE_BUY_CANDIDATE
   supported_asset_classes: [Stock]
@@ -177,12 +162,41 @@ new_cash_allocation_v1:
   human_review_required: true
   auto_trade: false
 
-capital_allocation:
-  scenario_modes: [NO_SELL, SOFT_REBALANCE, ACTIVE_REBALANCE]
-  new_cash_engine_live: true
-  scenario_simulation_next: true
-  human_approval_required: true
+portfolio_scenario_v1:
+  policy_version_id: POL-PORTFOLIO-SCENARIO-V1
+  run_table: fwios.portfolio_scenario_runs
+  action_table: fwios.portfolio_scenario_actions
+  position_table: fwios.portfolio_scenario_positions
+  metric_table: fwios.portfolio_scenario_metrics
+  modes: [NO_SELL, SOFT_REBALANCE, ACTIVE_REBALANCE]
+  no_sell_uses_new_cash_allocation_v1: true
+  soft_rebalance_trim_allowed_v1: false
+  soft_rebalance_one_time_cash_math_equals_no_sell: true
+  active_rebalance_trim_is_input_not_recommendation: true
+  trim_requires_current_holding: true
+  trim_amount_cannot_exceed_position_value: true
+  trim_requires_explicit_rationale: true
+  appreciation_only_trim_forbidden: true
+  add_requires_active_ranking_and_decision_snapshot: true
+  residual_cash_action: HOLD_CASH_THB
+  full_portfolio_expected_upside_requires_complete_valuation_coverage: true
+  changed_asset_expected_value_requires_changed_asset_valuation: true
+  partial_covered_metrics_allowed: true
+  current_holding_expected_upside_coverage_pct: 0
+  current_full_portfolio_upside_gate: "BLOCKED - INCOMPLETE PORTFOLIO VALUATION COVERAGE"
+  regressions: "28/28 PASS"
+  preview_mutates_live_portfolio: false
+  human_review_required: true
   auto_trade: false
+
+m3_4_rebalancing:
+  status: VALUATION_COVERAGE_GATED
+  recommendation_policy: REBALANCE
+  recommendation_policy_status: DRAFT
+  trim_candidate_expected_return_coverage_required: true
+  current_priority_coverage_candidate: NVDA
+  priority_reason: "largest single-stock concentration; coverage priority is not a trim recommendation"
+  no_trim_recommendation_without_traceable_expected_return_comparison: true
 
 fail_closed:
   missing_critical_data: BLOCKED
@@ -199,6 +213,9 @@ fail_closed:
   non_mispricing_hard_gate_failure_can_enter_value_watchlist: false
   stale_portfolio_ranking_mismatch_can_allocate: false
   unsupported_asset_class_can_allocate_v1: false
+  historical_return_can_substitute_expected_return: false
+  cost_basis_can_substitute_expected_return: false
+  narrative_target_can_substitute_expected_return: false
   unimplemented_model_status: "BLOCKED - MODEL NOT IMPLEMENTED"
 
 research_pipeline:
@@ -207,14 +224,6 @@ research_pipeline:
   max_universe: 20
   light_target_max: 5
   deep_priority_target: 3
-  evidence_reuse:
-    allowed_source_tiers: [A, B]
-    exact_source_registry_match_required: true
-    recompute_age_at_read_time: true
-    default_current_evidence_max_age_days: 120
-    legacy_sheet_serial_date_parse_required: true
-    later_material_reporting_event_invalidates_older_current_evidence: true
-    historical_reference_exception: true
   parallel_top_candidate_execution: performance_validation_open
 
 sector_loop:
@@ -241,7 +250,7 @@ security:
   rls_defense_in_depth: true
   service_role_internal_execution: true
   security_invoker_views_required: true
-  security_definer_forbidden_for_allocation_preview: true
+  security_definer_forbidden_for_allocation_scenario_preview: true
 
 google_sheets:
   role: view_compatibility_reconciliation_audit_export
@@ -262,4 +271,6 @@ regressions:
   m3_opportunity_ranking_pass: "8/8"
   m3_new_cash_allocation_suite: "REG-M3-NEWCASH-V1-*"
   m3_new_cash_allocation_pass: "20/20"
+  m3_portfolio_scenario_suite: "REG-M3-SCENARIO-V1-*"
+  m3_portfolio_scenario_pass: "28/28"
   formula_errors_forbidden: ["#REF!", "#DIV/0!", "#VALUE!", "#N/A"]
