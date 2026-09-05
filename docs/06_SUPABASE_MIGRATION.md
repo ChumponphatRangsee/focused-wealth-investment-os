@@ -86,7 +86,7 @@ No allocation run was created during M2 hardening and scenario tables do not mut
 `system_events` exists but no production trigger/autonomous workflow is enabled.
 
 ## Security
-`fwios` remains private. New M2 component/regression tables have RLS enabled and `anon`/`authenticated` access revoked. New scoring functions are immutable and not `SECURITY DEFINER`.
+`fwios` remains private. New M2 component/regression tables have RLS enabled and `anon`/`authenticated` access revoked. New scoring functions are immutable, not `SECURITY DEFINER`, and have `search_path` explicitly pinned to `pg_catalog, fwios`. Security Advisor after hardening reports no WARN/ERROR findings from the M2 changes; only expected private-schema `RLS Enabled No Policy` INFO notices remain.
 
 ## Sheet role
 Do not delete/restructure deep tabs until M3 traceability/cutover passes. Google Sheets is a view/compatibility/audit layer; authoritative scoring policy/state resides in Supabase and GitHub.
