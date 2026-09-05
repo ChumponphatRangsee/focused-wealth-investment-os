@@ -2,7 +2,7 @@
 
 This file is the **mandatory execution contract** for any AI agent or automation operating on the Portfolio investment system.
 
-Contract version: **FWIOS-CONTRACT-0.87.1**  
+Contract version: **FWIOS-CONTRACT-0.87.2**  
 Compatible live foundation: **0.87**
 
 ## 1. Non-negotiable objective
@@ -39,6 +39,7 @@ Current portfolio data always overrides older assumptions.
 - Maximum **5 active watchlist candidates**.
 - Maximum **3 immediate buy candidates**.
 - Human execution only. Never auto-buy or auto-sell.
+- `Investment Portfolio Tracker - Chumponphat` is the designated portfolio-state migration source for M2/M3 and must not be retired until Supabase transaction/position/cost-basis/allocation reconciliation passes.
 
 ## 4. Production scoring contract
 
@@ -73,6 +74,7 @@ Rules:
 - `Normalized_Metrics_v1` is the standardized/economic-normalization layer.
 - `Intrinsic_Valuation_v2` owns model assumptions and scenario outputs.
 - `Opportunity_Engine_v2` owns final formula-driven decision logic.
+- Current price/mispricing and portfolio state must pass their own gates before intrinsic value can become an expected-return or capital-allocation signal.
 
 ## 6. Fail-closed rule
 
@@ -82,6 +84,7 @@ Do not guess values to make a model pass.
 Do not use AI-only valuation as verified valuation.
 Do not promote a candidate on Quality Score alone.
 Do not force-fill a shortlist.
+Do not promote intrinsic valuation into an expected-return signal without a fresh current-price layer.
 
 If an archetype model is configured but not implemented, status must remain:
 
@@ -105,6 +108,14 @@ For production evidence, record when applicable:
 
 Use primary company/SEC/IR evidence for canonical financial metrics where available.
 
+RPV2.1 reusable evidence must additionally:
+
+- match `Source_Registry` on source ID, tier and URL;
+- recompute age at read time rather than trusting a persisted freshness label alone;
+- parse supported legacy Google Sheet serial dates deterministically;
+- invalidate older current reporting evidence when a later material reporting event exists;
+- keep historical-reference evidence separate from current-evidence aging rules.
+
 ## 8. Facts vs assumptions
 
 Never mix factual source evidence with valuation assumptions.
@@ -124,7 +135,9 @@ Examples:
 - Compare sector winners against existing active candidates; retain the best **5 overall**.
 - Missing/stale/conflicting/unverified data → BLOCKED and resume later.
 - Production score requires traceable Tier A/B evidence; model contracts may require Tier A specifically.
-- Current live sector snapshot is **Communication Services**, but `Sector_Run_Control` must always be re-read immediately before execution. Live state overrides this snapshot.
+- Under `MODEL_FACTORY_AFTER_CURRENT_SECTOR`, the current sector may close but a new sector may not start.
+- Under `DISCOVERY`, model debt remains fail-closed for affected candidates but does not block the sector loop.
+- Communication Services research is complete. The next queued sector snapshot is **Financials**, but `Sector_Run_Control` and the live Supabase controller must always be re-read immediately before execution. Live state overrides this snapshot.
 
 ## 10. Blocked Resolution Orchestrator
 
@@ -176,7 +189,7 @@ Before mutating the live system:
 
 Any change to normalization, valuation routing, scoring, gates or formulas must preserve or deliberately update regression checks.
 
-Current Phase 0.87 reference regressions include ISRG, EOG, BKR, CAVA and TPR.
+Current Phase 0.87 reference regressions include ISRG, EOG, BKR, CAVA, TPR, RDDT and PINS.
 
 A changed output is acceptable only if the economic/model logic was intentionally changed and the change is documented.
 
