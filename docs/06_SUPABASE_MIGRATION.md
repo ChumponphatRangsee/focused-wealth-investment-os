@@ -1,162 +1,87 @@
 # Supabase Migration — Focused Wealth Investment OS
 
-Status: **M2 PASS / M3.1 + M3.2 + M3.3 LIVE / M3.4 COVERAGE-GATED**  
+Status: **M2 PASS / M3.1 + M3.2 + M3.3 + M3.4 LIVE / M3.5 NEXT**  
 Date: **2026-09-05**  
 Supabase project ref: `ysjbmeukwbfnxnwqchuq`  
-Execution contract: `FWIOS-CONTRACT-0.87.7`
+Execution contract: `FWIOS-CONTRACT-0.87.8`
 
 ## Authority
 - Supabase = System of Record / State
 - GitHub = System of Logic / Contracts / Tests / Migrations
 - Google Sheets = System of View / Compatibility / Reconciliation / Audit / Export
 
-## Completed authority layers
+## Portfolio state
+29/29 transactions and 16/16 source positions reconciled. Current value ~THB 340,906.10; 10 open assets; NVDA ~41.25%; crypto ~38.09%. These are review flags, not automatic sell instructions.
 
-### Research / Evidence — PASS
-Supabase owns source/evidence/canonical/normalized state plus RPV2.1 cache/controller behavior. Current snapshot: 18 evidence-ready, 13 valuation-ready, 72.2% decision coverage, DISCOVERY controller, six open model-debt roots.
-
-### Portfolio State — PASS
-- 29/29 transactions reconciled.
-- 16/16 positions reconciled.
-- authoritative portfolio value snapshot ~THB 340,906.10.
-- current review flags: 10 open assets, NVDA ~41.25%, crypto ~38.09%.
-
-### M2 Decision Intelligence — PASS
-Active deterministic policies:
-- `POL-REVISION-SCORE-V1`
-- `POL-CHASE-SCORE-V1`
-
-Regression status: **16/16 PASS**.
-
-Reference decisions:
-- PINS → Promotion PASS / READY - HUMAN REVIEW.
-- RDDT → Mispricing FAIL / GOOD COMPANY - WAIT FOR VALUE.
+## M2 Decision Intelligence — PASS
+Revision/Chase active; 16/16 regressions. PINS Promotion PASS; RDDT Value-Wait due Mispricing FAIL.
 
 ## M3.1 Opportunity Ranking — PASS / LIVE
-Active policy: `POL-OPPORTUNITY-RANKING-V1`.
+`POL-OPPORTUNITY-RANKING-V1`; 8/8 regressions. `OPPRANK-M3-20260905-01`: PINS Immediate #1; RDDT Value-Wait #1.
 
-Production run `OPPRANK-M3-20260905-01` on `PORTFOLIO-M2-20260905-01`:
-- PINS → Immediate rank 1 / priority 87.6000.
-- RDDT → Value-Wait rank 1 / priority 72.1500.
+## M3.2 New-Cash Allocation — PASS / LIVE
+`POL-NEW-CASH-ALLOCATION-V1`; 20/20 regressions. New cash first, Stock Immediate candidates only, max one deployed asset/run, new-position cap 5% post-money, residual cash held, no mutation. Real allocation-run count remains 0.
 
-Regression status: **8/8 PASS**.
+## M3.3 Portfolio Scenario — PASS / LIVE
+`POL-PORTFOLIO-SCENARIO-V1`; 28/28 regressions. NO_SELL / SOFT_REBALANCE / ACTIVE_REBALANCE. Preview functions are non-mutating; ADD traces to active Decision Snapshot; TRIM requires current holding + explicit rationale; appreciation-only rationale forbidden.
 
-## M3.2 New-Cash Capital Allocation — PASS / LIVE
-Active policy: `POL-NEW-CASH-ALLOCATION-V1`.
+Full-portfolio expected upside stays fail-closed while any risk asset lacks valuation coverage.
 
-Production functions:
-- `new_cash_capacity_v1(...)`
-- `new_cash_input_gate_v1(...)`
-- `new_cash_current_input_gate_v1(...)`
-- `preview_new_cash_candidates_v1(...)`
-- `preview_new_cash_allocation_v1(...)`
-- `preview_new_cash_metrics_v1(...)`
+## M3.4 Semiconductor Designer holding valuation coverage
+Production model `SEMIS_MIDCYCLE_DCF_V1::1.0` is now IMPLEMENTED / regression PASS.
 
-Allocation behavior:
-- Immediate Stock candidates only;
-- max one deployed asset per run;
-- new-position starter cap 5% post-money;
-- existing add bounded by 5% staged increment + 30% stock ceiling;
-- Value-Wait receives zero;
-- residual capital stays `CASH_THB`;
-- no force-fill / no mutation.
+New/updated production objects:
+- `semis_midcycle_dcf_fv_v1(...)`
+- `v_holding_valuation_coverage_current`
+- NVDA source/evidence/canonical/normalized valuation inputs
+- `PX-NVDA-20260904`
+- `VAL-NVDA-SEMIS-20260905`
 
-Regression status: **20/20 PASS**.
+NVDA parity:
+- FCF LTM $127.006B
+- conservative net cash $23.220B
+- signed Hugging Face purchase consideration $11.9B deducted from equity bridge
+- Bear/Base/Bull/PW FV $87.0303 / $166.1671 / $273.2095 / $173.1435
+- Sep 4 price $230.34
+- `REG-SEMIS-V1-NVDA-PARITY` PASS
+
+NVDA now supplies traceable holding expected-return coverage. Current full risk-asset coverage is ~41.25%, so full-portfolio expected upside remains blocked; changed-assets NVDA↔PINS comparison is valid because both changed assets are covered.
+
+## M3.4 Rebalancing Recommendation — PASS / LIVE
+Policy `POL-REBALANCE-V1`; regressions **12/12 PASS**.
+
+New private objects:
+- `rebalancing_recommendation_runs`
+- `rebalancing_recommendation_actions`
+- `rebalancing_recommendation_metrics`
+- `preview_rebalancing_recommendation_v1(...)`
+
+Rules:
+- new cash before trim;
+- ADD = active Immediate + Decision Snapshot valuation;
+- trim source = current valuation-covered holding + concentration review in v1;
+- minimum PW expected-return edge 25pp;
+- trim = min(remaining candidate capacity, concentration excess above 30%);
+- never trim more than can be redeployed;
+- 30% is review threshold, not forced target;
+- appreciation-only rationale forbidden;
+- uncovered holdings excluded, never proxied;
+- human review and broker verification required; no auto-trade.
 
 Synthetic parity only:
-- 10k → PINS 10,000 / cash 0.
-- 50k → PINS 19,545.30 / cash 30,454.70.
-- 100k → PINS 22,045.30 / cash 77,954.70.
+- cash 0 → NVDA trim ~17,045.30 → PINS add ~17,045.30;
+- cash 10k → use 10k first, NVDA trim ~7,545.30;
+- cash 50k → PINS cap funded by new cash, NVDA trim 0.
 
-Real allocation-run count remains **0**.
-
-## M3.3 Portfolio Scenario Simulation — PASS / LIVE
-Active policy: `POL-PORTFOLIO-SCENARIO-V1`.
-
-New private tables:
-- `portfolio_scenario_runs`
-- `portfolio_scenario_actions`
-- `portfolio_scenario_positions`
-- `portfolio_scenario_metrics`
-
-All have RLS enabled and anon/authenticated access revoked.
-
-Production preview/gate functions:
-- `portfolio_scenario_structural_gate_v1(...)`
-- `portfolio_scenario_current_input_gate_v1(...)`
-- `preview_portfolio_scenario_actions_v1(...)`
-- `preview_portfolio_scenario_positions_v1(...)`
-- `preview_portfolio_scenario_metrics_v1(...)`
-
-Functions are SECURITY INVOKER, pin `search_path` to `pg_catalog, fwios`, and anon/authenticated EXECUTE is revoked.
-
-### Scenario modes
-- `NO_SELL`: positive new cash; no trim; exact M3.2 allocation/capacity path.
-- `SOFT_REBALANCE`: no trim in v1; one-time cash arithmetic intentionally equals NO_SELL until recurring DCA/redirection state exists.
-- `ACTIVE_REBALANCE`: hypothetical trim inputs are allowed for simulation only; M3.3 does not select the trim.
-
-Trim input gates:
-- current holding required;
-- amount cannot exceed current position value;
-- explicit economic/risk rationale required;
-- appreciation-only rationale forbidden.
-
-Scenario outputs include before/after position values and weights, max-stock concentration, crypto weight, position count, residual cash, exact ADD Decision/Mispricing lineage, candidate downside score, valuation coverage and expected-value metrics.
-
-Regression status: **28/28 PASS**.
-
-### Valuation-coverage gate
-At activation, current holdings expected-upside valuation coverage = **0%**.
-
-Therefore:
-- `full_portfolio_pw_upside` is `BLOCKED - INCOMPLETE PORTFOLIO VALUATION COVERAGE`;
-- no historical return, cost basis or narrative target substitutes for missing expected return;
-- PINS ADD-side expected value is available from `DEC-PINS-M2-20260905-V2 → MIS-PINS-20260904`;
-- ACTIVE trim of an uncovered holding such as NVDA blocks net expected-value comparison.
-
-This is an evidence-coverage gate, not an engine regression failure.
-
-Synthetic NO_SELL 50k parity:
-- PINS ADD 19,545.30; cash 30,454.70.
-- max-stock weight ~41.25% → ~35.98%.
-- crypto ~38.09% → ~33.22%.
-- full portfolio expected upside remains blocked.
-
-Synthetic ACTIVE input only:
-- NVDA trim 10,000 + new cash 0 can simulate PINS ADD 10,000.
-- concentration ~41.25% → ~38.32%.
-- net expected-value comparison BLOCKED because NVDA has no current traceable expected-return valuation.
-- this is not a trim recommendation.
-
-Real scenario-run count remains **0**; implementation used preview/regression paths only.
-
-## M3.4 Rebalancing Recommendation — NEXT / COVERAGE-GATED
-`REBALANCE` remains DRAFT.
-
-Before exact trim/add recommendation is legal:
-1. relevant source holding must have traceable current valuation / expected return;
-2. retained expected return must be comparable with the candidate opportunity;
-3. concentration/theme/crypto/focus/downside changes must be evaluated through M3.3;
-4. recommendation-size and traceability regressions must pass.
-
-NVDA is the first valuation-coverage priority because it is the largest concentration review item; this is modeling prioritization, not a recommendation to sell NVDA.
-
-## M4 event foundation
-`system_events` exists but no production trigger/autonomous workflow is enabled.
+No real recommendation run is materialized by activation.
 
 ## Security
-Security Advisor after M3.3 reports no new WARN/ERROR findings attributable to scenario DDL. Expected private-schema `RLS Enabled No Policy` INFO notices remain. Reference: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
+New recommendation tables use RLS defense-in-depth and anon/authenticated access is revoked. New holding coverage view is security-invoker. New functions pin search path and are not SECURITY DEFINER. Security Advisor reports no new WARN/ERROR from M3.4; expected private-schema `RLS Enabled No Policy` INFO notices remain. Reference: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
 
-## Sheet role
-During M3.2–M3.5, Google Sheets receives only `System_Foundation` / audit-status synchronization. No new production policy/config/allocation/scenario logic should be written into Sheet tabs.
+## Google Sheet rule
+During remaining M3, only `System_Foundation` / audit-status synchronization is allowed. Do not add production valuation/rebalancing logic to Sheet tabs.
 
-## Next milestone
-**Close trim-candidate valuation coverage, then build M3.4 Rebalancing Recommendation v1.**
+## Next milestone — M3.5 Human Approval / Cutover
+Build immutable approve/reject/expire state, stale-input revalidation and end-to-end traceability. Approval must not itself mutate portfolio state or submit a broker order. After M3.5 passes, reduce Google Sheet to legacy/read-only reporting surface as planned.
 
-1. Define holdings-valuation coverage contract for trim comparison.
-2. Prioritize NVDA modeling coverage due concentration relevance.
-3. Re-run changed-asset expected-value scenario math after coverage is available.
-4. Build deterministic recommendation logic over NO_SELL / soft / active scenarios.
-5. Keep `REBALANCE` DRAFT until recommendation regressions pass.
-
-Financials remains queued and sector automation remains manually paused while M3 is Main Roadmap priority.
+Financials remains queued and sector automation remains paused while M3 is Main Roadmap priority.
