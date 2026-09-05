@@ -2,7 +2,7 @@
 
 Status: **ACTIVE**  
 Live foundation: **0.87**  
-Execution contract: **FWIOS-CONTRACT-0.87.6**  
+Execution contract: **FWIOS-CONTRACT-0.87.7**  
 Last updated: **2026-09-05 Asia/Bangkok**  
 Execution mode: **HUMAN EXECUTION ONLY**
 
@@ -20,7 +20,7 @@ Live state overrides stale documentation.
 | Item | Current state |
 |---|---|
 | Foundation | 0.87 |
-| Contract | FWIOS-CONTRACT-0.87.6 |
+| Contract | FWIOS-CONTRACT-0.87.7 |
 | Research pipeline | RPV2.1 |
 | Operating mode | DISCOVERY |
 | Evidence-ready / valuation-ready | 18 / 13 |
@@ -31,11 +31,12 @@ Live state overrides stale documentation.
 | Sector automation | PAUSED — M3 Main Roadmap priority |
 | M2 Decision Intelligence | PASS |
 | M3.1 Opportunity Ranking | PASS / PRODUCTION LIVE |
-| M3.2 New-Cash Allocation | **PASS / PRODUCTION LIVE** |
-| M3.3 Scenario Simulation | **NEXT** |
+| M3.2 New-Cash Allocation | PASS / PRODUCTION LIVE |
+| M3.3 Scenario Simulation | **PASS / PRODUCTION LIVE** |
+| M3.4 Rebalancing Recommendation | **NEXT / VALUATION-COVERAGE GATED** |
 | Portfolio execution | Human only |
 
-Portfolio migration remains reconciled at 29/29 transactions and 16/16 positions. Current review flags remain: 10 open assets, max single-stock weight ~41.25%, crypto ~38.09%. These are review flags, not automatic sell instructions.
+Portfolio migration remains reconciled at 29/29 transactions and 16/16 positions. Current review flags: 10 open assets, max single-stock weight ~41.25%, crypto ~38.09%. These are review flags, not automatic sell instructions.
 
 ---
 
@@ -70,13 +71,13 @@ Reference decisions:
 - RDDT: Mispricing FAIL / GOOD COMPANY - WAIT FOR VALUE.
 
 ## Architecture Consolidation v1
-**Status: LIVE / M2 + M3.1 + M3.2 INTEGRATED**
+**Status: LIVE / M2 + M3.1 + M3.2 + M3.3 INTEGRATED**
 
 - [x] Supabase = State; GitHub = Logic/Contracts/Tests/Migrations; Sheets = View/Audit.
 - [x] Generic policy registry/version governance.
 - [x] Decision Snapshot reproducibility boundary.
-- [x] Active Data Scoring, Mispricing, Portfolio Fit, Revision, Chase, Opportunity Ranking and New-Cash Allocation policies.
-- [x] M3 scenario foundation tables.
+- [x] Active Data Scoring, Mispricing, Portfolio Fit, Revision, Chase, Opportunity Ranking, New-Cash Allocation and Portfolio Scenario policies.
+- [x] Non-mutating scenario tables/functions.
 - [x] M4 event foundation table, no production triggers.
 - [ ] Reduce user-facing Sheet surface only after M3 traceability/cutover passes.
 
@@ -103,61 +104,85 @@ Current ranking:
 
 Active policy: `POL-NEW-CASH-ALLOCATION-V1`.
 
-Production behavior:
-- consumes latest active Opportunity Ranking + latest reconciled portfolio batch;
-- portfolio batch and ranking batch must match;
-- only Immediate candidates can receive capital;
-- v1 supports Stock candidates only;
-- max one deployed asset per allocation run;
-- new position starter cap = 5% post-money portfolio value;
-- existing position staged add = min(5% post-money, headroom to 30% stock ceiling);
-- existing stock above 30% gets zero add capacity;
-- residual cash is held as `CASH_THB`;
-- no force-fill into the second-ranked candidate;
-- no sells/trims and no live portfolio mutation;
-- concentration, crypto and position-count effects are surfaced as metrics.
+Key behavior:
+- active ranking + latest reconciled portfolio only;
+- Immediate candidates only;
+- max one deployed asset per run;
+- new-position starter cap 5% post-money;
+- existing add bounded by 5% staged increment and 30% stock ceiling;
+- residual cash held; no force-fill;
+- no sells/trims and no live mutation.
 
 Regression status: **20/20 PASS**.
 
-Synthetic production-parity previews only:
-
+Synthetic parity only:
 | Requested new cash | PINS ADD | CASH_THB HOLD |
 |---:|---:|---:|
 | THB 10,000 | THB 10,000.00 | THB 0.00 |
 | THB 50,000 | THB 19,545.30 | THB 30,454.70 |
 | THB 100,000 | THB 22,045.30 | THB 77,954.70 |
 
-RDDT receives zero because Value-Wait cannot bypass Mispricing.
-
-No real `capital_allocation_run` has been materialized because no real user new-cash amount was supplied for this implementation step.
+No real allocation run exists because no real user cash amount was supplied for materialization.
 
 ### M3.3 Portfolio Scenario Simulation
-**Status: NEXT**
+**Status: PASS / PRODUCTION LIVE**
 
-Required modes:
-- `NO_SELL`
-- `SOFT_REBALANCE`
-- `ACTIVE_REBALANCE`
+Active policy: `POL-PORTFOLIO-SCENARIO-V1`.
 
-Required outputs:
-- before/after weights;
-- expected portfolio-upside change;
-- concentration/theme/crypto/focus effects;
-- downside/guardrail changes;
-- source portfolio batch + Decision Snapshot + ranking + allocation traceability;
-- zero live-portfolio mutation.
+Production behavior:
+- `NO_SELL`: positive new cash; no trim; reuses M3.2 allocation logic.
+- `SOFT_REBALANCE`: no trim in v1; one-time new-cash math intentionally equals NO_SELL until recurring DCA/redirection state exists.
+- `ACTIVE_REBALANCE`: accepts hypothetical trim inputs for simulation only; it does not select which asset should be trimmed.
+- trim must target current holding, stay within current value and include explicit economic/risk rationale.
+- appreciation-only trim rationale is forbidden.
+- ADD remains constrained by active ranking + Decision Snapshot + allocation capacity.
+- before/after position weights, concentration, crypto, focus, residual cash and valuation coverage are surfaced.
+- previews do not mutate holdings or create orders.
 
-M3.3 should reuse the active New-Cash Allocation engine for the `NO_SELL` baseline before introducing soft/hard rebalance math.
+Regression status: **28/28 PASS**.
+
+#### Expected-upside coverage gate
+Current holdings expected-upside valuation coverage at activation = **0%**.
+
+Therefore:
+- full portfolio probability-weighted expected upside is **BLOCKED - INCOMPLETE PORTFOLIO VALUATION COVERAGE**;
+- no cost-basis return, historical performance or narrative target is substituted;
+- PINS ADD-side expected value is computable from exact `DEC-PINS-M2-20260905-V2 → MIS-PINS-20260904` lineage;
+- an ACTIVE scenario trimming an uncovered holding such as NVDA blocks the net expected-value comparison.
+
+This is a current-data coverage gate, not a scenario-engine regression failure.
+
+Synthetic reference NO_SELL 50k:
+- PINS ADD THB 19,545.30; cash THB 30,454.70.
+- PINS post-money weight ~5%.
+- max single stock ~41.25% → ~35.98%.
+- crypto ~38.09% → ~33.22%.
+- full portfolio expected upside remains blocked.
+
+Synthetic ACTIVE input example only:
+- hypothetical NVDA trim THB 10,000 + new cash 0 → simulator can route THB 10,000 to PINS under current capacity;
+- concentration ~41.25% → ~38.32%;
+- net expected-value change is blocked because NVDA lacks traceable expected-return valuation;
+- this is **not** a trim recommendation.
+
+No real `portfolio_scenario_run` has been materialized during implementation.
 
 ### M3.4 Rebalancing Recommendation
-**Status: PENDING M3.3**
+**Status: NEXT / VALUATION-COVERAGE GATED**
 
-Exact trim/add amounts require explicit economic/risk rationale. Never trim merely because a winner appreciated. `REBALANCE` policy remains DRAFT until scenario math and traceability regressions pass.
+Before producing exact economic trim/add recommendations:
+1. close traceable current valuation / expected-return coverage for relevant trim candidates;
+2. start with NVDA as a coverage priority because it is the largest concentration review item — this prioritizes modeling only and does not imply it should be sold;
+3. compare retained expected return vs candidate expected return using reproducible valuations;
+4. combine opportunity cost, concentration, theme, crypto/focus and downside effects;
+5. only then allow deterministic trim-size recommendation regressions.
+
+`REBALANCE` remains DRAFT. Never recommend trimming merely because a winner appreciated.
 
 ### M3.5 Human Approval / Cutover
-**Status: PENDING**
+**Status: PENDING M3.4**
 
-M3 exits only when recommendations trace from source transactions → positions → portfolio batch → Decision Snapshot → Opportunity Ranking → allocation/scenario → human-review recommendation with no unexplained quantity, cost-basis, realized-P&L or allocation differences.
+M3 exits only when recommendations trace from source transactions → positions → portfolio batch → Decision Snapshot → Opportunity Ranking → allocation → scenario → recommendation → human approval with no unexplained quantity, cost-basis, realized-P&L or allocation differences.
 
 ## M4 — Autonomous Investment OS
 **Status: PENDING M3**
@@ -168,7 +193,7 @@ Future work includes scheduled/delta research refresh, thesis/material-change re
 
 # Remaining model debt / side quests
 
-Fail-closed coverage debt remains separate from M3 readiness:
+Fail-closed research/model coverage debt remains separate from M3 engine readiness:
 1. QCOM Semiconductor Designer — 73.80
 2. Streaming / Media — 73.70
 3. BALL Packaging — 73.45
@@ -176,27 +201,30 @@ Fail-closed coverage debt remains separate from M3 readiness:
 5. MP Magnetics full-company NAV — 71.55
 6. Telecom — 12.00
 
-Financials remains queued; sector automation stays manually paused while M3 is the Main Roadmap priority unless live controller/roadmap is explicitly changed.
+New M3.4 decision-coverage dependency:
+- current holdings expected-upside coverage is 0%; relevant potential trim holdings need traceable valuation before recommendation math can compare opportunity cost.
+
+Financials remains queued; sector automation stays paused while M3 is Main Roadmap priority.
 
 ---
 
 # Immediate next action
 
-**Build M3.3 Portfolio Scenario Simulation on the live New-Cash Allocation engine.**
+**Close M3.4 trim-candidate valuation coverage, then build Rebalancing Recommendation v1.**
 
-1. Define immutable scenario snapshot/input lineage.
-2. Implement `NO_SELL` scenario using `POL-NEW-CASH-ALLOCATION-V1`.
-3. Compute before/after position weights and guardrails.
-4. Add expected portfolio-upside math from traceable valuation/Decision Snapshot inputs.
-5. Add SOFT_REBALANCE and ACTIVE_REBALANCE only after the NO_SELL baseline passes.
-6. Keep `REBALANCE` DRAFT and all scenarios non-mutating.
+1. Define the holdings-valuation coverage contract required for trim comparison.
+2. Prioritize NVDA valuation coverage due to concentration relevance, without presuming a trim.
+3. Build reproducible current expected-return inputs for any other holding eligible for trim comparison.
+4. Re-run scenario net expected-value math once changed-asset coverage exists.
+5. Build deterministic recommendation/ranking of NO_SELL vs soft vs active options.
+6. Keep `REBALANCE` DRAFT until recommendation regressions and traceability pass.
 
 ---
 
 # Google Sheet rule during remaining M3
-Google Sheets stays view/audit only. During M3.2–M3.5, write only `System_Foundation` / audit-status information; do not add new production policies, formulas or allocation logic to Sheet tabs.
+Google Sheets stays view/audit only. During M3.2–M3.5, write only `System_Foundation` / audit-status information; do not add production policies, formulas or allocation/scenario logic to Sheet tabs.
 
 ---
 
 # Documentation/update rule
-Before material work read `AGENTS.md`, `contracts/system-contract.yaml`, `VERSION`, this roadmap, `docs/01_SYSTEM_ARCHITECTURE.md`, live `System_Foundation`, and relevant Supabase/Sheet controller state. After material work synchronize roadmap/architecture/live foundation when authority, capability, blocker, contract or next action changes.
+Before material work read `AGENTS.md`, `contracts/system-contract.yaml`, `VERSION`, this roadmap, `docs/01_SYSTEM_ARCHITECTURE.md`, live `System_Foundation`, and relevant Supabase/Sheet controller state. After material work synchronize roadmap/architecture/live foundation when authority, capability, blocker, contract, milestone or next action changes.
