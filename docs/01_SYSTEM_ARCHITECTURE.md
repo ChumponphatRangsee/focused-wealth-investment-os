@@ -1,45 +1,40 @@
 # 01 — System Architecture
 
-Contract version: **FWIOS-CONTRACT-0.87.7**  
+Contract version: **FWIOS-CONTRACT-0.87.8**  
 Foundation compatibility: **0.87**  
-Architecture state: **CONSOLIDATION V1 LIVE / M2 PASS / M3.1 + M3.2 + M3.3 LIVE**
+Architecture state: **CONSOLIDATION V1 LIVE / M2 + M3.1 + M3.2 + M3.3 + M3.4 LIVE**
 
 ## Authority model
 - **Supabase = System of Record / State**
 - **GitHub = System of Logic / Contracts / Tests / Migrations**
 - **Google Sheets = System of View / Compatibility / Reconciliation / Audit / Export**
 
-AI may research, interpret, explain and orchestrate within policy. Accounting, scoring math, ranking gates, allocation math, scenario math and portfolio mutation remain deterministic/system-controlled.
+AI may research, interpret, explain and orchestrate within policy. Accounting, scoring, ranking, allocation, scenario and rebalancing math are deterministic/system-controlled. Human execution only.
 
-## Layered architecture
+## Decision-and-capital architecture
 ```text
-Experience / Human Approval
-          ↑
-Rebalancing Recommendation
-          ↑
-Scenario & Capital Allocation
-          ↑
-Intelligence
-          ↑
-Domain State
-          ↑
-Knowledge / Evidence
-          ↑
-Orchestration / Events
+Source / Evidence / Canonical Facts / Normalized Metrics
+                         ↓
+                    Valuation
+                         ↓
+         Market Price + Portfolio State/Fit
+                         ↓
+       Core Score + Revision / Chase Gates
+                         ↓
+                 Decision Snapshot
+                         ↓
+               Opportunity Ranking
+                         ↓
+              New-Cash Allocation
+                         ↓
+          Portfolio Scenario Simulation
+                         ↓
+           Rebalancing Recommendation
+                         ↓
+                 Human Approval
 ```
 
-### Knowledge / Evidence
-`Source → Evidence → Canonical Facts → Normalized Metrics`
-
-Research provenance is mandatory. Facts and model assumptions remain separate.
-
-### Domain State
-Owns reconciled portfolio/company/market state. Portfolio accounting comes from private Supabase ledger state. Current portfolio is reconciled at 29/29 transactions and 16/16 positions.
-
-### Intelligence
-Owns valuation, mispricing, Portfolio Fit, Core Score, Revision and Chase.
-
-Current policy state:
+## Production policy state
 | Policy | State |
 |---|---|
 | Data Scoring 30/30/25/15 | ACTIVE |
@@ -49,184 +44,104 @@ Current policy state:
 | Chase Risk v1 | ACTIVE |
 | Opportunity Ranking v1 | ACTIVE |
 | New-Cash Allocation v1 | ACTIVE |
-| Portfolio Scenario v1 | **ACTIVE** |
-| Rebalance | **DRAFT** |
+| Portfolio Scenario v1 | ACTIVE |
+| Rebalance v1 | **ACTIVE** |
 
-## Decision-and-capital path
-```text
-Decision Snapshot
-      ↓
-Opportunity Ranking v1
-      ↓
-New-Cash Allocation v1
-      ↓
-Portfolio Scenario Simulation v1
-      ↓
-Rebalancing Recommendation (coverage-gated)
-      ↓
-Human Approval
-```
+## M3.1 Opportunity Ranking
+`POL-OPPORTUNITY-RANKING-V1`; 8/8 regressions. Priority = existing Core Score, no second weighted score. PINS Immediate #1; RDDT Value-Wait #1. Value-Wait cannot receive capital.
 
-### Decision Snapshot boundary
-`fwios.decision_snapshots` remains the reproducibility boundary between candidate intelligence and downstream capital decisions. Every ADD must trace through an exact production Decision Snapshot.
+## M3.2 New-Cash Allocation
+`POL-NEW-CASH-ALLOCATION-V1`; 20/20 regressions. New cash first; Stock Immediate candidates only; max one deployed asset/run; new-position starter cap 5% post-money; residual cash held; no portfolio mutation.
 
-### M3.1 Opportunity Ranking
-Policy: `POL-OPPORTUNITY-RANKING-V1`.
-- priority = existing Core Score;
-- Promotion PASS → Immediate;
-- Mispricing-only FAIL → Value-Wait;
-- max 3 Immediate / 5 Watchlist; never force-fill;
-- 8/8 regressions PASS.
+## M3.3 Portfolio Scenario Simulation
+`POL-PORTFOLIO-SCENARIO-V1`; 28/28 regressions. Modes: `NO_SELL`, `SOFT_REBALANCE`, `ACTIVE_REBALANCE`. Every ADD traces to active ranking + Decision Snapshot. Every TRIM must target a current holding, remain within value and carry explicit economic/risk rationale. Appreciation-only rationale is forbidden. Full portfolio expected upside fails closed when risk-asset valuation coverage is incomplete.
 
-First production run `OPPRANK-M3-20260905-01`:
-- PINS → Immediate #1 / priority 87.6000.
-- RDDT → Value-Wait #1 / priority 72.1500.
+### Holding-valuation coverage bridge
+M3.4 adds `fwios.v_holding_valuation_coverage_current` so a current holding may supply expected-return lineage from a fresh production valuation even when it has no candidate Decision Snapshot. Requirements:
+- valuation model version = PRODUCTION and regression PASS;
+- valuation run = production eligible / valuation PASS / schema PASS;
+- run price snapshot = current fresh market snapshot with effective price gate PASS;
+- current portfolio exposure must contain the asset.
 
-### M3.2 New-Cash Allocation
-Policy: `POL-NEW-CASH-ALLOCATION-V1`.
+Uncovered holdings are excluded, never proxied.
 
-Key production objects:
-- `fwios.capital_allocation_runs`
-- `fwios.capital_allocation_actions`
-- `fwios.capital_allocation_metrics`
-- `fwios.v_new_cash_allocation_current_context`
-- `fwios.preview_new_cash_candidates_v1(...)`
-- `fwios.preview_new_cash_allocation_v1(...)`
-- `fwios.preview_new_cash_metrics_v1(...)`
+## Semiconductor Designer valuation v1
+`SEMIS_MIDCYCLE_DCF_V1::1.0` is production-live using a deterministic five-year equity-FCF DCF + terminal value.
 
-Invariants:
-1. Portfolio batch must match ranking batch.
-2. Immediate candidates only.
-3. Max one deployed asset per run.
-4. New-position starter cap 5% post-money.
-5. Existing stock >30% has zero add capacity.
-6. Residual capital is held as cash.
-7. No live mutation.
+Required normalized inputs:
+`revenue_ltm`, `gross_margin`, `inventory_days`, `customer_concentration`, `fcf_ltm`, `net_cash`, `shares_outstanding`, plus signed pending acquisition consideration where applicable.
 
-M3.2 regressions: 20/20 PASS.
+NVDA production snapshot `VAL-NVDA-SEMIS-20260905`:
+- price `PX-NVDA-20260904` = $230.34;
+- FCF LTM $127.006B;
+- conservative net cash $23.220B;
+- pending Hugging Face purchase consideration $11.9B deducted from equity bridge;
+- Bear / Base / Bull / PW FV = 87.03032203 / 166.16708908 / 273.20947981 / 173.14349500;
+- `REG-SEMIS-V1-NVDA-PARITY` PASS.
 
-### M3.3 Portfolio Scenario Simulation
-Policy: `POL-PORTFOLIO-SCENARIO-V1`.
+This enables NVDA↔PINS changed-assets expected-return comparison. Full portfolio expected-upside coverage remains incomplete because other risk assets are not yet valuation-covered.
+
+## M3.4 Rebalancing Recommendation
+Policy `POL-REBALANCE-V1`; 12/12 regressions PASS.
 
 New private snapshot objects:
-- `fwios.portfolio_scenario_runs`
-- `fwios.portfolio_scenario_actions`
-- `fwios.portfolio_scenario_positions`
-- `fwios.portfolio_scenario_metrics`
+- `fwios.rebalancing_recommendation_runs`
+- `fwios.rebalancing_recommendation_actions`
+- `fwios.rebalancing_recommendation_metrics`
+- `fwios.preview_rebalancing_recommendation_v1(...)`
 
-Preview/gate functions:
-- `fwios.portfolio_scenario_structural_gate_v1(...)`
-- `fwios.portfolio_scenario_current_input_gate_v1(...)`
-- `fwios.preview_portfolio_scenario_actions_v1(...)`
-- `fwios.preview_portfolio_scenario_positions_v1(...)`
-- `fwios.preview_portfolio_scenario_metrics_v1(...)`
-
-All preview functions are `SECURITY INVOKER`, pin `search_path` to `pg_catalog, fwios`, and are not executable by `anon` or `authenticated`.
-
-#### Mode semantics
-`NO_SELL`
-- requires positive new cash;
-- no TRIM allowed;
-- consumes the same active ranking/capacity path as M3.2.
-
-`SOFT_REBALANCE`
-- no TRIM allowed in v1;
-- for a one-time new-cash event, numerical output intentionally equals NO_SELL;
-- future differentiation requires real recurring DCA/redirection state; the system must not invent one.
-
-`ACTIVE_REBALANCE`
-- accepts hypothetical trim inputs for simulation;
-- does not choose which asset should be trimmed;
-- trim must reference a current holding, remain within current value and carry explicit economic/risk rationale;
-- appreciation-only rationale is forbidden;
-- proceeds can be reallocated only through active Immediate-candidate capacity.
-
-#### Position/metric outputs
-The simulator produces:
-- before/delta/after THB values;
-- before/after weights;
-- concentration and crypto effects;
-- position-count/focus effect;
-- residual cash;
-- exact ADD Decision Snapshot/Mispricing lineage;
-- candidate downside score lineage;
-- valuation coverage;
-- partial covered expected-upside contribution;
-- full portfolio expected upside only when coverage is complete;
-- net modeled expected-value change only when every changed non-cash asset is valuation-covered.
-
-#### Valuation coverage boundary
-At M3.3 activation, current holdings expected-upside coverage is **0%**. Consequently:
-- full portfolio expected upside is fail-closed;
-- PINS ADD-side expected value is computable because its chain is traceable;
-- trimming an uncovered holding such as NVDA blocks the net expected-value comparison;
-- cost basis, historical return or narrative targets cannot fill the gap.
-
-This prevents the simulator from appearing more precise than its evidence.
-
-M3.3 regressions: **28/28 PASS**.
-
-Reference synthetic NO_SELL 50k:
-- PINS ADD 19,545.30; residual cash 30,454.70;
-- max stock ~41.25% → ~35.98%;
-- crypto ~38.09% → ~33.22%;
-- PINS lineage `DEC-PINS-M2-20260905-V2 → MIS-PINS-20260904`;
-- full portfolio expected upside BLOCKED because existing holdings lack valuation coverage.
-
-Reference synthetic ACTIVE input only:
-- NVDA trim 10k → PINS ADD 10k can be simulated;
-- concentration ~41.25% → ~38.32%;
-- net expected-value comparison BLOCKED due missing NVDA valuation;
-- this is not a recommendation to trim NVDA.
-
-### M3.4 Rebalancing Recommendation boundary
-M3.4 is **valuation-coverage gated**.
-
-Recommendation logic may not select an economic trim until the relevant source holding has traceable current expected-return valuation. Coverage work may prioritize NVDA because it is the largest concentration review item, but prioritizing valuation coverage is not equivalent to recommending a sale.
-
-Required comparison path:
+Deterministic v1 flow:
 ```text
-Holding current valuation / expected return
-        + concentration / theme / downside context
-        ↓
-Opportunity candidate valuation / expected return
-        + Portfolio Fit / downside / ranking
-        ↓
-Scenario delta from M3.3
-        ↓
-Deterministic trim/add recommendation
-        ↓
-Human approval
+New cash
+   ↓ first
+Immediate candidate capacity
+   ↓ remaining capacity
+Covered concentrated holding (>30%)
+   + PW expected-return edge >= 25pp
+   ↓
+trim = min(remaining candidate capacity, concentration excess)
+   ↓
+M3.3 changed-assets scenario / expected-value delta
+   ↓
+READY - HUMAN REVIEW
 ```
 
-`REBALANCE` remains DRAFT until this path and regressions pass.
+Invariants:
+1. New cash is used before a trim.
+2. ADD candidate must be active Immediate + Decision Snapshot valuation lineage.
+3. Trim source must be current, valuation-covered and concentration-review eligible in v1.
+4. Trim is never larger than approved remaining candidate capacity.
+5. 30% is a review threshold, not a forced target.
+6. Appreciation alone cannot justify a trim.
+7. Full-portfolio valuation coverage is not required for a changed-assets comparison when every changed non-cash asset is covered.
+8. Preview/recommendation activation does not mutate holdings or place orders.
+9. Broker price verification + explicit human approval are required before any real trade.
 
-### Experience / Human Approval
-Google Sheets remains view/audit compatibility only. During M3.2–M3.5, only `System_Foundation` / audit status should be written; do not add production allocation/scenario formulas or policy config to Sheet tabs.
+Synthetic parity:
+- new cash 0 → NVDA trim ~17,045.30 → PINS add ~17,045.30;
+- new cash 10k → 10k new cash first + NVDA trim ~7,545.30;
+- new cash 50k → PINS starter capacity funded from cash, NVDA trim 0.
+
+These are regression examples, not trade instructions. No production recommendation run is materialized by policy activation.
+
+## M3.5 Human Approval / Cutover boundary
+Next layer must create immutable approval/rejection/expiry state and revalidate price/valuation freshness before approval. Approval itself must never submit a broker order or mutate portfolio accounting. M3 cutover passes only with end-to-end traceability from ledger transaction/position through recommendation and human decision.
+
+## Google Sheets
+During M3.2–M3.5, write only `System_Foundation` / audit status. No production scoring, allocation, scenario or rebalancing logic/config is authored in Sheet tabs.
 
 ## Security
-`fwios` remains private. Scenario tables use RLS defense-in-depth; `anon`/`authenticated` privileges remain revoked. Security Advisor after M3.3 reports no new WARN/ERROR findings attributable to scenario DDL; expected private-schema `RLS Enabled No Policy` INFO notices remain.
+`fwios` remains private. New recommendation tables use RLS defense-in-depth; `anon`/`authenticated` privileges are revoked. New view/functions are security-invoker and pin search path. Security Advisor after M3.4 shows no new WARN/ERROR attributable to these changes; expected private-schema `RLS Enabled No Policy` INFO notices remain.
 
 ## Architectural invariants
-1. Web research cannot jump directly to final valuation/allocation/recommendation.
-2. Facts and assumptions remain separate.
-3. Portfolio accounting uses reconciled ledger state only.
-4. Policy versions and raw lineage reproduce decisions.
-5. Missing/stale/unverified promotion inputs fail closed.
-6. Revision/Chase cannot override valuation/Mispricing/Portfolio Fit/core gates.
-7. Opportunity Ranking cannot create a second weighted score.
-8. Value-Wait candidates cannot receive capital.
-9. Allocation cannot use a stale ranking/portfolio pair.
-10. New-cash allocation never force-fills additional assets.
-11. Scenario previews do not mutate live holdings.
-12. Scenario simulation does not choose a trim; recommendation is a separate layer.
-13. Appreciation alone cannot justify a trim.
-14. Missing holding valuation blocks full expected portfolio upside.
-15. Missing valuation on a changed asset blocks net expected-value comparison.
-16. Human execution only.
-17. M4 automation remains foundation-only until explicitly activated/tested.
+- live reconciled state outranks stale docs;
+- missing/stale/unverified critical inputs fail closed;
+- no candidate can bypass hard gates;
+- uncovered holdings cannot be economic trim sources;
+- no hidden score/valuation proxy is invented;
+- new cash precedes trim logic;
+- no force-fill;
+- scenario/recommendation outputs never mutate live holdings;
+- human execution only.
 
-See:
-- `policies/opportunity/OPPORTUNITY_RANKING_V1.md`
-- `policies/allocation/NEW_CASH_ALLOCATION_V1.md`
-- `policies/scenario/PORTFOLIO_SCENARIO_V1.md`
+See `policies/valuation/SEMIS_MIDCYCLE_DCF_V1.md` and `policies/rebalancing/REBALANCE_V1.md`.
