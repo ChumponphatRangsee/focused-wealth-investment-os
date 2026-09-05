@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.1
+  id: FWIOS-CONTRACT-0.87.2
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-05"
   timezone: Asia/Bangkok
@@ -24,6 +24,14 @@ portfolio_guardrails:
   soft_rebalance_with_new_cash_first: true
   trim_only_because_price_appreciated: false
   auto_trade: false
+
+portfolio_state_migration:
+  designated_source: "Investment Portfolio Tracker - Chumponphat"
+  target_authority: Supabase
+  required_before_portfolio_fit_cutover: true
+  required_before_rebalancing_cutover: true
+  retirement_guard: "Do not retire/delete the Sheet until transaction, position, cost-basis, realized-P&L and allocation reconciliation pass."
+  target_post_cutover_sheet_role: read_only_reconciliation_audit_export_archive
 
 source_precedence:
   - latest_portfolio_data
@@ -78,6 +86,44 @@ fail_closed:
   quality_alone_can_promote: false
   force_fill_shortlist: false
   unimplemented_model_status: "BLOCKED - MODEL NOT IMPLEMENTED"
+  intrinsic_value_without_current_price_can_promote: false
+
+research_pipeline:
+  version: RPV2.1
+  stages:
+    - FAST_DISCOVERY
+    - LIGHT_RESEARCH
+    - DEEP_RESEARCH
+  max_universe: 20
+  light_target_max: 5
+  deep_priority_target: 3
+  evidence_reuse:
+    allowed_only_when_verified: true
+    allowed_source_tiers:
+      - A
+      - B
+    exact_source_registry_match_required: true
+    recompute_age_at_read_time: true
+    default_current_evidence_max_age_days: 120
+    legacy_sheet_serial_date_parse_required: true
+    later_material_reporting_event_invalidates_older_current_evidence: true
+    historical_reference_exception: true
+  controller_boundary:
+    DISCOVERY:
+      new_sector_allowed: true
+      current_sector_can_close: true
+      model_debt_decoupled: true
+    MODEL_FACTORY_AFTER_CURRENT_SECTOR:
+      new_sector_allowed: false
+      current_sector_can_close: true
+      model_debt_decoupled_for_current_closeout: true
+    MODEL_FACTORY:
+      new_sector_allowed: false
+      current_sector_can_close: false
+    MODEL_FACTORY_CRITICAL:
+      new_sector_allowed: false
+      current_sector_can_close: false
+  parallel_top_candidate_execution: performance_validation_open
 
 sector_loop:
   max_universe_per_sector: 20
@@ -85,7 +131,8 @@ sector_loop:
   max_global_active: 5
   run_unit: one_full_sector
   resume_running_sector_before_new: true
-  next_sector_snapshot: Communication Services
+  next_sector_snapshot: Financials
+  live_controller_must_be_reread_before_execution: true
 
 blocked_orchestrator:
   sheet: Data_Quality_Gates
@@ -105,6 +152,11 @@ valuation_registry:
     - RESTAURANT_UNIT_ECONOMICS_DCF_V1
     - BRANDED_RETAIL_FCF_YIELD_V1
     - OFS_MIDCYCLE_EV_EBITDA_FCF_V1
+    - SAAS_EV_FCF_REVERSE_DCF_V1
+    - MATERIALS_MIDCYCLE_FCF_DCF_V1
+    - IT_SERVICES_FCF_COMPOUNDER_V1
+    - MINING_ASSET_NAV_SOTP_V1
+    - DIGITAL_ADS_FCF_REVERSE_DCF_V1
   default_required_source_tier: A
   default_max_metric_age_days: 120
 
@@ -113,8 +165,32 @@ freshness:
   pre_trade_price_verification: broker_required
   fundamentals: latest_reported_quarter
   new_earnings_after_research: BLOCKED
+  reusable_evidence_age_recomputed_at_read: true
+  later_material_reporting_event_invalidates_older_current_evidence: true
   consensus_revision_missing: do_not_guess
   catalyst_for_ready: future_dated_required
+
+decision_intelligence:
+  m2_required_layers:
+    - native_market_price
+    - mispricing
+    - portfolio_state
+    - portfolio_fit
+    - data_scoring_v2_supabase_parity
+  current_price_required_for_expected_return_promotion: true
+  portfolio_state_source_before_cutover: "Investment Portfolio Tracker - Chumponphat"
+
+capital_allocation:
+  m3_required_outputs:
+    - new_cash_deployment
+    - trim_add_amounts
+    - before_after_weights
+    - expected_portfolio_upside_change
+    - concentration_and_theme_change
+    - no_sell_scenario
+    - soft_rebalance_scenario
+    - active_rebalance_scenario
+  human_approval_required: true
 
 documentation_handshake:
   repository: ChumponphatRangsee/focused-wealth-investment-os
@@ -148,6 +224,8 @@ regressions:
     - BKR
     - CAVA
     - TPR
+    - RDDT
+    - PINS
   formula_errors_forbidden:
     - "#REF!"
     - "#DIV/0!"
