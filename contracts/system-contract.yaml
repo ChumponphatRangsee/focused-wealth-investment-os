@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.2
+  id: FWIOS-CONTRACT-0.87.3
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-05"
   timezone: Asia/Bangkok
@@ -10,6 +10,13 @@ objective:
   target_thb: 1000000
   strategy: aggressive_disciplined_capital_growth
   core_principle: "Focus creates upside. Position sizing creates survival. Valuation creates margin of safety."
+
+authority_model:
+  supabase: system_of_record_state
+  github: system_of_logic_contract_tests_migrations
+  google_sheets: system_of_view_compatibility_reconciliation_audit_export
+  ai: research_interpretation_explanation_controlled_orchestration
+  live_state_overrides_stale_docs: true
 
 portfolio_guardrails:
   meaningful_positions:
@@ -25,33 +32,27 @@ portfolio_guardrails:
   trim_only_because_price_appreciated: false
   auto_trade: false
 
-portfolio_state_migration:
-  designated_source: "Investment Portfolio Tracker - Chumponphat"
-  target_authority: Supabase
-  required_before_portfolio_fit_cutover: true
-  required_before_rebalancing_cutover: true
-  retirement_guard: "Do not retire/delete the Sheet until transaction, position, cost-basis, realized-P&L and allocation reconciliation pass."
-  target_post_cutover_sheet_role: read_only_reconciliation_audit_export_archive
-
-source_precedence:
-  - latest_portfolio_data
-  - focused_wealth_building_rules
-  - personal_investment_strategist
-  - screener_system_output
-  - current_primary_source_research
-  - wall_street_consensus
-  - news_and_social_narratives
+portfolio_state:
+  source_migration_origin: "Investment Portfolio Tracker - Chumponphat"
+  current_authority: Supabase
+  sheet_retirement_guard: "Retain for reconciliation/audit/export until M3 traceability tests pass."
+  scenario_mutates_live_portfolio: false
 
 production_path:
-  - Sector_Criteria
-  - AI_Discovery_Staging
-  - Source_Registry
-  - Evidence_Ledger
-  - Company_Metrics_v2
-  - Normalized_Metrics_v1
-  - Intrinsic_Valuation_v2
-  - Data_Scoring_v2
-  - Opportunity_Engine_v2
+  - Source
+  - Evidence
+  - Canonical_Facts
+  - Normalized_Metrics
+  - Intrinsic_Valuation
+  - Market_Price_Mispricing
+  - Portfolio_State_Fit
+  - Core_Scoring
+  - Revision_Chase_Gates
+  - Decision_Snapshot
+  - Opportunity_Ranking
+  - Capital_Allocation
+  - Portfolio_Scenario_Simulation
+  - Human_Approval
 
 scoring:
   business_thesis: 0.30
@@ -63,18 +64,69 @@ scoring:
 
 thresholds:
   quality_gate_min: 70
-  research_quality_min: 75
-  valuation_gate_min: 60
-  starter_valuation_min: 70
-  asymmetry_gate_min: 60
-  starter_asymmetry_min: 70
-  chase_risk_max: 60
   portfolio_fit_min: 50
+  chase_risk_max: 60
   mispricing_base_upside_min: 0.15
   mispricing_pw_upside_min: 0.10
   starter_base_upside_min: 0.20
   starter_pw_upside_min: 0.15
   strong_buy_base_upside_min: 0.25
+
+policy_governance:
+  registry_table: fwios.policy_registry
+  version_table: fwios.policy_versions
+  production_version_status: ACTIVE
+  deterministic_scoring_required_when_numeric_score_is_used: true
+  ai_may_invent_raw_to_score_mapping: false
+  seeded_families:
+    DATA_SCORING: ACTIVE
+    MISPRICING: ACTIVE
+    PORTFOLIO_FIT: ACTIVE
+    REVISION_SCORE: DRAFT
+    CHASE_SCORE: DRAFT
+    REBALANCE: DRAFT
+
+decision_snapshot:
+  table: fwios.decision_snapshots
+  required_references:
+    - portfolio_batch
+    - price_snapshot
+    - valuation_run
+    - mispricing_snapshot
+    - portfolio_fit_snapshot
+    - revision_snapshot
+    - chase_snapshot
+    - score_snapshot
+    - policy_versions
+  incomplete_promotion_policy: BLOCKED
+
+capital_allocation:
+  run_table: fwios.capital_allocation_runs
+  action_table: fwios.capital_allocation_actions
+  metric_table: fwios.capital_allocation_metrics
+  scenario_modes:
+    - NO_SELL
+    - SOFT_REBALANCE
+    - ACTIVE_REBALANCE
+  required_outputs:
+    - new_cash_deployment
+    - trim_add_amounts
+    - before_after_weights
+    - expected_portfolio_upside_change
+    - concentration_and_theme_change
+  human_approval_required: true
+  auto_trade: false
+
+event_foundation:
+  table: fwios.system_events
+  production_triggers_enabled: false
+  intended_event_classes:
+    - PRICE_CHANGED
+    - EARNINGS_RELEASED
+    - CONSENSUS_UPDATED
+    - PORTFOLIO_CHANGED
+    - THESIS_CHANGED
+    - VALUATION_CHANGED
 
 fail_closed:
   missing_critical_data: BLOCKED
@@ -82,11 +134,12 @@ fail_closed:
   conflicting_critical_data: BLOCKED
   schema_invalid: BLOCKED
   unverified_or_provenance_free: BLOCKED
+  policy_incomplete: BLOCKED
   ai_only_valuation_can_pass: false
   quality_alone_can_promote: false
   force_fill_shortlist: false
-  unimplemented_model_status: "BLOCKED - MODEL NOT IMPLEMENTED"
   intrinsic_value_without_current_price_can_promote: false
+  unimplemented_model_status: "BLOCKED - MODEL NOT IMPLEMENTED"
 
 research_pipeline:
   version: RPV2.1
@@ -98,10 +151,7 @@ research_pipeline:
   light_target_max: 5
   deep_priority_target: 3
   evidence_reuse:
-    allowed_only_when_verified: true
-    allowed_source_tiers:
-      - A
-      - B
+    allowed_source_tiers: [A, B]
     exact_source_registry_match_required: true
     recompute_age_at_read_time: true
     default_current_evidence_max_age_days: 120
@@ -111,18 +161,14 @@ research_pipeline:
   controller_boundary:
     DISCOVERY:
       new_sector_allowed: true
-      current_sector_can_close: true
       model_debt_decoupled: true
     MODEL_FACTORY_AFTER_CURRENT_SECTOR:
       new_sector_allowed: false
       current_sector_can_close: true
-      model_debt_decoupled_for_current_closeout: true
     MODEL_FACTORY:
       new_sector_allowed: false
-      current_sector_can_close: false
     MODEL_FACTORY_CRITICAL:
       new_sector_allowed: false
-      current_sector_can_close: false
   parallel_top_candidate_execution: performance_validation_open
 
 sector_loop:
@@ -133,64 +179,21 @@ sector_loop:
   resume_running_sector_before_new: true
   next_sector_snapshot: Financials
   live_controller_must_be_reread_before_execution: true
-
-blocked_orchestrator:
-  sheet: Data_Quality_Gates
-  range: R:AJ
-  orchestrator_states:
-    - READY
-    - WAIT_DEPENDENCY
-    - WAIT_RETRY
-    - CLOSED
-  dependency_required_before_downstream: true
-
-valuation_registry:
-  configured_models: 20
-  implemented_phase_0_87:
-    - MEDTECH_INSTALLED_BASE_DCF_V1
-    - "E&P_NORMALIZED_FCF_YIELD_V1"
-    - RESTAURANT_UNIT_ECONOMICS_DCF_V1
-    - BRANDED_RETAIL_FCF_YIELD_V1
-    - OFS_MIDCYCLE_EV_EBITDA_FCF_V1
-    - SAAS_EV_FCF_REVERSE_DCF_V1
-    - MATERIALS_MIDCYCLE_FCF_DCF_V1
-    - IT_SERVICES_FCF_COMPOUNDER_V1
-    - MINING_ASSET_NAV_SOTP_V1
-    - DIGITAL_ADS_FCF_REVERSE_DCF_V1
-  default_required_source_tier: A
-  default_max_metric_age_days: 120
+  automation_paused_while_m2_promotion_hardening: true
 
 freshness:
   stock_market_data: latest_market_session_for_screening
   pre_trade_price_verification: broker_required
   fundamentals: latest_reported_quarter
   new_earnings_after_research: BLOCKED
-  reusable_evidence_age_recomputed_at_read: true
-  later_material_reporting_event_invalidates_older_current_evidence: true
   consensus_revision_missing: do_not_guess
   catalyst_for_ready: future_dated_required
 
-decision_intelligence:
-  m2_required_layers:
-    - native_market_price
-    - mispricing
-    - portfolio_state
-    - portfolio_fit
-    - data_scoring_v2_supabase_parity
-  current_price_required_for_expected_return_promotion: true
-  portfolio_state_source_before_cutover: "Investment Portfolio Tracker - Chumponphat"
-
-capital_allocation:
-  m3_required_outputs:
-    - new_cash_deployment
-    - trim_add_amounts
-    - before_after_weights
-    - expected_portfolio_upside_change
-    - concentration_and_theme_change
-    - no_sell_scenario
-    - soft_rebalance_scenario
-    - active_rebalance_scenario
-  human_approval_required: true
+security:
+  private_schema: fwios
+  anon_authenticated_privileges: revoked
+  rls_defense_in_depth: true
+  service_role_internal_execution: true
 
 documentation_handshake:
   repository: ChumponphatRangsee/focused-wealth-investment-os
@@ -199,35 +202,10 @@ documentation_handshake:
     - contracts/system-contract.yaml
     - VERSION
     - docs/00_SYSTEM_ROADMAP.md
-  block_new_sector_on_version_mismatch: true
-  roadmap_required_before_material_work: true
+    - docs/01_SYSTEM_ARCHITECTURE.md
+  block_material_work_on_version_mismatch: true
   roadmap_update_after_material_change: true
 
-roadmap_governance:
-  file: docs/00_SYSTEM_ROADMAP.md
-  role: persistent_project_status_index
-  live_state_overrides_roadmap: true
-  update_on:
-    - milestone_status_change
-    - system_capability_change
-    - blocker_or_bottleneck_change
-    - authority_or_cutover_change
-    - next_action_change
-    - contract_or_foundation_change
-  drift_failure_status: "BLOCKED - DOCUMENTATION DRIFT"
-  main_roadmap_precedes_side_quests_unless_hard_blocked: true
-
 regressions:
-  reference_tickers:
-    - ISRG
-    - EOG
-    - BKR
-    - CAVA
-    - TPR
-    - RDDT
-    - PINS
-  formula_errors_forbidden:
-    - "#REF!"
-    - "#DIV/0!"
-    - "#VALUE!"
-    - "#N/A"
+  reference_tickers: [ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS]
+  formula_errors_forbidden: ["#REF!", "#DIV/0!", "#VALUE!", "#N/A"]
