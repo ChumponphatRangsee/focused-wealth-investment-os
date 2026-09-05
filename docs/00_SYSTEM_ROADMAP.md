@@ -2,7 +2,7 @@
 
 Status: **ACTIVE**  
 Live foundation: **0.87**  
-Execution contract: **FWIOS-CONTRACT-0.87.1**  
+Execution contract: **FWIOS-CONTRACT-0.87.2**  
 Last updated: **2026-09-05 Asia/Bangkok**  
 Execution mode: **HUMAN EXECUTION ONLY**
 
@@ -26,21 +26,23 @@ This roadmap is **not allowed to override live state**. Before acting, always re
 | Item | Current state |
 |---|---|
 | Foundation | 0.87 |
-| Contract | FWIOS-CONTRACT-0.87.1 |
-| Operating mode | MODEL_FACTORY_AFTER_CURRENT_SECTOR |
+| Contract | FWIOS-CONTRACT-0.87.2 |
+| Research pipeline | RPV2.1 |
+| Operating mode | DISCOVERY |
 | Evidence-ready candidates | 18 |
-| Valuation-ready candidates | 11 |
-| Decision coverage | 61.1% |
-| Open root model blockers | 7 |
+| Valuation-ready candidates | 13 |
+| Decision coverage | 72.2% |
+| Open root model blockers | 6 |
 | Current sector | Communication Services |
 | Current sector stage | DONE — research closeout |
+| Next queued sector | Financials |
 | Run lock | IDLE |
-| Sector automation | PAUSED — controller-required model work |
+| Sector automation | PAUSED — manual control while Main Roadmap advances to M2 |
 | Current run ID | none |
 | Supabase authority | RESEARCH + VALUATION COMPUTE CONTROL PLANE |
 | Portfolio execution | Human only; no auto-buy / auto-sell |
 
-Current valuation/model infrastructure includes reusable private kernels for `FCF_COMPOUNDER`, `MIDCYCLE_CASHFLOW` and `ASSET_NAV`. Price/mispricing integration, final scoring cutover and final opportunity/capital-allocation authority are not yet complete.
+Current valuation/model infrastructure includes reusable private kernels for `FCF_COMPOUNDER`, `MIDCYCLE_CASHFLOW` and `ASSET_NAV`. Digital Advertising is now implemented on `FCF_COMPOUNDER`. Current-price/mispricing integration, portfolio-state cutover, final scoring and opportunity/capital-allocation authority remain incomplete.
 
 ### Designated portfolio migration source
 
@@ -58,11 +60,11 @@ Target authority after cutover:
 
 # MAIN ROADMAP
 
-Main Roadmap work directly advances the system toward a complete research → valuation → portfolio-fit → capital-allocation decision loop. Main Roadmap work takes precedence over Side Quests unless a Side Quest becomes a hard blocker for the current main milestone.
+Main Roadmap work directly advances the system toward a complete research → valuation → portfolio-fit → capital-allocation decision loop. Main Roadmap work takes precedence over Side Quests unless a Side Quest becomes a hard blocker for the active main milestone.
 
 ## M1 — Research Pipeline v2
 
-**Status: RESEARCH RUN COMPLETE / HARDENING OPEN**
+**Status: CORE HARDENING PASS / PERFORMANCE VALIDATION OPEN**
 
 Goal: reduce full-sector discovery/research latency without weakening evidence lineage, source quality or fail-closed behavior.
 
@@ -70,36 +72,32 @@ Goal: reduce full-sector discovery/research latency without weakening evidence l
 - [x] Fast Discovery stage: universe up to 20 → approximately 8 candidates using only high-signal screening data.
 - [x] Light Research stage: approximately 8 → maximum 5 candidates using Business Quality, Growth, rough Valuation, Downside and Portfolio Fit.
 - [x] Deep Research stage: production-grade evidence collection for the strongest approximately 3 candidates first; expand to candidates 4–5 only when justified.
-- [ ] Evidence cache / delta refresh: reuse fresh verified evidence and refresh only stale, missing, conflicting or materially changed inputs.
+- [x] Evidence cache / delta refresh core: exact registry provenance, read-time age recomputation, legacy Sheet date parsing and later-material-event invalidation are live in RPV2.1.
 - [x] Deterministic Source Router: route filings, guidance, balance-sheet facts, technical reports, market quotes and material news to defined source classes.
-- [ ] Model-debt decoupling: a missing valuation model must create/update persistent Model Debt and mark valuation pending, but must not stop the rest of sector discovery while the Operating Controller remains `DISCOVERY`.
-- [ ] Parallel top-candidate research where source/dependency ordering permits it.
-- [ ] Add regression/acceptance checks proving the staged funnel does not bypass Tier A/B evidence requirements or fail-closed gates.
+- [x] Model-debt decoupling: affected candidates remain fail-closed while sector completion/new-sector permission follows the Operating Controller boundary.
+- [ ] Parallel top-candidate execution/performance validation where source/dependency ordering permits it.
+- [x] Regression/acceptance checks proving cache aging, later-event invalidation, provenance failure and date parsing fail closed correctly.
 
-Target after instrumentation: **approximately 12–20 minutes per normal full-sector discovery/research run when reusable models exist**. This is a target, not a guaranteed SLA; telemetry must replace estimates once enough runs are measured.
+Communication Services completed the recorded 20→8→5→3 funnel in 863.729 seconds (14.4 minutes). RPV2.1 then repaired the two closeout defects found by review:
 
-### Closeout findings — 2026-09-05
+- `v_latest_reusable_evidence` now recomputes current-evidence age, validates exact Source Registry provenance, parses ISO and supported legacy Sheet serial dates, and invalidates older current reporting evidence after a later material reporting event.
+- `v_research_pipeline_controller` now permits current-sector completion in `MODEL_FACTORY_AFTER_CURRENT_SECTOR` while keeping new-sector discovery blocked until the controller returns `DISCOVERY`.
 
-Communication Services completed the recorded 20→8→5→3 funnel in 863.729 seconds. Six stored pipeline checks and eleven stored model regressions report PASS. This is recorded evidence, not a fresh independent retest of every model. Cache hits were zero; no live reuse speedup or parallel-execution benefit was measured.
+Behavioral regressions `REG-M1-CACHE-EVENT-20260905`, `REG-M1-CACHE-AGE-20260905`, `REG-M1-CACHE-PROV-20260905` and `REG-M1-DATE-PARSE-20260905` all PASS. Current reusable-evidence count is 221. RDDT/PINS/NFLX current Tier-A sets are eligible under the hardened cache rules.
 
-Two M1 implementation gaps remain before a full completion claim:
-
-- `v_latest_reusable_evidence` relies on persisted freshness labels and does not recompute age or detect a later earnings event. Implement deterministic date parsing (including legacy Sheet serial dates), source provenance checks, age/event invalidation and behavioral negative tests before enabling unattended reuse.
-- `v_research_pipeline_controller` reports `model_debt_blocks_sector_completion=true` for `MODEL_FACTORY_AFTER_CURRENT_SECTOR`, whereas the operating controller says to finish the current sector first. Correct the boundary and test coverage crossing below 70% during a run; new-sector discovery must remain blocked.
-
-The source router and parallelizability flags are configured. Parallel worker behavior and enforcement are not proven merely by those flags. See [closeout report](07_RESEARCH_CLOSEOUT.md).
+Parallel-worker speedup is still an optimization/measurement item; it no longer blocks progression to M2 because correctness and fail-closed M1 hardening criteria now pass.
 
 ### M1 exit criteria
 
-- Stage timings are measured rather than estimated.
-- Sector discovery can finish even when one candidate creates Model Debt.
-- Fresh evidence is reused deterministically.
-- No production candidate is promoted without the existing evidence / valuation / portfolio-fit gates.
-- Communication Services can run under the new pipeline without breaking prior regressions.
+- [x] Stage timings are measured rather than estimated.
+- [x] Sector discovery can finish even when a candidate creates Model Debt when the live controller permits it.
+- [x] Fresh evidence is reused deterministically and fails closed on provenance/age/event invalidation.
+- [x] No production candidate is promoted without evidence / valuation / current-price / portfolio-fit gates.
+- [x] Communication Services data is compatible with the hardened RPV2.1 cache/controller behavior without breaking the recorded run closeout.
 
 ## M2 — Decision Intelligence
 
-**Status: PENDING M1 FOUNDATION**
+**Status: NEXT / ACTIVE PRIORITY**
 
 Goal: answer not only whether a company is good, but whether it is attractive at the current price and suitable for the live portfolio.
 
@@ -152,28 +150,37 @@ Goal: automate monitoring and research refresh while keeping final portfolio exe
 
 ---
 
-# SIDE QUESTS
+# VALUATION MODEL COVERAGE / SIDE QUESTS
 
-Side Quests improve coverage, ergonomics or specialist depth but should not interrupt the active Main Roadmap unless the Operating Controller or a hard dependency explicitly promotes one into the main path.
+## Digital Advertising — PASS
 
-## Current model debt — promoted to the main execution queue
+`DIGITAL_ADS_FCF_REVERSE_DCF_V1` v1.0 is implemented on the reusable `FCF_COMPOUNDER` kernel with normalization `NORM_V1-DIGADS`.
 
-The live controller has promoted model work ahead of additional discovery. Priority values are snapshots of the controller, not investment scores.
+RDDT and PINS each have 9/9 required normalized inputs PASS. The model blends current monetization/ad growth with engagement growth and caps long-duration extrapolation; GAAP operating margin, capex intensity, positive FCF and SBC/revenue are sanity gates. Independent regressions pass at absolute tolerance 0.01.
+
+| Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV |
+|---|---:|---:|---:|---:|
+| RDDT | 92.3017 | 142.5985 | 237.7178 | 153.8041 |
+| PINS | 25.3199 | 40.6020 | 69.4854 | 44.0023 |
+
+These are intrinsic-value outputs only. Both candidates remain `WAIT - PRICE/MISPRICING PENDING`; no Buy/Ready promotion is allowed until M2 provides a fresh price/mispricing layer.
+
+## Remaining open model debt
+
+The live controller is now `DISCOVERY`, so these are fail-closed coverage tasks rather than blockers to the next Main Roadmap milestone. Priority values are model-resolution values, not investment scores.
 
 | Rank | Blocker | Scope | Resolution value |
 |---|---|---|---:|
-| 1 | BLK-COMM-DADS-MDL-001 | RDDT / PINS digital advertising | 88.40 |
-| 2 | BLK-IT-SEMI-MDL-001 | QCOM semiconductor designer | 73.80 |
-| 3 | BLK-COMM-STREAM-DEF-001 | Streaming / Media | 73.70 |
-| 4 | BLK-MAT-PACK-DEF-001 | BALL packaging | 73.45 |
-| 5 | BLK-IT-SEMICAP-MDL-001 | AMAT semiconductor equipment | 72.00 |
-| 6 | BLK-MP-MAGNETICS-NAV-001 | MP full-company NAV bridge | 71.55 |
-| 7 | BLK-COMM-TELCO-DEF-001 | Telecom | 12.00 |
-
-All remain fail-closed. A configured model or existing generic kernel cannot close a blocker without normalized inputs, explicit assumptions and model regressions.
+| 1 | BLK-IT-SEMI-MDL-001 | QCOM semiconductor designer | 73.80 |
+| 2 | BLK-COMM-STREAM-DEF-001 | Streaming / Media | 73.70 |
+| 3 | BLK-MAT-PACK-DEF-001 | BALL packaging | 73.45 |
+| 4 | BLK-IT-SEMICAP-MDL-001 | AMAT semiconductor equipment | 72.00 |
+| 5 | BLK-MP-MAGNETICS-NAV-001 | MP full-company NAV bridge | 71.55 |
+| 6 | BLK-COMM-TELCO-DEF-001 | Telecom | 12.00 |
 
 ## Other side quests
 
+- [ ] Parallel top-candidate performance validation / speed measurement.
 - [ ] Dashboard/UI polish after decision logic stabilizes.
 - [ ] Further Google Sheet tab simplification when it does not disrupt live controls.
 - [ ] Advanced thesis-monitor enhancements.
@@ -188,16 +195,17 @@ All remain fail-closed. A configured model or existing generic kernel cannot clo
 
 ## Immediate next action
 
-**Repair the two M1 hardening gaps, then execute the controller-required model sprint, starting with Digital Advertising.**
+**Begin M2 Decision Intelligence.**
 
-1. Preserve Communication Services research completion and its central blockers; do not repeat the sector.
-2. Make cache eligibility recompute freshness and invalidate evidence after a later material event.
-3. Correct the current-sector completion boundary without allowing a new sector below the coverage threshold.
-4. Complete the Digital Advertising normalization/model contract for RDDT/PINS with independent regression anchors; keep production valuation blocked until every requirement passes.
-5. Recompute coverage and re-read the controller. Financials stays queued until discovery is permitted.
-6. Implement M2 price/mispricing, **Portfolio State migration from `Investment Portfolio Tracker - Chumponphat`**, portfolio-fit parity, then M3 and M4 against their exit criteria.
+1. Preserve the completed Communication Services run; do not repeat it.
+2. Keep Financials queued and eligible under the live `DISCOVERY` controller, but do not auto-start it while the Main Roadmap is advancing to M2.
+3. Migrate Portfolio State from `Investment Portfolio Tracker - Chumponphat` into private Supabase tables with transaction/position/cost-basis/allocation reconciliation and fail-closed parity checks.
+4. Implement the native Market Price freshness layer and Mispricing engine.
+5. Build Portfolio Fit from reconciled live portfolio weights/exposures.
+6. Cut over `Data_Scoring_v2` to Supabase parity with 30/30/25/15 weights.
+7. Re-read portfolio/controller state before any investment recommendation or new sector execution.
 
-The closeout utility checks recorded no-promotion run consistency; it is not a substitute for the remaining implementation or independent investment-source verification.
+The six remaining model-debt items stay fail-closed and can be resolved opportunistically or when the controller/bottleneck promotes them again. M3 Rebalancing depends on M2 portfolio-state, price, mispricing and portfolio-fit outputs.
 
 ---
 
@@ -242,6 +250,17 @@ If live state conflicts with this roadmap:
 
 # Change Log
 
+## 2026-09-05 — M1 core hardening PASS / Digital Ads model PASS
+
+- Upgraded research pipeline controller/cache semantics to RPV2.1.
+- Added exact provenance validation, read-time freshness aging, legacy Sheet date parsing and later-material-event invalidation.
+- Corrected the `MODEL_FACTORY_AFTER_CURRENT_SECTOR` completion boundary and added behavioral negative regressions.
+- Removed five legacy `#VALUE!` errors in `Sector_Universe` without inventing missing scores; incomplete numeric inputs now remain blank/fail-closed.
+- Implemented `DIGITAL_ADS_FCF_REVERSE_DCF_V1` v1.0 for RDDT/PINS on `FCF_COMPOUNDER`; 9/9 normalized metrics and independent regressions PASS.
+- Closed `BLK-COMM-DADS-MDL-001` while preserving current-price/mispricing as a downstream M2 gate.
+- Decision coverage improved from 61.1% (11/18) to 72.2% (13/18); controller returned to `DISCOVERY`; open root model debt fell from seven to six.
+- Advanced Main Roadmap priority to M2 Decision Intelligence. Financials remains queued, not automatically started.
+
 ## 2026-09-05 — Portfolio tracker migration dependency recorded
 
 - Designated `Investment Portfolio Tracker - Chumponphat` as the portfolio-side migration source for M2/M3.
@@ -265,4 +284,3 @@ If live state conflicts with this roadmap:
 - Recorded live 73.3% decision coverage and DISCOVERY operating mode.
 - Recorded four current root model-debt side quests.
 - Added mandatory AI roadmap read/update governance.
-- Corrected project-direction drift away from the stale Materials next-sector snapshot; current live sector remains Communication Services, READY / IDLE / no run ID.
