@@ -42,6 +42,18 @@ This roadmap is **not allowed to override live state**. Before acting, always re
 
 Current valuation/model infrastructure includes reusable private kernels for `FCF_COMPOUNDER`, `MIDCYCLE_CASHFLOW` and `ASSET_NAV`. Price/mispricing integration, final scoring cutover and final opportunity/capital-allocation authority are not yet complete.
 
+### Designated portfolio migration source
+
+`Investment Portfolio Tracker - Chumponphat` is the designated live/legacy migration source for portfolio-state data required by M2/M3. It must **not** be retired, deleted, or treated as disposable legacy output until Supabase portfolio-state parity, transaction reconciliation and downstream rebalancing tests pass.
+
+Migration scope includes at minimum: accounts, transactions, asset / asset class, quantity, price, fees, currency / FX, net quantity, THB cash flow, cost-basis changes, realized P&L, running quantity, running cost basis, average cost, holdings/allocation state, thesis/action context and data-quality lineage where available.
+
+Target authority after cutover:
+
+- **Supabase** = portfolio ledger/state source of truth used by Portfolio Fit, Opportunity, Capital Allocation and Rebalancing engines.
+- **GitHub** = schema, migration, contract, regression and decision-engine implementation authority.
+- **Investment Portfolio Tracker - Chumponphat** = read-only reconciliation / audit / export / archive layer unless a later roadmap explicitly keeps a live compatibility use case.
+
 ---
 
 # MAIN ROADMAP
@@ -93,13 +105,14 @@ Goal: answer not only whether a company is good, but whether it is attractive at
 
 - [ ] Native Market Price layer with quote timestamp, session status and freshness gate.
 - [ ] Mispricing engine: current price vs Bear/Base/Bull/PW fair value, upside/downside and margin-of-safety classification.
+- [ ] **Portfolio State migration from `Investment Portfolio Tracker - Chumponphat` into Supabase**, with reconciled accounts, transactions, positions, cost basis, realized/unrealized state, allocation and exposure inputs. The Sheet remains authoritative/retained until parity and reconciliation pass.
 - [ ] Portfolio Fit Engine: live position weight, sector/theme dependency, concentration, crypto exposure, thesis overlap and opportunity-cost context.
 - [ ] Supabase parity for `Data_Scoring_v2` using the production weights: Business/Thesis 30%, Expected Return/Valuation 30%, Portfolio Fit 25%, Downside Risk 15%.
 - [ ] Fail-closed parity tests for stale price, stale earnings, missing portfolio context and incomplete valuation.
 
 ### M2 exit criteria
 
-The system can state, with traceable inputs: **good business + current valuation + expected return + portfolio fit + downside risk**.
+The system can state, with traceable inputs: **good business + current valuation + expected return + portfolio fit + downside risk**, using reconciled live portfolio state rather than a manually copied snapshot.
 
 ## M3 — Opportunity & Capital Allocation
 
@@ -111,14 +124,17 @@ Goal: rank where the next unit of capital should go and simulate portfolio chang
 - [ ] Global candidate ranking with maximum 5 active watchlist candidates and maximum 3 immediate buy candidates.
 - [ ] New-cash deployment logic.
 - [ ] Soft-rebalancing sequence: new cash → reduce DCA → reassess thesis/valuation → allow weights to normalize → hard trim only when justified.
-- [ ] Rebalancing signal engine with trim/add amounts and before/after portfolio exposure.
+- [ ] Rebalancing signal engine with trim/add amounts and before/after portfolio exposure, using the migrated `Investment Portfolio Tracker - Chumponphat` portfolio ledger/state as the portfolio-side input.
 - [ ] Trim/Add simulation with estimated change in portfolio expected return and concentration risk.
+- [ ] Scenario outputs for **No-Sell / Soft Rebalance / Active Rebalance**, including recommended trim amount, destination asset(s), before/after position weights, concentration/theme effects and expected portfolio-upside change.
 - [ ] Explicit concentration review for exceptional single-stock weights above approximately 30%.
 - [ ] Explicit Phase-1 crypto exposure review around the approximately 15–20% target.
 
 ### M3 exit criteria
 
-The system can answer: **“If new capital is available today, where should it go; should anything be reduced first; and what changes in expected portfolio outcome?”** Human approval/execution remains mandatory.
+The system can answer: **“If new capital is available today, where should it go; if new cash is insufficient, should anything be reduced, by how much, where should those proceeds move, and what changes in expected portfolio outcome?”** Human approval/execution remains mandatory.
+
+The M3 cutover is not complete until recommendations are generated from the reconciled Supabase portfolio ledger and can be traced back to source transactions from `Investment Portfolio Tracker - Chumponphat` without unexplained quantity, cost-basis, realized-P&L or allocation differences.
 
 ## M4 — Autonomous Investment OS
 
@@ -179,7 +195,7 @@ All remain fail-closed. A configured model or existing generic kernel cannot clo
 3. Correct the current-sector completion boundary without allowing a new sector below the coverage threshold.
 4. Complete the Digital Advertising normalization/model contract for RDDT/PINS with independent regression anchors; keep production valuation blocked until every requirement passes.
 5. Recompute coverage and re-read the controller. Financials stays queued until discovery is permitted.
-6. Implement M2 price/mispricing and portfolio-fit parity, then M3 and M4 against their exit criteria.
+6. Implement M2 price/mispricing, **Portfolio State migration from `Investment Portfolio Tracker - Chumponphat`**, portfolio-fit parity, then M3 and M4 against their exit criteria.
 
 The closeout utility checks recorded no-promotion run consistency; it is not a substitute for the remaining implementation or independent investment-source verification.
 
@@ -226,6 +242,14 @@ If live state conflicts with this roadmap:
 
 # Change Log
 
+## 2026-09-05 — Portfolio tracker migration dependency recorded
+
+- Designated `Investment Portfolio Tracker - Chumponphat` as the portfolio-side migration source for M2/M3.
+- Added Supabase Portfolio State migration before Portfolio Fit / Rebalancing cutover.
+- Added M3 No-Sell / Soft Rebalance / Active Rebalance scenario requirement with trim/add and expected-upside comparison.
+- Added a retirement guard: do not delete/retire the portfolio tracker until transaction/position/cost-basis/allocation reconciliation passes.
+- Target post-cutover role for the Sheet is read-only reconciliation / audit / export / archive.
+
 ## 2026-09-05 — Recover Communication Services closeout
 
 - Reconciled completed Supabase research with the previously RUNNING Sheets controller.
@@ -233,7 +257,6 @@ If live state conflicts with this roadmap:
 - Corrected coverage to 61.1%, root blockers to seven and next action to controller-required model work.
 - Added a read-only closeout checker and failure-case tests.
 - Kept M1 hardening, M2, M3 and M4 open; no claim of whole-project completion.
-
 
 ## 2026-09-05 — Master roadmap introduced
 
