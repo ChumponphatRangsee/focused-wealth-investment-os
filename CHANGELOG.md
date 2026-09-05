@@ -20,3 +20,10 @@ Added:
 - `VERSION` handshake file.
 
 Live-system handshake is expected to require foundation `0.87` before new autonomous sector execution.
+
+## 2026-09-05 — Communication Services closeout recovery
+
+- Reconciled completed research, history, universe, blockers and controller handoff.
+- Added read-only no-promotion closeout checks and synthetic failure tests.
+- Corrected operational documentation without changing valuation/scoring logic.
+- Identified unresolved cache-aging and controller-completion defects; M1 hardening and M2–M4 remain open.

@@ -129,11 +129,15 @@ Forbidden:
 - using analyst estimates as canonical reported facts;
 - declaring a blocker resolved because a stock looks attractive.
 
-## Phase 0.87 snapshot
+## Historical initial Phase 0.87 snapshot
 
-The live foundation currently reports:
+The initial Phase 0.87 baseline reported:
 
 - `0 OPEN ROOT BLOCKERS`
 - `0 READY / 0 WAIT_DEP / 0 WAIT_RETRY / 8 CLOSED`
 
 This is a point-in-time snapshot only. Future sector runs must add newly discovered root blockers into the same queue.
+
+## Current snapshot
+
+As of the 2026-09-05 Communication Services closeout, seven root blockers remain. Use the master roadmap and live Supabase controller for the current resolution order; the initial zero-blocker baseline above is historical.

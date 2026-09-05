@@ -90,7 +90,7 @@ At the latest Phase 0.87 snapshot:
 3. Energy — COMPLETE
 4. Materials — COMPLETE
 5. Information Technology — COMPLETE
-6. Communication Services — QUEUED / READY
+6. Communication Services — research COMPLETE / DONE (2026-09-05)
 7. Financials — QUEUED / READY
 8. Industrials — QUEUED / READY
 9. Real Estate — QUEUED / READY
@@ -99,7 +99,7 @@ At the latest Phase 0.87 snapshot:
 
 The live sheet must always be checked again before executing. This snapshot is documentation, not a substitute for current state.
 
-## Latest Materials run
+## Historical Materials run
 
 Run ID: `SECTOR-MAT-FULL-20260904-01`
 
@@ -127,7 +127,7 @@ Root definition blockers created:
 
 These are `MANUAL` system-development blockers. Scheduled blocker automation must not redesign the production model registry automatically.
 
-## Latest Information Technology run
+## Historical Information Technology run
 
 Run ID: `SECTOR-IT-FULL-20260904-01`
 
@@ -164,9 +164,9 @@ Root blockers created:
 
 These are `MANUAL` system-development blockers. Scheduled blocker automation must skip them until an explicit production-model development run is requested.
 
-### Portfolio-fit result
+### Historical portfolio-fit result
 
-The live portfolio was re-read before promotion. NVDA represented approximately **41.4%** of the portfolio and MSFT approximately **6.0%** at the run snapshot. Correlated AI / mega-cap / semiconductor names were therefore explicitly penalized. NVDA remains a stop-add concentration case rather than a new-capital candidate, and MSFT was not promoted merely because it belongs to a high-quality IT archetype.
+The live portfolio was re-read before promotion. The run observed concentrated AI / mega-cap exposure. Exact private allocations must be read from the portfolio tracker, not retained in this public repository. Correlated AI / mega-cap / semiconductor names were therefore explicitly penalized. NVDA remains a stop-add concentration case rather than a new-capital candidate, and MSFT was not promoted merely because it belongs to a high-quality IT archetype.
 
 No IT name entered the immediate-buy set. The global active research set remains:
 
@@ -178,12 +178,12 @@ No IT name entered the immediate-buy set. The global active research set remains
 
 No portfolio holdings or transactions were changed.
 
-## Communication Services next-run requirement
+## Historical Communication Services start requirements
 
 Before starting Communication Services:
 
 1. documentation handshake must be PASS;
-2. live foundation must still be compatible with contract 0.87.0;
+2. live foundation must be compatible with the current `VERSION`;
 3. central blocker queue must be read;
 4. current portfolio must be re-read before portfolio-fit promotion;
 5. each Communication Services archetype must use its current `Sector_Criteria` contract exactly as defined;
@@ -209,3 +209,7 @@ A run is complete only when:
 - global active candidates are reconciled;
 - `Sector_Run_History` has a final row;
 - no portfolio holdings or transactions were changed as part of screener research.
+
+## Completed Communication Services research and recovery
+
+See [07_RESEARCH_CLOSEOUT.md](07_RESEARCH_CLOSEOUT.md). Research completion and cross-system closeout are separate: persist the universe, blockers and append-only history, verify the unchanged global active set, then release the matching run lock. A new-sector handoff must follow the live operating controller. At 61.1% coverage, finish the current run and do model work before Financials. Never clear a lock belonging to a different run.

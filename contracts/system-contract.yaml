@@ -98,7 +98,7 @@ blocked_orchestrator:
   dependency_required_before_downstream: true
 
 valuation_registry:
-  configured_models: 17
+  configured_models: 20
   implemented_phase_0_87:
     - MEDTECH_INSTALLED_BASE_DCF_V1
     - "E&P_NORMALIZED_FCF_YIELD_V1"

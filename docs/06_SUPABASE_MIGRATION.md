@@ -209,17 +209,6 @@ Live state overrides a stale roadmap. Material changes that alter capability, mi
 
 ## Next milestone
 
-The active Main Roadmap priority is **M1 Research Pipeline v2 before the Communication Services full-sector run**:
+Communication Services research is complete under RPV2.0. The recorded 20→8→5→3 run took 14.4 minutes and added three model blockers. Coverage is 11/18 (61.1%), so the live controller requires model work before another sector.
 
-1. Add Research Run Telemetry.
-2. Implement Fast Discovery → Light Research → Deep Research staged funnel.
-3. Add evidence reuse / delta-refresh rules.
-4. Decouple Model Debt from sector completion while the controller remains `DISCOVERY`.
-5. Add deterministic source routing and safe parallel top-candidate research.
-6. Regression-test the new pipeline without weakening Tier A/B evidence requirements or fail-closed gates.
-7. Re-read Operating Controller and `Sector_Run_Control`.
-8. If live state still permits, start Communication Services. Current snapshot is READY / IDLE / no current run ID.
-9. Keep QCOM, BALL, AMAT and MP Magnetics model debt in the persistent queue unless a live hard dependency promotes one into the main path.
-10. Build current Market Price / Mispricing gating as the next Decision Intelligence bottleneck after the research-pipeline milestone, subject to the live controller.
-11. Do not migrate final `Opportunity_Engine_v2` authority until native valuation + price/mispricing parity is proven.
-12. Human execution only; no automatic portfolio trades.
+The [master roadmap](00_SYSTEM_ROADMAP.md) and [closeout report](07_RESEARCH_CLOSEOUT.md) track the two remaining M1 hardening gaps. Implement Digital Advertising valuation after those corrections; price/mispricing and final opportunity cutover remain pending. Keep research completion separate from investment readiness.
