@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.5
+  id: FWIOS-CONTRACT-0.87.6
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-05"
   timezone: Asia/Bangkok
@@ -24,6 +24,7 @@ portfolio_guardrails:
   target_crypto_pct: {min: 15, max: 20}
   max_active_watchlist_candidates: 5
   max_immediate_buy_candidates: 3
+  usual_new_purchases_per_decision_cycle: {min: 0, max: 1}
   soft_rebalance_with_new_cash_first: true
   trim_only_because_price_appreciated: false
   auto_trade: false
@@ -46,8 +47,9 @@ production_path:
   - Revision_Chase_Gates
   - Decision_Snapshot
   - Opportunity_Ranking
-  - Capital_Allocation
+  - New_Cash_Allocation
   - Portfolio_Scenario_Simulation
+  - Rebalancing_Recommendation
   - Human_Approval
 
 scoring:
@@ -83,6 +85,7 @@ policy_governance:
     REVISION_SCORE: ACTIVE
     CHASE_SCORE: ACTIVE
     OPPORTUNITY_RANKING: ACTIVE
+    NEW_CASH_ALLOCATION: ACTIVE
     REBALANCE: DRAFT
 
 revision_score_v1:
@@ -136,12 +139,7 @@ opportunity_ranking_v1:
   no_second_weighted_score: true
   immediate_rule: "input_integrity PASS and promotion_gate PASS"
   watchlist_rule: "input_integrity PASS and only mispricing FAIL - INSUFFICIENT MISPRICING while all other M2 hard gates PASS"
-  tie_break_order:
-    - expected_return_score_desc
-    - portfolio_fit_score_desc
-    - downside_risk_score_desc
-    - business_thesis_score_desc
-    - ticker_asc
+  tie_break_order: [expected_return_score_desc, portfolio_fit_score_desc, downside_risk_score_desc, business_thesis_score_desc, ticker_asc]
   max_immediate: 3
   max_watchlist: 5
   force_fill: false
@@ -149,13 +147,40 @@ opportunity_ranking_v1:
   first_production_run: OPPRANK-M3-20260905-01
   human_execution_only: true
 
-capital_allocation:
+new_cash_allocation_v1:
+  policy_version_id: POL-NEW-CASH-ALLOCATION-V1
   run_table: fwios.capital_allocation_runs
   action_table: fwios.capital_allocation_actions
   metric_table: fwios.capital_allocation_metrics
-  scenario_modes: [NO_SELL, SOFT_REBALANCE, ACTIVE_REBALANCE]
-  source_opportunities_must_use_active_ranking_policy: true
+  context_view: fwios.v_new_cash_allocation_current_context
+  candidate_preview_function: fwios.preview_new_cash_candidates_v1
+  allocation_preview_function: fwios.preview_new_cash_allocation_v1
+  metric_preview_function: fwios.preview_new_cash_metrics_v1
+  source_ranking_policy: POL-OPPORTUNITY-RANKING-V1
+  source_bucket: IMMEDIATE_BUY_CANDIDATE
+  supported_asset_classes: [Stock]
+  max_deployed_assets_per_run: 1
+  new_position_post_money_cap_pct: 5
+  existing_position_increment_cap_pct: 5
+  exceptional_single_stock_max_pct: 30
+  existing_position_above_30_add_capacity: 0
+  residual_cash_action: HOLD_CASH_THB
+  watchlist_allocation_allowed: false
+  force_fill: false
   new_cash_first: true
+  portfolio_batch_must_match_ranking_batch: true
+  add_requires_ranking_candidate_reference: true
+  add_requires_decision_snapshot_reference: true
+  regressions: "20/20 PASS"
+  production_materialization_requires_real_user_cash_amount: true
+  preview_mutates_live_portfolio: false
+  human_review_required: true
+  auto_trade: false
+
+capital_allocation:
+  scenario_modes: [NO_SELL, SOFT_REBALANCE, ACTIVE_REBALANCE]
+  new_cash_engine_live: true
+  scenario_simulation_next: true
   human_approval_required: true
   auto_trade: false
 
@@ -169,8 +194,11 @@ fail_closed:
   ai_only_valuation_can_pass: false
   quality_alone_can_promote: false
   force_fill_shortlist: false
+  force_fill_allocation: false
   intrinsic_value_without_current_price_can_promote: false
   non_mispricing_hard_gate_failure_can_enter_value_watchlist: false
+  stale_portfolio_ranking_mismatch_can_allocate: false
+  unsupported_asset_class_can_allocate_v1: false
   unimplemented_model_status: "BLOCKED - MODEL NOT IMPLEMENTED"
 
 research_pipeline:
@@ -213,6 +241,12 @@ security:
   rls_defense_in_depth: true
   service_role_internal_execution: true
   security_invoker_views_required: true
+  security_definer_forbidden_for_allocation_preview: true
+
+google_sheets:
+  role: view_compatibility_reconciliation_audit_export
+  during_m3_2_to_m3_5_write_scope: [System_Foundation, Audit_Status]
+  new_production_logic_or_config_writes_forbidden: true
 
 documentation_handshake:
   repository: ChumponphatRangsee/focused-wealth-investment-os
@@ -226,4 +260,6 @@ regressions:
   m2_promotion_policy_pass: "16/16"
   m3_opportunity_ranking_suite: "REG-M3-OPPRANK-V1-*"
   m3_opportunity_ranking_pass: "8/8"
+  m3_new_cash_allocation_suite: "REG-M3-NEWCASH-V1-*"
+  m3_new_cash_allocation_pass: "20/20"
   formula_errors_forbidden: ["#REF!", "#DIV/0!", "#VALUE!", "#N/A"]
