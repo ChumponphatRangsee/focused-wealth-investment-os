@@ -1,6 +1,6 @@
 # Supabase Migration — Focused Wealth Investment OS
 
-Status: **PHASE 3 MODEL FACTORY — SAAS PASS**  
+Status: **PHASE 3 MODEL FACTORY — MATERIALS CHEM PASS**  
 Date: 2026-09-05  
 Supabase project ref: `ysjbmeukwbfnxnwqchuq`
 
@@ -43,8 +43,6 @@ Kernel state: **IMPLEMENTED**
 Function security: private `fwios` schema; PUBLIC/anon/authenticated EXECUTE revoked; service role only.
 
 ### SaaS disclosure-contract v1.1
-The original SaaS contract required both `arr_growth_yoy` and `nrr`. Production evidence showed that ADBE and CRM do not provide a consistently comparable NRR field suitable for a universal fail-closed required input. The contract was therefore versioned rather than silently substituting a different metric.
-
 `SAAS_CONTRACT_V1_1` requires:
 - `recurring_growth_yoy`
 - `gross_margin`
@@ -55,50 +53,71 @@ The original SaaS contract required both `arr_growth_yoy` and `nrr`. Production 
 - `net_cash`
 - `shares_outstanding`
 
-NRR is an optional diagnostic when disclosed. `recurring_growth_yoy` is explicitly a disclosure-normalized recurring-growth proxy, **not NRR**:
-- ADBE: Total Adobe ARR growth YoY proxy.
-- CRM: organic subscription/support growth YoY excluding Informatica contribution proxy.
-
-The proxy identity and source metric remain preserved in canonical metadata.
-
-### SaaS production input path
-Verified evidence already present in `fwios.evidence_records` was promoted through the canonical path and normalized as `NORM_V1-SAAS`.
+NRR is an optional diagnostic when disclosed. `recurring_growth_yoy` is explicitly a disclosure-normalized recurring-growth proxy, not NRR.
 
 Required input coverage:
 - ADBE: **8 / 8 PASS**
 - CRM: **8 / 8 PASS**
 
-### Native valuation runs and regression
 Model: `SAAS_EV_FCF_REVERSE_DCF_V1`  
 Version: **1.1**  
 Status: **IMPLEMENTED / PRODUCTION_V1**
-
-Native Supabase kernel outputs:
 
 | Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV |
 |---|---:|---:|---:|---:|
 | ADBE | 340.7882 | 489.0870 | 731.7702 | 512.6831 |
 | CRM | 156.7065 | 230.0284 | 352.2504 | 242.2534 |
 
-Independent regression anchors were calculated outside the database kernel and compared against Supabase outputs. Both candidates pass absolute tolerance 0.01:
-- ADBE regression: **PASS**
-- CRM regression: **PASS**
+ADBE and CRM regressions pass absolute tolerance 0.01. Their current-price/mispricing gates remain blocked; neither was promoted.
 
-Scenario policy:
-- Bear/Base/Bull probabilities = 25% / 50% / 25%.
-- Base years 1–5 growth uses the disclosed recurring-growth proxy.
-- Bear growth = base minus 4 percentage points with a 3% floor.
-- Bull growth = base plus 4 percentage points with a 20% cap.
-- Years 6–10 growth fades to 50% of early-stage growth with scenario floors.
-- Discount rates = 13% / 12% / 11%.
-- Terminal growth = 3.0% / 3.5% / 4.0%.
+## Phase 3 Model Factory — Materials Specialty Chemicals / Industrial Gases PASS
+The second reusable executable kernel is now live:
 
-These growth/discount/terminal parameters are explicit valuation assumptions, not reported evidence.
+`fwios.midcycle_cashflow_fv(...)`
 
-## Fail-closed state after SaaS implementation
-`BLK-IT-SAAS-MDL-001` is now **CLOSED / PASS** because the missing model implementation itself is resolved.
+Kernel family: `MIDCYCLE_CASHFLOW`  
+Kernel state: **IMPLEMENTED**  
+Function security: private `fwios` schema; PUBLIC/anon/authenticated EXECUTE revoked; service role only.
 
-This does **not** mean ADBE or CRM are buy candidates. Their current state is:
+### Materials valuation contract v1.0
+Model: `MATERIALS_MIDCYCLE_FCF_DCF_V1`  
+Version: **1.0**  
+Normalization: `NORM_V1-MAT-CHEM`  
+Status: **IMPLEMENTED / PRODUCTION_V1**
+
+Required canonical metrics:
+- `fcf_ltm`
+- `fcf_3y_median`
+- `capex_ltm`
+- `net_debt`
+- `shares_outstanding`
+- `organic_sales_growth`
+
+The production starting cash-flow anchor is three-year median reported CFO minus capex. This prevents a single working-capital or capex period from being mistaken for normalized economics.
+
+Subtype policy:
+- **Industrial gases (LIN):** tighter scenario bands reflect contracted/on-site durability. Project backlog is a diagnostic and is never capitalized directly into fair value.
+- **Coatings (PPG):** wider downside bands reflect cyclical end markets and working-capital volatility. Current LTM cash-flow improvement is a cross-check, not automatically the normalized starting level.
+- `net_debt` remains a leverage diagnostic because the kernel discounts equity FCF after interest; subtracting debt again would double count leverage.
+
+Verified normalized anchors:
+- LIN normalized mid-cycle FCF: **USD 5.089B**; LTM FCF cross-check: **USD 4.975B**; shares: **460.980163M**.
+- PPG normalized mid-cycle FCF: **USD 1.163B**; LTM FCF cross-check: **USD 1.407B**; shares: **222.3M**.
+
+Native valuation outputs:
+
+| Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV |
+|---|---:|---:|---:|---:|
+| LIN | 115.6977 | 169.5095 | 254.6389 | 177.3389 |
+| PPG | 40.4529 | 64.8542 | 98.4271 | 67.1471 |
+
+Independent calculations were performed outside the database kernel and compared against Supabase outputs. Both pass absolute tolerance 0.01:
+- LIN regression `REG-LIN-MAT-20260905`: **PASS**
+- PPG regression `REG-PPG-MAT-20260905`: **PASS**
+
+`BLK-MAT-CHEM-DEF-001` is now **CLOSED / PASS**.
+
+This does not make LIN or PPG buy candidates. Their current state is:
 - intrinsic valuation compute: PASS
 - valuation gate: PASS
 - expected-return / current-price gate: BLOCKED - PRICE/MISPRICING PENDING
@@ -109,24 +128,22 @@ This does **not** mean ADBE or CRM are buy candidates. Their current state is:
 No candidate was promoted and no portfolio transaction occurred.
 
 ## Decision Coverage / Operating Controller
-Decision Coverage improved from **33.3% (5/15)** to **46.7% (7/15)** because ADBE and CRM are now valuation-ready.
+Decision Coverage is now **60.0% (9/15)**, up from 46.7% after the SaaS pass and 33.3% at the initial model-factory baseline.
 
-Operating Controller moved from `MODEL_FACTORY_CRITICAL` to **`MODEL_FACTORY`**.
+Operating Controller: **`MODEL_FACTORY_AFTER_CURRENT_SECTOR`**  
+Controller action: **Finish current sector, then run a model sprint.**
 
-Current policy action: prioritize model factory before additional sector breadth.
-
-Open root blockers: **6**.
+Open root blockers: **5**.
 
 Current Model Debt Controller ranking:
-1. Materials Specialty Chemicals / Industrial Gases — **87.30**
-2. IT Services / Hardware — **81.05**
-3. Materials Mining / Commodities — **78.55**
-4. Semiconductor Designer — **73.80**
-5. Materials Packaging — **73.45**
-6. Semiconductor Equipment / Foundry — **72.00**
+1. IT Services / Hardware — **81.05** (`FCF_COMPOUNDER`; ACN)
+2. Materials Mining / Commodities — **78.55** (`ASSET_NAV`; ALB + MP)
+3. Semiconductor Designer — **73.80** (`MIDCYCLE_CASHFLOW`; QCOM)
+4. Materials Packaging — **73.45** (`MIDCYCLE_CASHFLOW`; BALL)
+5. Semiconductor Equipment / Foundry — **72.00** (`MIDCYCLE_CASHFLOW`; AMAT)
 
 ## Security advisor
-Post-change security advisor shows only expected INFO notices `RLS Enabled No Policy` on private `fwios` tables. This is intentional: RLS is enabled as defense in depth while `anon` and `authenticated` have no schema/table privileges. No new exposed SECURITY DEFINER surface was introduced.
+Post-change security advisor shows only expected INFO notices `RLS Enabled No Policy` on private `fwios` tables. This remains intentional: RLS is enabled as defense in depth while `anon` and `authenticated` have no schema/table privileges. No new exposed SECURITY DEFINER surface was introduced.
 
 ## Authority state
 Supabase is authoritative for:
@@ -134,14 +151,15 @@ Supabase is authoritative for:
 - dependency and model registry state,
 - blocker/model-debt state,
 - production valuation snapshots,
-- the executable `FCF_COMPOUNDER` kernel,
-- SaaS v1.1 intrinsic valuation compute for ADBE/CRM.
+- executable `FCF_COMPOUNDER` and `MIDCYCLE_CASHFLOW` kernels,
+- SaaS v1.1 intrinsic valuation compute for ADBE/CRM,
+- Materials Specialty Chemicals / Industrial Gases v1.0 intrinsic valuation compute for LIN/PPG.
 
 Google Sheets remains the compatibility/control-room representation. Current-price/mispricing integration, `Data_Scoring_v2`, `Opportunity_Engine_v2`, portfolio holdings/transactions/positions and final human decision logic remain downstream.
 
 ## Next milestone
-1. Build the next highest-value reusable valuation route, led by Materials Specialty Chemicals / Industrial Gases or IT Services / Hardware.
-2. Integrate current market-price / mispricing gating into Supabase without contaminating evidence/canonical layers.
+1. Follow the live Operating Controller. With Materials research already complete, the next model sprint priority is IT Services / Hardware (`BLK-IT-HW-DEF-001`, ACN), unless live controller state changes.
+2. Build current market-price / mispricing gating in Supabase as a separate market-data layer; never mix quote data into reported evidence/canonical facts.
 3. Add deterministic stale/missing/conflicting-input tests around executable kernels.
 4. Do not migrate `Opportunity_Engine_v2` until native valuation + price/mispricing compute parity is proven.
 5. Human execution only; no automatic portfolio trades.
