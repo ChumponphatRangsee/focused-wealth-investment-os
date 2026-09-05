@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.6**  
+Contract version: **FWIOS-CONTRACT-0.87.7**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -28,7 +28,7 @@ Live portfolio/system/controller state overrides stale documentation.
 5. Prefer primary company/SEC/IR evidence for canonical facts.
 6. Check concentration and crypto exposure.
 7. Challenge FOMO, anchoring, confirmation bias and narrative-driven reasoning.
-8. Use the latest reproducible Decision Snapshot, active Opportunity Ranking and active allocation policy where applicable.
+8. Use the latest reproducible Decision Snapshot, active Opportunity Ranking, New-Cash Allocation and Scenario policies where applicable.
 9. Broker-verify price before any real trade decision.
 
 ## 4. Portfolio guardrails
@@ -51,129 +51,120 @@ Core weights are exactly 30/30/25/15:
 Revision/catalyst/timing/chase are non-core and cannot override hard gates.
 
 ## 6. Production path
-`Source → Evidence → Canonical Facts → Normalized Metrics → Valuation → Market Price/Mispricing + Portfolio State/Fit → Core Scoring → Revision/Chase Gates → Decision Snapshot → Opportunity Ranking → New-Cash Allocation → Scenario Simulation → Rebalancing Recommendation → Human Approval`
+`Source → Evidence → Canonical Facts → Normalized Metrics → Valuation → Market Price/Mispricing + Portfolio State/Fit → Core Scoring → Revision/Chase Gates → Decision Snapshot → Opportunity Ranking → New-Cash Allocation → Portfolio Scenario Simulation → Rebalancing Recommendation → Human Approval`
 
 Facts and model assumptions remain separate. Web research cannot jump directly to valuation/allocation. Portfolio accounting comes only from reconciled ledger state. Preview/scenario functions never mutate live holdings.
 
 ## 7. Policy versioning
-Production policy governance lives in `fwios.policy_registry` and `fwios.policy_versions`.
-
 Production-active deterministic policies include:
 - `POL-REVISION-SCORE-V1`
 - `POL-CHASE-SCORE-V1`
 - `POL-OPPORTUNITY-RANKING-V1`
 - `POL-NEW-CASH-ALLOCATION-V1`
+- `POL-PORTFOLIO-SCENARIO-V1`
 
-`REBALANCE` remains DRAFT until M3 scenario/rebalancing design and regressions pass.
+`REBALANCE` remains DRAFT until M3.4 recommendation logic and traceability/valuation gates pass.
 
-AI must never invent or retune component scores, ranking weights, allocation math or trim logic to make a candidate pass.
+AI must never invent or retune component scores, ranking weights, allocation math, scenario math or trim logic to make a candidate pass.
 
 ## 8. Decision Snapshots
-`fwios.decision_snapshots` is the reproducibility boundary for downstream allocation. It must reference exact portfolio batch, price, valuation, mispricing, Portfolio Fit, Revision, Chase, core score and policy versions.
-
-Missing/incomplete critical references or non-active required policies => BLOCKED.
+`fwios.decision_snapshots` is the reproducibility boundary for downstream allocation/scenario work. Missing or incomplete critical references or inactive required policies => BLOCKED.
 
 ## 9. M2 exit state
 M2 Promotion hardening is PASS with 16/16 decision-policy regressions.
-
-- PINS: core 87.60; Revision PASS; Chase PASS; Mispricing PASS; Promotion PASS; `READY - HUMAN REVIEW`.
-- RDDT: core 72.15; Revision PASS; Chase PASS; Mispricing FAIL; `GOOD COMPANY - WAIT FOR VALUE`.
-
+- PINS: Promotion PASS / `READY - HUMAN REVIEW`.
+- RDDT: Mispricing FAIL / `GOOD COMPANY - WAIT FOR VALUE`.
 READY never means auto-execution.
 
 ## 10. M3.1 Opportunity Ranking — production live
 Policy: `POL-OPPORTUNITY-RANKING-V1`.
-
-Rules:
-- consume only latest production Decision Snapshot per ticker;
-- `priority_score = core_score`; no second weighted investment score;
-- tie-break: Expected Return → Portfolio Fit → Downside → Business/Thesis → ticker;
-- Promotion PASS + input integrity PASS → `IMMEDIATE_BUY_CANDIDATE`;
-- only insufficient Mispricing with every other hard gate PASS → `WATCHLIST_VALUE_WAIT`;
-- all other states → `EXCLUDED`;
-- max 3 Immediate / max 5 Watchlist; never force-fill.
-
-M3.1 regressions: **8/8 PASS**. First production run: `OPPRANK-M3-20260905-01`.
+- Priority = Core Score; no second weighted investment score.
+- Promotion PASS + integrity PASS → Immediate.
+- Only insufficient Mispricing with other hard gates PASS → Value-Wait.
+- Max 3 Immediate / max 5 Watchlist; never force-fill.
+- 8/8 regressions PASS.
+- `OPPRANK-M3-20260905-01`: PINS Immediate #1; RDDT Value-Wait #1.
 
 ## 11. M3.2 New-Cash Capital Allocation — production live
 Policy: `POL-NEW-CASH-ALLOCATION-V1`.
+- Positive new cash only.
+- Latest portfolio/ranking batches must match.
+- Immediate candidates only; v1 supports Stock candidates.
+- Max one deployed asset per run.
+- New-position starter cap 5% post-money.
+- Existing-position staged add = min(5% post-money, headroom to 30%).
+- Existing stock already >30% gets zero add capacity.
+- Residual capital remains `CASH_THB`; never force-fill.
+- Preview is non-mutating.
+- 20/20 regressions PASS.
 
-Rules:
-- positive new cash only;
-- latest reconciled portfolio batch must match the ranking run portfolio batch;
-- only `IMMEDIATE_BUY_CANDIDATE` may receive capital;
-- v1 supports Stock candidates only; unsupported asset classes fail closed;
-- maximum 1 deployed asset per allocation run;
-- highest-ranked candidate with positive allocation capacity wins;
-- new position starter cap = 5% of post-money portfolio value;
-- existing position staged-add cap = min(5% of post-money value, headroom to 30% stock ceiling);
-- existing stock already above 30% receives zero add capacity;
-- residual cash remains `CASH_THB`; never force-fill the next candidate;
-- allocation previews report concentration, crypto and focus effects;
-- existing review deviations remain visible and never auto-trigger sales.
+Synthetic parity only: 10k → PINS 10k; 50k → PINS 19,545.30 + cash 30,454.70; 100k → PINS 22,045.30 + cash 77,954.70.
 
-M3.2 regressions: **20/20 PASS**.
+## 12. M3.3 Portfolio Scenario Simulation — production live
+Policy: `POL-PORTFOLIO-SCENARIO-V1`.
 
-Current synthetic parity previews on `PORTFOLIO-M2-20260905-01` / `OPPRANK-M3-20260905-01`:
-- THB 10k → PINS 10k / cash 0.
-- THB 50k → PINS 19,545.30 / cash 30,454.70.
-- THB 100k → PINS 22,045.30 / cash 77,954.70.
+Modes:
+- `NO_SELL`: positive new cash, no TRIM, reuses M3.2 allocation math.
+- `SOFT_REBALANCE`: no TRIM in v1; one-time new-cash arithmetic intentionally equals NO_SELL until recurring DCA/redirection state exists.
+- `ACTIVE_REBALANCE`: accepts hypothetical trim inputs for simulation but does not decide which holding should be trimmed.
 
-These are regression previews only, not a trade instruction. No production allocation run exists until the user supplies a real new-cash amount or explicitly asks to materialize a scenario.
+Scenario invariants:
+- every ADD traces to active ranking + Decision Snapshot;
+- every TRIM must target a current holding, stay within current value and carry explicit economic/risk rationale;
+- `PRICE_APPRECIATION_ONLY` / `APPRECIATION_ONLY` trim rationale is forbidden;
+- RDDT Value-Wait cannot receive capital;
+- residual cash is held;
+- full portfolio expected upside requires valuation coverage for all risk assets;
+- missing valuation on a changed asset blocks net expected-value comparison;
+- no preview materializes a trade or mutates live holdings.
 
-## 12. M3 boundary
+M3.3 regressions: **28/28 PASS**.
+
+Current data-coverage state at activation:
+- existing holdings expected-upside valuation coverage = **0%**;
+- therefore `full_portfolio_pw_upside` is `BLOCKED - INCOMPLETE PORTFOLIO VALUATION COVERAGE`;
+- PINS ADD-side expected value can still be calculated from exact `DEC-PINS-M2-20260905-V2 → MIS-PINS-20260904` lineage;
+- an ACTIVE scenario that trims NVDA cannot calculate net expected-value improvement until NVDA has traceable valuation.
+
+This coverage blocker does not invalidate the scenario engine; it gates M3.4 economic trim recommendation.
+
+## 13. M3 boundary
 Current order:
 1. Opportunity Ranking — **PASS / LIVE**
 2. New-Cash Capital Allocation — **PASS / LIVE**
-3. Portfolio Scenario Simulation — **NEXT**
-4. Rebalancing Recommendation
-5. Human Approval
+3. Portfolio Scenario Simulation — **PASS / LIVE**
+4. Rebalancing Recommendation — **NEXT / VALUATION-COVERAGE GATED**
+5. Human Approval / Cutover
 
-Scenario modes: `NO_SELL`, `SOFT_REBALANCE`, `ACTIVE_REBALANCE`.
+Before M3.4 recommends any trim, relevant trim candidates must have traceable current valuation/expected-return coverage. Prioritize coverage work based on portfolio relevance; concentration review may prioritize NVDA for modeling, but that is not itself a trim recommendation.
 
-Each ADD must trace to active Opportunity Ranking + production Decision Snapshot. Each TRIM must trace to reconciled portfolio state and explicit economic/risk rationale. No scenario may mutate live holdings.
-
-## 13. Fail-closed rule
+## 14. Fail-closed rule
 Missing, stale, conflicting, schema-invalid, unverified, provenance-free or policy-incomplete critical data => BLOCKED.
+Never substitute historical return, cost basis, narrative target or unverified consensus for missing expected-return valuation. Never force-fill allocation, bypass hard gates, or modify live holdings during system work unless explicitly instructed.
 
-Never guess values/scores, use AI-only valuation as verified valuation, promote on quality alone, force-fill a shortlist/allocation, bypass Portfolio Fit/Mispricing, convert a non-mispricing hard failure into Value-Wait, or modify live holdings during system work unless explicitly instructed.
+## 15. Evidence requirements
+Production evidence should carry exact source/provenance, metric/period, reported-vs-derived status, derivation lineage, confidence and verification state. RPV2.1 reusable evidence must recompute freshness and invalidate older current evidence after later material events.
 
-## 14. Evidence requirements
-Production evidence should carry exact URL, source tier/class, metric ID where applicable, reported/derived status, derivation inputs, period/date, confidence and verification state.
-
-RPV2.1 reusable evidence must match Source Registry provenance, recompute age at read time, invalidate older current evidence after later material events, and keep historical references separate from current aging rules.
-
-## 15. Research/controller rules
+## 16. Research/controller rules
 - One full sector per scheduled run; resume incomplete run first.
 - Max universe 20; max sector shortlist 5; never force-fill.
 - Max 5 global active candidates.
 - Model debt remains fail-closed for affected candidates.
 - Communication Services is complete; Financials is queued.
-- Sector automation remains manually PAUSED while M3 is the Main Roadmap priority unless live controller/roadmap explicitly changes.
+- Sector automation remains manually PAUSED while M3 is Main Roadmap priority.
 
-## 16. Orchestration
-Root blockers remain persistent and dependency-aware. `fwios.system_events` is M4 foundation only; no event trigger is production-active merely because the table exists.
+## 17. Orchestration
+`fwios.system_events` remains M4 foundation only; no event trigger is production-active merely because the table exists.
 
-## 17. Documentation handshake
-Before material work read:
-1. live `System_Foundation`
-2. `AGENTS.md`
-3. `contracts/system-contract.yaml`
-4. `VERSION`
-5. `docs/00_SYSTEM_ROADMAP.md`
-6. `docs/01_SYSTEM_ARCHITECTURE.md`
-7. relevant Supabase/Sheet controller state
+## 18. Documentation handshake
+Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material work synchronize roadmap/architecture/live foundation when capability, authority, blocker, contract or next action changes.
 
-Resolve drift before changing production logic. After material changes synchronize live foundation plus repository roadmap/architecture when capability, authority, blocker, contract or next action changes.
+Google Sheets should receive only `System_Foundation` / audit-status updates during M3.2–M3.5; do not add production logic/config there.
 
-Google Sheets should receive only System_Foundation/Audit status during M3.2–M3.5; do not add new production logic/config there.
+## 19. Regression discipline
+Changes to normalization, valuation, policies, scoring, Decision Snapshots, ranking, allocation, scenario or rebalancing logic require deterministic regressions. Reference tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT and PINS.
 
-## 18. Regression discipline
-Changes to normalization, valuation, policies, scoring, gates, Decision Snapshots, Opportunity Ranking, allocation or scenario logic require deterministic regressions.
-
-Reference tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT and PINS.
-
-## 19. Source precedence
+## 20. Source precedence
 1. Latest reconciled portfolio data
 2. Focused Wealth-Building rules
 3. Personal Investment Strategist framework
