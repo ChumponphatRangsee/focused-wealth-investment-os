@@ -1,87 +1,24 @@
 # Supabase Migration — Focused Wealth Investment OS
 
-Status: **PHASE 3 VALUATION INFRASTRUCTURE PASS**  
+Status: **PHASE 3 MODEL FACTORY — SAAS KERNEL EXPERIMENTAL PASS**  
 Date: 2026-09-05  
 Supabase project ref: `ysjbmeukwbfnxnwqchuq`
 
 ## Objective
-
-Migrate the Investment OS from a spreadsheet-centered architecture to a hybrid architecture without breaking the live Google Sheets decision workflow.
-
-Target operating model:
-
-- **Supabase**: canonical backend, lineage, dependencies, model registry, blocker state, valuation versions/runs, run history and automation state.
-- **Google Sheets**: dashboard, control room, human review and temporary compatibility/calculation layer until compute parity passes.
-- **Human execution only**: no automatic portfolio trading.
-
-## Migration strategy
-
-Use a strangler migration. Do not perform a big-bang cutover. A layer becomes authoritative in Supabase only after row-count, lineage, gate and regression parity pass.
+Migrate the Investment OS from spreadsheet-centered architecture to a hybrid architecture without breaking the live decision workflow. Supabase becomes authoritative layer-by-layer only after lineage, gates and regression tests pass. Human execution remains mandatory; no automatic trading.
 
 ## Phase 1 — Foundation PASS
+Private schema `fwios` created with system/model/company/run/source/evidence/metric/candidate/blocker/sync foundations. RLS is enabled; `anon` and `authenticated` have no `fwios` privileges. The schema remains private.
 
-Private schema: `fwios`
-
-Core foundation tables include:
-
-- `system_state`
-- `sector_archetypes`
-- `valuation_models`
-- `companies`
-- `sector_runs`
-- `sources`
-- `evidence_records`
-- `company_metrics`
-- `normalized_metrics`
-- `research_candidates`
-- `blockers`
-- `sync_runs`
-
-Foundation snapshot:
-
-- Sector archetypes: **41**
-- Configured valuation contracts: **17**
-- Implemented production models: **5**
-- Research candidates: **15**
-- Total blocker records: **15**
-- Open root blockers: **7**
-- Decision Coverage: **33.3%**
-
-Security posture:
-
-- RLS enabled on all `fwios` tables.
-- `anon` and `authenticated` have no schema/table privileges.
-- `fwios` is not the public client-facing API surface.
-- Existing `public.rls_auto_enable()` execution permission was revoked from PUBLIC/anon/authenticated after the Supabase security advisor flagged it.
+Foundation snapshot: 41 sector archetypes, 17 valuation contracts, 15 research candidates, 15 blocker records / 7 open root blockers.
 
 ## Phase 2 — Research data parity PASS
+Supabase became authoritative for Evidence → Canonical → Normalized research layers.
 
-The three dependency-ordered research layers are fully migrated and authoritative in Supabase:
-
-1. `Evidence_Ledger → fwios.evidence_records`
-2. `Company_Metrics_v2 → fwios.company_metrics`
-3. `Normalized_Metrics_v1 → fwios.normalized_metrics`
-
-Parity result:
-
-- Evidence rows: **181 / 181**
-- Evidence Machine Status PASS: **181 / 181**
-- Evidence Verification Status VERIFIED: **181 / 181**
-- Canonical metric rows: **47 / 47**
-- Canonical Metric Status PASS: **47 / 47**
-- Normalized metric rows: **53 / 53**
-- Normalization Gate PASS: **53 / 53**
-- Duplicate Evidence IDs: **0**
-- Canonical → Evidence orphan references: **0**
-- Normalized → Evidence orphan references: **0**
-- Evidence → Source orphan references: **0**
+Migration baseline: 181 Evidence rows, 47 canonical rows, 53 normalized rows; zero duplicate Evidence IDs and zero canonical/evidence/source lineage orphans.
 
 ## Phase 3 — Valuation infrastructure PASS
-
-Phase 3 moved the valuation control-plane and current production valuation snapshots into Supabase without changing economic/model logic.
-
-New tables:
-
+Added explicit valuation control-plane structures:
 - `metric_dependencies`
 - `valuation_kernel_families`
 - `valuation_model_versions`
@@ -91,114 +28,96 @@ New tables:
 - `model_regression_runs`
 - `blocker_candidate_map`
 - `model_debt_profiles`
-
-New views:
-
 - `v_model_debt_controller`
 - `v_operating_controller`
 
-Phase 3 snapshot:
+Phase 3 baseline: 97 dependency edges, 5 production model versions, 5 migrated production valuation snapshots, 15 scenarios, 40 mapped inputs and 5/5 snapshot regressions PASS. Decision Coverage remains 33.3%, so operating mode remains `MODEL_FACTORY_CRITICAL`.
 
-- Dependency edges: **97**
-- Production model versions: **5**
-- Valuation runs migrated: **5**
-- Scenario rows: **15**
-- Model run inputs mapped: **40**
-- Regression checks PASS: **5 / 5**
+## Phase 3 Model Factory — SaaS kernel
+The first native executable kernel is now live privately in Supabase:
 
-Reference valuation regressions:
+`fwios.fcf_compounder_fv(...)`
 
-- ISRG Bear/Base/Bull/PW = **176.72 / 257.98 / 395.05 / 271.93**
-- EOG Bear/Base/Bull/PW = **43.55440384 / 170.2097883 / 294.1920388 / 169.5415048**
-- BKR Bear/Base/Bull/PW = **33.89226734 / 41.38798041 / 49.21109197 / 41.46983003**
-- CAVA Bear/Base/Bull/PW = **16.0499411 / 31.53068159 / 58.71340713 / 34.45617785**
-- TPR Bear/Base/Bull/PW = **69.01945407 / 100.305089 / 133.9789403 / 100.9021431**
+Kernel family: `FCF_COMPOUNDER`  
+Kernel state: **IMPLEMENTED**  
+Function security: private `fwios` schema; PUBLIC/anon/authenticated EXECUTE revoked; service role only.
 
-All five Supabase regression snapshots exactly match the current live `Intrinsic_Valuation_v2` reference values within the configured absolute tolerance of 0.01.
+### SaaS disclosure-contract correction
+The original SaaS contract required both `arr_growth_yoy` and `nrr`. Production evidence showed that ADBE and CRM do not provide a consistently comparable NRR field suitable for a universal fail-closed required input. The contract was therefore versioned rather than silently substituting a different metric.
 
-## Valuation Kernel architecture
+`SAAS_CONTRACT_V1_1` now requires:
+- `recurring_growth_yoy`
+- `gross_margin`
+- `fcf_margin_ltm`
+- `revenue_ltm`
+- `fcf_ltm`
+- `sbc_to_revenue`
+- `net_cash`
+- `shares_outstanding`
 
-The reusable kernel families are now represented explicitly in Supabase:
+NRR remains an optional diagnostic when disclosed. `recurring_growth_yoy` is explicitly a disclosure-normalized proxy, **not NRR**:
+- ADBE: Total Adobe ARR growth YoY proxy.
+- CRM: organic subscription/support growth YoY excluding Informatica contribution proxy.
 
-- `FCF_COMPOUNDER`
-- `MIDCYCLE_CASHFLOW`
-- `ASSET_NAV`
-- `NORMALIZED_EARNINGS`
-- `RNPV`
-- `CONTRACTED_YIELD`
+The proxy identity and source metric are preserved in canonical metadata; no semantic equivalence to NRR is asserted.
 
-Existing production models are also mapped to their current implemented kernels/policies:
+### SaaS production input path
+Verified evidence already present in `Evidence_Ledger` was promoted through the canonical path and normalized as `NORM_V1-SAAS`.
 
-- `MEDTECH_INSTALLED_BASE_DCF_V1`
-- `E&P_NORMALIZED_FCF_YIELD_V1`
-- `OFS_MIDCYCLE_EV_EBITDA_FCF_V1`
-- `RESTAURANT_UNIT_ECONOMICS_DCF_V1`
-- `BRANDED_RETAIL_FCF_YIELD_V1`
+Required input coverage:
+- ADBE: **8 / 8 PASS**
+- CRM: **8 / 8 PASS**
 
-The kernel architecture is ready for new overlays, but no missing model has been falsely marked implemented.
+The evidence remains traceable to first-party/SEC records already stored in `fwios.evidence_records`.
 
-## Model Debt Controller
+### Experimental native valuation runs
+Model version: `SAAS_EV_FCF_REVERSE_DCF_V1::1.1-EXPERIMENTAL`  
+Status: **EXPERIMENTAL — NOT PRODUCTION ELIGIBLE**
 
-`v_model_debt_controller` ranks the seven current root blockers using system-development factors including current candidate quality, portfolio fit, evidence readiness, candidate breadth, cross-sector reusability, implementation readiness and complexity penalty.
+Native Supabase kernel outputs:
 
-Current ranking:
+| Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV |
+|---|---:|---:|---:|---:|
+| ADBE | 340.7882 | 489.0870 | 731.7702 | 512.6831 |
+| CRM | 156.7065 | 230.0284 | 352.2504 | 242.2534 |
 
-1. `SAAS_EV_FCF_REVERSE_DCF_V1` — **90.45** — unlocks ADBE + CRM
-2. Materials Specialty Chemicals / Industrial Gases definition — **87.30** — LIN + PPG
-3. IT Services / Hardware definition — **81.05** — ACN
-4. Materials Mining / Commodities definition — **78.55** — ALB + MP
-5. `SEMIS_MIDCYCLE_DCF_V1` — **73.80** — QCOM
-6. Materials Packaging definition — **73.45** — BALL
-7. `SEMICAP_MIDCYCLE_FCF_V1` — **72.00** — AMAT
+These values are engineering outputs from the experimental FCF overlay, **not investment recommendations or production valuation signals**.
 
-These scores prioritize engineering/model-development work; they are not stock investment scores.
+Scenario policy in the experimental overlay:
+- Bear/Base/Bull probabilities = 25% / 50% / 25%.
+- Base years 1–5 growth uses the disclosed recurring-growth proxy.
+- Bear growth = base minus 4 percentage points with a 3% floor.
+- Bull growth = base plus 4 percentage points with a 20% cap.
+- Years 6–10 growth fades to 50% of early-stage growth with scenario floors.
+- Discount rates = 13% / 12% / 11%.
+- Terminal growth = 3.0% / 3.5% / 4.0%.
 
-`v_operating_controller` currently reports:
+These are explicit model assumptions and are stored in model-version/scenario metadata, never represented as reported evidence.
 
-- Evidence-ready candidates: **15**
-- Valuation-ready candidates: **5**
-- Decision Coverage: **33.3%**
-- Operating mode: **MODEL_FACTORY_CRITICAL**
-- Action: pause new sector discovery and resolve highest-value model debt first.
+## Fail-closed state
+The SaaS blocker is **not closed yet**. ADBE and CRM have not been promoted to production valuation-ready status. `production_eligible=false` remains enforced on both experimental runs.
 
-## Authority state after Phase 3
+Before promotion the model must pass:
+1. candidate valuation sanity/reverse-DCF calibration,
+2. sensitivity and permanent-loss checks,
+3. current-price/mispricing integration,
+4. deterministic rerun/regression checks,
+5. blocker-close transition test.
 
-Supabase is authoritative for:
+The existing five production valuation snapshots remain unchanged. No portfolio transaction or candidate promotion occurred.
 
-- Evidence records
-- Canonical metrics
-- Normalized metrics
-- Model registry/version metadata
-- Dependency graph
-- Current migrated valuation snapshots and regression records
-- Model debt prioritization/control state
+## Security advisor
+After the kernel change, the security advisor shows only the expected INFO notices `RLS Enabled No Policy` for private `fwios` tables. This is intentional because anon/authenticated have no schema/table access. No new exposed SECURITY DEFINER surface was introduced.
 
-Google Sheets remains authoritative for **valuation calculation execution** until the formulas/kernel are recomputed natively in Supabase and parity-tested. Specifically, `Intrinsic_Valuation_v2` remains the live calculation engine for now.
+## Authority state
+Supabase is authoritative for research data, canonical/normalized metrics, dependency/model metadata, migrated valuation snapshots, model-debt state and the new experimental kernel state.
 
-Google Sheets also remains authoritative for:
-
-- `Data_Scoring_v2`
-- `Opportunity_Engine_v2`
-- portfolio holdings / transactions / positions
-- control-room presentation
-
-Do not retire `Intrinsic_Valuation_v2` yet.
-
-## Fail-closed state preserved
-
-The seven root blockers remain OPEN. No blocked candidate was promoted during Phase 3.
-
-In particular, `SAAS_EV_FCF_REVERSE_DCF_V1` is now the highest-priority model debt, but ADBE and CRM remain blocked until their required production canonical/normalized metrics are collected, verified and then the SaaS model is implemented and regression-tested.
+Google Sheets `Intrinsic_Valuation_v2` remains the production valuation calculation authority until native compute parity/cutover criteria pass. `Data_Scoring_v2`, `Opportunity_Engine_v2`, portfolio holdings/transactions/positions and control-room presentation also remain downstream/live in Sheets.
 
 ## Next milestone
-
-Next development milestone:
-
-1. Build the executable reusable `FCF_COMPOUNDER` valuation kernel in Supabase.
-2. Implement `SAAS_EV_FCF_REVERSE_DCF_V1` as the first overlay.
-3. Collect/fill production metric contracts for ADBE and CRM through the canonical evidence path.
-4. Regression-test ADBE/CRM and prove fail-closed behavior for missing/stale inputs.
-5. Once Supabase can recompute the five existing reference valuations plus SaaS correctly, move valuation calculation authority from Google Sheets to Supabase.
-6. Only after valuation-compute parity passes should `Data_Scoring_v2` / `Opportunity_Engine_v2` migration begin.
-
-Communication Services remains queued, but the current operating controller is `MODEL_FACTORY_CRITICAL`, so model factory work takes precedence while Decision Coverage remains below 35%.
+1. Validate/calibrate the experimental SaaS valuation overlay against reverse-DCF and sensitivity bands.
+2. Add current market-price ingestion/gating without allowing price data to contaminate reported evidence.
+3. Run fail-closed tests for missing/stale/conflicting SaaS inputs.
+4. If all tests pass, promote SaaS model version to production and close `BLK-IT-SAAS-MDL-001`.
+5. Recompute Decision Coverage; only then decide whether to continue model factory or resume sector discovery.
+6. Do not migrate `Opportunity_Engine_v2` until native valuation compute authority is proven.
