@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.3
+  id: FWIOS-CONTRACT-0.87.4
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-05"
   timezone: Asia/Bangkok
@@ -19,13 +19,9 @@ authority_model:
   live_state_overrides_stale_docs: true
 
 portfolio_guardrails:
-  meaningful_positions:
-    min: 5
-    max: 8
+  meaningful_positions: {min: 5, max: 8}
   exceptional_single_stock_max_pct: 30
-  target_crypto_pct:
-    min: 15
-    max: 20
+  target_crypto_pct: {min: 15, max: 20}
   max_active_watchlist_candidates: 5
   max_immediate_buy_candidates: 3
   soft_rebalance_with_new_cash_first: true
@@ -66,6 +62,7 @@ thresholds:
   quality_gate_min: 70
   portfolio_fit_min: 50
   chase_risk_max: 60
+  revision_gate_min: 50
   mispricing_base_upside_min: 0.15
   mispricing_pw_upside_min: 0.10
   starter_base_upside_min: 0.20
@@ -75,6 +72,7 @@ thresholds:
 policy_governance:
   registry_table: fwios.policy_registry
   version_table: fwios.policy_versions
+  regression_table: fwios.decision_policy_regression_runs
   production_version_status: ACTIVE
   deterministic_scoring_required_when_numeric_score_is_used: true
   ai_may_invent_raw_to_score_mapping: false
@@ -82,9 +80,54 @@ policy_governance:
     DATA_SCORING: ACTIVE
     MISPRICING: ACTIVE
     PORTFOLIO_FIT: ACTIVE
-    REVISION_SCORE: DRAFT
-    CHASE_SCORE: DRAFT
+    REVISION_SCORE: ACTIVE
+    CHASE_SCORE: ACTIVE
     REBALANCE: DRAFT
+
+revision_score_v1:
+  policy_version_id: POL-REVISION-SCORE-V1
+  weights: {guidance: 0.30, consensus: 0.25, kpi_acceleration: 0.25, margin_fcf: 0.20}
+  common_delta_score: "clamp(50 + 5 * delta, 0, 100)"
+  guidance_raw: "forward revenue guidance midpoint surprise percent vs pre-guidance analyst consensus for same period"
+  consensus_raw: "same-provider same-metric same-fiscal-period consensus revision percent"
+  kpi_acceleration_raw: "average pp acceleration of configured monetization/growth and engagement YoY growth vs immediately prior quarter"
+  margin_fcf_raw: "average of same-quarter YoY adjusted EBITDA-margin delta pp and FCF-margin delta pp"
+  full_component_coverage_required: true
+  pass_min_score: 50
+  negative_revision_status: "FAIL - NEGATIVE FUNDAMENTAL REVISION"
+  missing_data_status: BLOCKED
+
+chase_score_v1:
+  policy_version_id: POL-CHASE-SCORE-V1
+  weights: {price_extension: 0.25, price_vs_revision: 0.30, multiple_expansion: 0.25, price_vs_fv: 0.20}
+  anchor_price: "last regular-session close before latest material earnings release"
+  excess_risk_score: "clamp(max(excess_pct, 0) * 2.5, 0, 100)"
+  price_vs_fv_reference: "min(base_fv, probability_weighted_fv)"
+  price_vs_fv_breakpoints:
+    - [-20, 0]
+    - [-10, 15]
+    - [0, 40]
+    - [10, 65]
+    - [25, 100]
+  full_component_coverage_required: true
+  pass_max_score: 60
+  missing_data_status: "BLOCKED - INCOMPLETE CHASE DATA"
+
+promotion_gate:
+  active_revision_policy_required: true
+  active_chase_policy_required: true
+  required_hard_gates:
+    - quality
+    - valuation
+    - mispricing
+    - portfolio_fit
+    - downside
+    - revision
+    - chase
+  all_required_gates_must_pass_for_ready: true
+  ready_status: "READY - HUMAN REVIEW"
+  human_execution_only: true
+  broker_price_verification_before_trade: true
 
 decision_snapshot:
   table: fwios.decision_snapshots
@@ -104,10 +147,7 @@ capital_allocation:
   run_table: fwios.capital_allocation_runs
   action_table: fwios.capital_allocation_actions
   metric_table: fwios.capital_allocation_metrics
-  scenario_modes:
-    - NO_SELL
-    - SOFT_REBALANCE
-    - ACTIVE_REBALANCE
+  scenario_modes: [NO_SELL, SOFT_REBALANCE, ACTIVE_REBALANCE]
   required_outputs:
     - new_cash_deployment
     - trim_add_amounts
@@ -120,13 +160,7 @@ capital_allocation:
 event_foundation:
   table: fwios.system_events
   production_triggers_enabled: false
-  intended_event_classes:
-    - PRICE_CHANGED
-    - EARNINGS_RELEASED
-    - CONSENSUS_UPDATED
-    - PORTFOLIO_CHANGED
-    - THESIS_CHANGED
-    - VALUATION_CHANGED
+  intended_event_classes: [PRICE_CHANGED, EARNINGS_RELEASED, CONSENSUS_UPDATED, PORTFOLIO_CHANGED, THESIS_CHANGED, VALUATION_CHANGED]
 
 fail_closed:
   missing_critical_data: BLOCKED
@@ -143,10 +177,7 @@ fail_closed:
 
 research_pipeline:
   version: RPV2.1
-  stages:
-    - FAST_DISCOVERY
-    - LIGHT_RESEARCH
-    - DEEP_RESEARCH
+  stages: [FAST_DISCOVERY, LIGHT_RESEARCH, DEEP_RESEARCH]
   max_universe: 20
   light_target_max: 5
   deep_priority_target: 3
@@ -158,17 +189,6 @@ research_pipeline:
     legacy_sheet_serial_date_parse_required: true
     later_material_reporting_event_invalidates_older_current_evidence: true
     historical_reference_exception: true
-  controller_boundary:
-    DISCOVERY:
-      new_sector_allowed: true
-      model_debt_decoupled: true
-    MODEL_FACTORY_AFTER_CURRENT_SECTOR:
-      new_sector_allowed: false
-      current_sector_can_close: true
-    MODEL_FACTORY:
-      new_sector_allowed: false
-    MODEL_FACTORY_CRITICAL:
-      new_sector_allowed: false
   parallel_top_candidate_execution: performance_validation_open
 
 sector_loop:
@@ -179,7 +199,7 @@ sector_loop:
   resume_running_sector_before_new: true
   next_sector_snapshot: Financials
   live_controller_must_be_reread_before_execution: true
-  automation_paused_while_m2_promotion_hardening: true
+  automation_paused_while_main_roadmap_priority: true
 
 freshness:
   stock_market_data: latest_market_session_for_screening
@@ -197,15 +217,12 @@ security:
 
 documentation_handshake:
   repository: ChumponphatRangsee/focused-wealth-investment-os
-  required_files:
-    - AGENTS.md
-    - contracts/system-contract.yaml
-    - VERSION
-    - docs/00_SYSTEM_ROADMAP.md
-    - docs/01_SYSTEM_ARCHITECTURE.md
+  required_files: [AGENTS.md, contracts/system-contract.yaml, VERSION, docs/00_SYSTEM_ROADMAP.md, docs/01_SYSTEM_ARCHITECTURE.md]
   block_material_work_on_version_mismatch: true
   roadmap_update_after_material_change: true
 
 regressions:
   reference_tickers: [ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS]
+  m2_promotion_policy_suite: "REG-M2-POLICY-V1-*"
+  m2_promotion_policy_pass: "16/16"
   formula_errors_forbidden: ["#REF!", "#DIV/0!", "#VALUE!", "#N/A"]
