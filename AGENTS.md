@@ -2,7 +2,7 @@
 
 This file is the **mandatory execution contract** for any AI agent or automation operating on the Portfolio investment system.
 
-Contract version: **FWIOS-CONTRACT-0.87.0**  
+Contract version: **FWIOS-CONTRACT-0.87.1**  
 Compatible live foundation: **0.87**
 
 ## 1. Non-negotiable objective
@@ -124,7 +124,7 @@ Examples:
 - Compare sector winners against existing active candidates; retain the best **5 overall**.
 - Missing/stale/conflicting/unverified data → BLOCKED and resume later.
 - Production score requires traceable Tier A/B evidence; model contracts may require Tier A specifically.
-- Current next sector in the live queue is Materials, but live sheet state must be re-read before execution.
+- Current live sector snapshot is **Communication Services**, but `Sector_Run_Control` must always be re-read immediately before execution. Live state overrides this snapshot.
 
 ## 10. Blocked Resolution Orchestrator
 
@@ -154,9 +154,23 @@ Before mutating the live system:
 
 1. Read `System_Foundation` and confirm live foundation version.
 2. Read this repository's `contracts/system-contract.yaml` and `VERSION`.
-3. Confirm the live foundation is compatible with the contract.
-4. If versions are incompatible or the handshake status is BLOCKED, do not run a new sector or change production logic.
-5. After a material system change, update both the live foundation and this repository in the same workstream.
+3. Read `docs/00_SYSTEM_ROADMAP.md`.
+4. Confirm the live foundation is compatible with the contract.
+5. Re-read the live controller / run state relevant to the requested work.
+6. If versions are incompatible, the handshake status is BLOCKED, or unresolved documentation drift could change the action, do not run a new sector or change production logic.
+7. After a material system change, update both the live foundation and this repository in the same workstream.
+8. If the material change affects project status, capability, blockers, authority/cutover state or next action, update `docs/00_SYSTEM_ROADMAP.md` in the same workstream.
+
+### Roadmap governance
+
+`docs/00_SYSTEM_ROADMAP.md` is the persistent project-status index for AI agents. It is not a substitute for live state.
+
+- Live portfolio/system/controller state always overrides a stale roadmap snapshot.
+- Main Roadmap work has priority over Side Quests unless a Side Quest becomes a hard blocker for the active main milestone.
+- Do not silently keep stale roadmap values after discovering drift.
+- Correct roadmap drift in the same material workstream.
+- If drift cannot be resolved safely, use `BLOCKED - DOCUMENTATION DRIFT` rather than guessing.
+- Routine evidence refreshes that do not alter project status do not require a roadmap edit.
 
 ## 12. Regression discipline
 
