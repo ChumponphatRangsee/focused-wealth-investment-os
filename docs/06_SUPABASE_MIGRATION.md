@@ -1,6 +1,6 @@
 # Supabase Migration — Focused Wealth Investment OS
 
-Status: **PHASE 3 MODEL FACTORY — IT SERVICES PASS**  
+Status: **PHASE 3 MODEL FACTORY — MINING ASSET_NAV PARTIAL PASS / DISCOVERY ENABLED**  
 Date: 2026-09-05  
 Supabase project ref: `ysjbmeukwbfnxnwqchuq`
 
@@ -129,24 +129,92 @@ ACN state:
 
 No candidate was promoted and no portfolio transaction occurred.
 
+## Phase 3 Model Factory — Mining ASSET_NAV PARTIAL PASS
+A third reusable executable valuation kernel is now live privately in Supabase:
+
+`fwios.asset_nav_fv(...)`
+
+Kernel family: `ASSET_NAV`  
+Kernel state: **IMPLEMENTED**  
+Function security: private `fwios` schema; PUBLIC/anon/authenticated EXECUTE revoked; service role only.
+
+Model: `MINING_ASSET_NAV_SOTP_V1`  
+Version: **1.0**  
+Normalization: `NORM_V1-MINING-NAV`  
+Status: **IMPLEMENTED / PRODUCTION_V1**
+
+The kernel values common equity from explicit components:
+
+`core asset NAV + other asset value + cash - debt - other claims`
+
+The model contract requires qualified-person / reserve NAV or another explicit normalized asset-value anchor, a full-company SOTP/replacement-cost bridge, and a non-overlapping balance-sheet bridge. Missing material business components fail closed. Peak spot commodity prices and future capex cannot be capitalized mechanically.
+
+### ALB — full-company bridge PASS
+Current qualified-person technical reports provide attributable post-tax NAV anchors for Greenbushes, Wodgina and Salar de Atacama. These technical-report values remain evidence/normalization inputs rather than canonical reported financial facts.
+
+Normalized base resource NAV:
+- Greenbushes attributable NPV10: **USD 3.3B**
+- Wodgina attributable NPV10: **USD 1.6B**
+- Salar de Atacama NPV10: **USD 1.4793B**
+- Total selected resource QP NAV: **USD 6.3793B**
+
+The FY2025 gross-asset replacement proxy for the same selected assets is USD 3.9144B. Current Albemarle shareholders' equity is USD 10.275169B, leaving an **other-equity bridge of USD 6.360769B** after removing those selected resource gross assets. That residual already contains corporate cash, liabilities, Specialties, Silver Peak and other assets, so cash/debt/other claims are zeroed in the kernel call to prevent double counting. Silver Peak receives no stale technical-report NAV uplift and remains inside the residual bridge.
+
+ALB uses FY2026 diluted-share guidance of **136M shares**. Resource NAV is sensitized by ±20% for Bear/Base/Bull while the residual bridge remains constant.
+
+| Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV |
+|---|---:|---:|---:|---:|
+| ALB | 84.2957 | 93.6770 | 103.0583 | 93.6770 |
+
+Independent component-NAV calculation was performed outside the database kernel. Regression `REG-ALB-MIN-NAV-20260905` is **PASS** at absolute tolerance 0.01.
+
+ALB state:
+- intrinsic valuation compute: PASS
+- valuation gate: PASS
+- expected-return / current-price gate: BLOCKED - PRICE/MISPRICING PENDING
+- mispricing gate: BLOCKED - PRICE/MISPRICING PENDING
+- promotion gate: BLOCKED
+- final decision: WAIT - PRICE/MISPRICING PENDING
+
+### MP — full-company valuation intentionally fail-closed
+The current Mountain Pass technical report supports an after-tax project NPV at 6% of approximately **USD 5.8B** for the Materials operation. Current balance-sheet facts are also available, but MP's Magnetics segment is material and is not fully represented by that Mountain Pass project NAV.
+
+The 10X project has material future investment and a contractual EBITDA floor, but assigning current fair value from those data alone would require a remaining-capex/timing/incentive bridge and a non-overlapping value for Independence. Capitalizing announced future spend one-for-one would risk double counting.
+
+Therefore MP remains:
+- valuation readiness: BLOCKED
+- valuation gate: BLOCKED - MAGNETICS NAV INCOMPLETE
+- production eligible: false
+- full-company fair value: NULL
+- promotion gate: BLOCKED
+- final decision: DATA BLOCKED - MAGNETICS NAV
+
+The blocked diagnostic run stores a **Mountain Pass + current balance-sheet floor excluding Magnetics of approximately USD 32.71/share** in `raw_payload`. It is explicitly **not** a production intrinsic value and must not be used for a buy/sell decision.
+
+The generic Mining definition blocker `BLK-MAT-MIN-DEF-001` is CLOSED / PASS because the reusable ASSET_NAV kernel and Mining model contract now exist. MP has been moved to a narrower blocker: `BLK-MP-MAGNETICS-NAV-001`.
+
+No candidate was promoted and no portfolio transaction occurred.
+
 ## Decision Coverage / Operating Controller
-Decision Coverage is now **66.7% (10/15)**, up from 60.0% after the Materials pass, 46.7% after the SaaS pass and 33.3% at the initial model-factory baseline.
+Decision Coverage is now **73.3% (11/15)**, up from 66.7% after IT Services, 60.0% after Materials Specialty Chemicals / Industrial Gases, 46.7% after SaaS and 33.3% at the initial model-factory baseline.
 
-Operating Controller: **`MODEL_FACTORY_AFTER_CURRENT_SECTOR`**  
-Controller action: **Finish current sector, then run a model sprint.**
+Operating Controller: **`DISCOVERY`**  
+Controller action: **Valuation support is healthy enough for broader sector discovery.**
 
-Open root blockers: **4**.
+The 70% discovery threshold has been crossed without forcing MP through an incomplete valuation.
 
-Current Model Debt Controller ranking:
-1. Materials Mining / Commodities — **78.55** (`ASSET_NAV`; ALB + MP)
-2. Semiconductor Designer — **73.80** (`MIDCYCLE_CASHFLOW`; QCOM)
-3. Materials Packaging — **73.45** (`MIDCYCLE_CASHFLOW`; BALL)
-4. Semiconductor Equipment / Foundry — **72.00** (`MIDCYCLE_CASHFLOW`; AMAT)
+Open root blockers remain **4** because the generic Mining blocker was replaced by the focused MP Magnetics blocker:
+1. Semiconductor Designer — **73.80** (`MIDCYCLE_CASHFLOW`; QCOM)
+2. Materials Packaging — **73.45** (`MIDCYCLE_CASHFLOW`; BALL)
+3. Semiconductor Equipment / Foundry — **72.00** (`MIDCYCLE_CASHFLOW`; AMAT)
+4. MP Magnetics full-company NAV — **28.35** (`ASSET_NAV`; MP)
 
-The system has not yet crossed the 70% threshold required for `DISCOVERY`; one additional valuation-ready candidate would move coverage to at least 73.3% if the evidence-ready denominator remains 15.
+These model-debt items remain in the queue but no longer block broader sector discovery while coverage remains at or above the controller threshold.
 
 ## Security state
-`fwios` remains a private schema. `anon` and `authenticated` remain without `fwios` privileges; RLS remains enabled as defense in depth. Executable valuation kernels remain private/internal and no automatic trading surface exists.
+`fwios` remains a private schema. `anon` and `authenticated` remain without `fwios` privileges; RLS remains enabled as defense in depth. `FCF_COMPOUNDER`, `MIDCYCLE_CASHFLOW` and `ASSET_NAV` executable kernels remain private/internal and no automatic trading surface exists.
+
+Post-change security advisor shows only the expected `RLS Enabled No Policy` INFO notices for private `fwios` tables. No new warning/critical issue or exposed privileged function was introduced.
 
 ## Authority state
 Supabase is authoritative for:
@@ -154,16 +222,18 @@ Supabase is authoritative for:
 - dependency and model registry state,
 - blocker/model-debt state,
 - production valuation snapshots,
-- executable `FCF_COMPOUNDER` and `MIDCYCLE_CASHFLOW` kernels,
+- executable `FCF_COMPOUNDER`, `MIDCYCLE_CASHFLOW` and `ASSET_NAV` kernels,
 - SaaS v1.1 intrinsic valuation compute for ADBE/CRM,
 - Materials Specialty Chemicals / Industrial Gases v1.0 intrinsic valuation compute for LIN/PPG,
-- IT Services v1.0 intrinsic valuation compute for ACN.
+- IT Services v1.0 intrinsic valuation compute for ACN,
+- Mining ASSET_NAV v1.0 full-company compute for ALB,
+- fail-closed diagnostic lineage for MP while Magnetics SOTP remains incomplete.
 
 Google Sheets remains the compatibility/control-room representation. Current-price/mispricing integration, `Data_Scoring_v2`, `Opportunity_Engine_v2`, portfolio holdings/transactions/positions and final human decision logic remain downstream.
 
 ## Next milestone
-1. Follow the live controller: next root blocker is Materials Mining / Commodities (`BLK-MAT-MIN-DEF-001`, ALB + MP) using `ASSET_NAV`, unless live state changes.
-2. Reuse `MIDCYCLE_CASHFLOW` for QCOM, BALL and AMAT overlays after the higher-value Mining / Commodities blocker.
+1. Follow the live Operating Controller and run-lock contract. The current sector is **Communication Services** and run `SECTOR-COMM-FULL-20260905-01` is already **RUNNING**; resume that run before starting another sector.
+2. Keep QCOM, BALL, AMAT and MP Magnetics model debt in the persistent queue. They do not need to be force-cleared before discovery while decision coverage remains >=70%.
 3. Build current market-price / mispricing gating in Supabase as a separate market-data layer; never mix quote data into reported evidence/canonical facts.
 4. Add deterministic stale/missing/conflicting-input tests around executable kernels.
 5. Do not migrate `Opportunity_Engine_v2` until native valuation + price/mispricing compute parity is proven.
