@@ -1,21 +1,17 @@
 # 01 — System Architecture
 
-Contract version: **FWIOS-CONTRACT-0.87.3**  
+Contract version: **FWIOS-CONTRACT-0.87.4**  
 Foundation compatibility: **0.87**  
-Architecture state: **CONSOLIDATION V1 LIVE**
+Architecture state: **CONSOLIDATION V1 LIVE / M2 PROMOTION HARDENED**
 
 ## Authority model
-
-The Investment OS now uses a three-authority model:
-
 - **Supabase = System of Record / State**
 - **GitHub = System of Logic / Contracts / Tests / Migrations**
 - **Google Sheets = System of View / Compatibility / Reconciliation / Audit / Export**
 
-AI may research, interpret, explain and orchestrate within policy, but accounting, scoring math, gates and portfolio mutation must remain deterministic/system-controlled.
+AI may research, interpret, explain and orchestrate within policy. Accounting, scoring math, hard gates and portfolio mutation remain deterministic/system-controlled.
 
 ## Layered architecture
-
 ```text
 Experience / Human Approval
           ↑
@@ -30,45 +26,24 @@ Knowledge / Evidence
 Orchestration / Events
 ```
 
-### 1. Orchestration / Events
+### Orchestration / Events
+Owns run/controller state, blockers, dependencies and future event/delta refresh. `fwios.system_events` remains foundation-only; no production event trigger is enabled.
 
-Owns run/controller state, blockers, dependency ordering and future event/delta refresh.
-
-Current foundations include research-stage/run state, operating/model-debt controllers, blocker queue and `fwios.system_events`.
-
-`system_events` is foundation only in v1; no automatic event trigger is enabled.
-
-### 2. Knowledge / Evidence
-
-Logical flow:
-
+### Knowledge / Evidence
 `Source → Evidence → Canonical Facts → Normalized Metrics`
 
-Rules:
+Research provenance is mandatory; facts cannot contain valuation forecasts; derived facts require methods/input lineage; normalization cannot overwrite reported evidence.
 
-- research provenance is mandatory;
-- facts cannot contain valuation forecasts;
-- derived facts need deterministic methods and input lineage;
-- normalization may standardize definitions/units or perform evidenced economic normalization but never overwrite reported evidence.
+### Domain State
+Owns reconciled portfolio/company/market state. Portfolio accounting comes from private Supabase ledger state. Market state carries quote provenance, session/freshness and conflict gates.
 
-### 3. Domain State
+### Intelligence
+Owns valuation, mispricing, Portfolio Fit, core scoring, Revision and Chase.
 
-Owns current portfolio/company/market state.
-
-Portfolio accounting comes from the reconciled private Supabase ledger. Portfolio transactions, positions, cost basis, allocation and exposure are deterministic state, not AI memory.
-
-Market state includes quote provenance, session date, freshness and conflict gates.
-
-### 4. Intelligence
-
-Owns valuation, mispricing, Portfolio Fit, core scoring, Revision and Chase logic.
-
-Existing specialized policy tables remain live backing implementations. Architecture Consolidation v1 adds generic governance:
-
+Generic policy governance:
 - `fwios.policy_registry`
 - `fwios.policy_versions`
-
-A numeric scoring policy may become production-authoritative only when its version is ACTIVE and deterministic.
+- `fwios.decision_policy_regression_runs`
 
 Current policy state:
 
@@ -77,20 +52,24 @@ Current policy state:
 | Data Scoring 30/30/25/15 | ACTIVE |
 | Mispricing | ACTIVE |
 | Portfolio Fit | ACTIVE |
-| Revision Score | DRAFT — raw→score map undefined |
-| Chase Risk | DRAFT — raw→score map undefined |
+| Revision Score v1 | **ACTIVE / deterministic** |
+| Chase Risk v1 | **ACTIVE / deterministic** |
 | Rebalance | DRAFT |
 
-### 5. Decision & Capital Allocation
+Revision/Chase raw-input lineage is stored in:
+- `fwios.candidate_revision_component_inputs`
+- `fwios.candidate_chase_component_inputs`
 
-`fwios.decision_snapshots` is the reproducibility boundary between candidate intelligence and portfolio allocation.
+Their component maps are defined in GitHub policy documents and executable SQL functions. Missing critical components remain fail-closed.
 
-A decision snapshot references the exact portfolio batch, price snapshot, valuation run, mispricing snapshot, Portfolio Fit snapshot, Revision snapshot, Chase snapshot, core score snapshot and policy versions.
+### Decision & Capital Allocation
+`fwios.decision_snapshots` is the reproducibility boundary between candidate intelligence and portfolio allocation. A decision snapshot references exact portfolio, price, valuation, mispricing, Portfolio Fit, Revision, Chase, core score and policy versions.
 
-Initial Decision Snapshots exist for PINS and RDDT. Both preserve current fail-closed Promotion state.
+Current V2 snapshots:
+- PINS: `READY - HUMAN REVIEW`, Promotion PASS.
+- RDDT: `GOOD COMPANY - WAIT FOR VALUE`, Promotion fails only because Mispricing remains insufficient.
 
-M3 is deliberately separated into:
-
+M3 remains separated into:
 ```text
 Decision Snapshot
       ↓
@@ -106,27 +85,16 @@ Human Approval
 ```
 
 Foundation tables:
-
 - `fwios.capital_allocation_runs`
 - `fwios.capital_allocation_actions`
 - `fwios.capital_allocation_metrics`
 
-Allowed scenario modes:
+Scenario modes: `NO_SELL`, `SOFT_REBALANCE`, `ACTIVE_REBALANCE`. Scenario runs cannot mutate live portfolio state and cannot auto-trade.
 
-- NO_SELL
-- SOFT_REBALANCE
-- ACTIVE_REBALANCE
-
-No scenario may mutate the live portfolio and no output may auto-trade.
-
-### 6. Experience / Human Approval
-
-Google Sheets remains the current human-readable control/view layer while deeper production state moves to Supabase.
-
-Long-term user-facing Sheet target is a smaller set of views such as Dashboard, Portfolio, Candidates, Research, System Status and Audit/Export. Deep evidence, policy, scoring and run state should not remain duplicated writable Sheet data after cutover.
+### Experience / Human Approval
+Google Sheets remains the human-readable view/control compatibility layer. Long-term target is a smaller set of views such as Dashboard, Portfolio, Candidates, Research, System Status and Audit/Export after M3 traceability/cutover passes.
 
 ## Production decision flow
-
 ```text
 Sector Criteria / Discovery
         ↓
@@ -144,7 +112,7 @@ Portfolio State → Portfolio Fit
         ↓
 30/30/25/15 Core Score
         ↓
-Revision + Chase hard gates
+Revision Score v1 + Chase Risk v1
         ↓
 Decision Snapshot
         ↓
@@ -153,32 +121,36 @@ Opportunity / Allocation / Scenario
 Human Approval
 ```
 
-## Current live M2 state
+## Revision Score v1
+Weights: Guidance 30%, Consensus 25%, KPI Acceleration 25%, Margin/FCF 20%.
 
-- Portfolio State migration: PASS — 29/29 transactions and 16/16 positions reconciled.
-- Native Market Price / Mispricing: PASS infrastructure.
-- Portfolio Fit: PASS.
-- Native 30/30/25/15 core scoring: LIVE.
-- Revision comparable consensus evidence: present for PINS/RDDT.
-- Revision scoring policy: DRAFT / BLOCKED until raw→score rubric is versioned.
-- Chase scoring policy: DRAFT / BLOCKED until raw→score rubric and component data are complete.
-- Promotion Gate: fail-closed.
+Common component map: `clamp(50 + 5 × delta, 0, 100)`. Full coverage required; total score >=50 passes. Guidance uses forward guide-vs-consensus surprise; consensus uses comparable estimate revision; KPI uses QoQ acceleration of comparable YoY growth rates; Margin/FCF uses same-quarter YoY margin changes.
+
+## Chase Risk v1
+Weights: Price Extension 25%, Price vs Revision 30%, Multiple Expansion 25%, Price vs FV 20%. Full coverage required; total risk <=60 passes.
+
+Anchor = last regular-session close before earnings. Price-vs-FV uses `min(Base FV, PW FV)` as conservative reference. Extension/revision/multiple components only penalize positive excess; price-vs-FV uses explicit piecewise breakpoints.
+
+## M2 exit state
+- 16/16 decision-policy regressions PASS.
+- PINS: Core 87.60, Revision 60.5531 PASS, Chase 0.0000 PASS, Mispricing PASS, Promotion PASS.
+- RDDT: Core 72.15, Revision 71.4010 PASS, Chase 12.2748 PASS, Mispricing FAIL, WAIT FOR VALUE.
+- M2 Decision Intelligence: **PASS**.
+- M3 Opportunity & Capital Allocation: **READY / NEXT**.
 
 ## Security
-
-The `fwios` schema remains private. New consolidation tables have RLS enabled and `anon` / `authenticated` privileges revoked. Service-role/internal execution remains the intended model.
+`fwios` remains private. New component/regression tables have RLS enabled and `anon`/`authenticated` privileges revoked. Scoring functions are immutable/invoker functions and are not `SECURITY DEFINER`.
 
 ## Architectural invariants
-
-1. Web research cannot jump directly to final valuation or allocation.
-2. Facts and model assumptions remain separate.
+1. Web research cannot jump directly to final valuation/allocation.
+2. Facts and assumptions remain separate.
 3. Portfolio accounting uses reconciled ledger state only.
-4. Policy versions are explicit and immutable enough to reproduce decisions.
-5. Draft/undefined raw→score policies cannot pass production gates.
-6. Decision Snapshots bridge intelligence into allocation.
-7. Scenario simulations do not mutate live holdings.
-8. Human execution only.
-9. New system gaps enter a persistent blocker/policy queue rather than undocumented exceptions.
-10. Future M4 automation should prefer event/delta refresh over unnecessary full-stack reruns.
+4. Policy versions and raw component lineage must reproduce decisions.
+5. Missing/stale/unverified promotion inputs fail closed.
+6. Revision/Chase cannot override valuation, Mispricing, Portfolio Fit or core gates.
+7. Decision Snapshots bridge intelligence into allocation.
+8. Scenario simulations do not mutate live holdings.
+9. Human execution only.
+10. M4 automation should prefer event/delta refresh over unnecessary full-stack reruns.
 
-See `docs/02_ARCHITECTURE_CONSOLIDATION_V1.md` for the implementation record.
+See `policies/revision/REVISION_SCORE_V1.md` and `policies/chase/CHASE_RISK_V1.md` for policy calibration.

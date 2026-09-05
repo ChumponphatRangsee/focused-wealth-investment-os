@@ -1,160 +1,104 @@
 # Supabase Migration — Focused Wealth Investment OS
 
-Status: **M2 CORE LIVE / ARCHITECTURE CONSOLIDATION V1 FOUNDATION LIVE**  
+Status: **M2 DECISION INTELLIGENCE PASS / M3 READY**  
 Date: **2026-09-05**  
 Supabase project ref: `ysjbmeukwbfnxnwqchuq`  
-Execution contract: `FWIOS-CONTRACT-0.87.3`
+Execution contract: `FWIOS-CONTRACT-0.87.4`
 
-## Objective
-
-Move the Investment OS from spreadsheet-centered operation to a durable hybrid architecture without breaking evidence lineage, fail-closed gates or human-only execution.
-
-Authority after Architecture Consolidation v1:
-
+## Authority
 - Supabase = System of Record / State
 - GitHub = System of Logic / Contracts / Tests / Migrations
 - Google Sheets = System of View / Compatibility / Reconciliation / Audit / Export
 
-## Completed migration layers
+## Completed authority layers
 
 ### Research / Evidence — PASS
-
-Supabase is authoritative for source/evidence/canonical/normalized research state and RPV2.1 controller/cache behavior.
-
-Current research snapshot:
-
-- Evidence-ready candidates: 18
-- Valuation-ready candidates: 13
-- Decision Coverage: 72.2%
-- Operating Controller: DISCOVERY
-- Open root model debt: 6
+Supabase owns source/evidence/canonical/normalized state plus RPV2.1 cache/controller behavior. Current snapshot: 18 evidence-ready, 13 valuation-ready, 72.2% decision coverage, DISCOVERY controller, six open model-debt roots.
 
 ### Valuation — PASS for implemented routes
+Production valuation kernels/routes remain versioned and regression-tested. Digital Advertising RDDT/PINS valuations are live under `DIGITAL_ADS_FCF_REVERSE_DCF_V1`.
 
-Reusable private kernels remain:
+### Portfolio State — PASS
+Migration source: `Investment Portfolio Tracker - Chumponphat`.
+- 29/29 transactions reconciled.
+- 16/16 positions reconciled.
+- Supabase owns portfolio state used by Portfolio Fit/downstream decision logic.
+- Legacy Sheet remains retained for reconciliation/audit/export until M3 traceability passes.
 
-- FCF_COMPOUNDER
-- MIDCYCLE_CASHFLOW
-- ASSET_NAV
+### Market Price / Mispricing — PASS
+Native quote/snapshot/mispricing state is live with provenance, session/freshness and fail-closed gates.
 
-Implemented production routes include MEDTECH, E&P, Restaurant, Branded Retail, OFS, SaaS, Materials Specialty Chemicals/Industrial Gases, IT Services, Mining NAV partial route and Digital Advertising.
+### Portfolio Fit — PASS
+Uses reconciled portfolio weights/exposures.
 
-RDDT/PINS Digital Advertising intrinsic values remain validated under `DIGITAL_ADS_FCF_REVERSE_DCF_V1`.
+### Core Scoring — PASS
+Native 30/30/25/15 scoring is live.
 
-### M2 Portfolio State — PASS
+## M2 Promotion-Gate Hardening — PASS
 
-Source: `Investment Portfolio Tracker - Chumponphat`.
+New governance/lineage objects:
+- `candidate_revision_component_inputs`
+- `candidate_chase_component_inputs`
+- `decision_policy_regression_runs`
 
-Reconciliation:
+Active deterministic policies:
+- `POL-REVISION-SCORE-V1`
+- `POL-CHASE-SCORE-V1`
 
-- 29/29 transactions PASS
-- 16/16 positions PASS
-- latest recorded snapshot ≈ THB 340,906.10
+Executable immutable/invoker functions:
+- `score_revision_delta_v1`
+- `calculate_revision_score_v1`
+- `revision_gate_v1`
+- `score_chase_excess_v1`
+- `score_price_vs_fv_risk_v1`
+- `calculate_chase_risk_v1`
+- `chase_gate_v1`
 
-Supabase now owns the reconciled portfolio ledger/state used by Portfolio Fit and downstream decision logic. The original Sheet remains retained for reconciliation/audit/export until M3 traceability tests pass.
+Regression status: **16/16 PASS**, including mapping boundaries, missing-data fail-closed tests and PINS/RDDT production parity.
 
-### M2 Market Price / Mispricing — PASS infrastructure
+Production snapshots:
 
-Native quote/snapshot and mispricing structures are live with provenance, session/freshness and fail-closed gates.
+| Candidate | Revision | Chase | Mispricing | Promotion / State |
+|---|---:|---:|---|---|
+| PINS | 60.5531 PASS | 0.0000 PASS | PASS | PASS — READY - HUMAN REVIEW |
+| RDDT | 71.4010 PASS | 12.2748 PASS | FAIL insufficient mispricing | GOOD COMPANY - WAIT FOR VALUE |
 
-### M2 Portfolio Fit — PASS
+V2 reproducible decisions:
+- `DEC-PINS-M2-20260905-V2`
+- `DEC-RDDT-M2-20260905-V2`
 
-Portfolio Fit uses reconciled portfolio weights/exposures rather than generic diversification bonuses.
-
-### M2 Core Scoring — LIVE
-
-Production core is 30/30/25/15:
-
-- Business/Thesis 30%
-- Expected Return/Valuation 30%
-- Portfolio Fit 25%
-- Downside Risk 15%
-
-PINS core 87.60 with Mispricing PASS. RDDT core 72.15 with insufficient Mispricing / WAIT FOR VALUE.
+RDDT confirms policy separation: positive Revision/Chase cannot bypass the separate Mispricing hard gate.
 
 ## Architecture Consolidation v1
+Policy registry/version governance and Decision Snapshots are live. Active policy families now include Data Scoring, Mispricing, Portfolio Fit, Revision Score and Chase Score. `REBALANCE` remains DRAFT.
 
-Applied additively to private schema `fwios`.
-
-### Policy governance
-
-New tables:
-
-- `policy_registry`
-- `policy_versions`
-
-Seeded families:
-
-- DATA_SCORING — ACTIVE
-- MISPRICING — ACTIVE
-- PORTFOLIO_FIT — ACTIVE
-- REVISION_SCORE — DRAFT
-- CHASE_SCORE — DRAFT
-- REBALANCE — DRAFT
-
-Draft Revision/Chase policies deliberately record `raw_to_score_map = UNDEFINED`; missing policy logic remains BLOCKED.
-
-### Decision reproducibility
-
-New table:
-
-- `decision_snapshots`
-
-Initial snapshots:
-
-- `DEC-PINS-M2-20260905-V1`
-- `DEC-RDDT-M2-20260905-V1`
-
-Both preserve existing fail-closed Promotion state. No gate was relaxed.
-
-### M3 scenario foundation
-
-New tables:
-
+## M3 scenario foundation
+Tables already exist:
 - `capital_allocation_runs`
 - `capital_allocation_actions`
 - `capital_allocation_metrics`
 
-Allowed modes:
+Modes: `NO_SELL`, `SOFT_REBALANCE`, `ACTIVE_REBALANCE`.
 
-- NO_SELL
-- SOFT_REBALANCE
-- ACTIVE_REBALANCE
+No allocation run was created during M2 hardening and scenario tables do not mutate live portfolio state.
 
-No allocation run exists yet. These tables are foundation only.
+## M4 event foundation
+`system_events` exists but no production trigger/autonomous workflow is enabled.
 
-### M4 event foundation
+## Security
+`fwios` remains private. New M2 component/regression tables have RLS enabled and `anon`/`authenticated` access revoked. New scoring functions are immutable and not `SECURITY DEFINER`.
 
-New table:
+## Sheet role
+Do not delete/restructure deep tabs until M3 traceability/cutover passes. Google Sheets is a view/compatibility/audit layer; authoritative scoring policy/state resides in Supabase and GitHub.
 
-- `system_events`
+## Next milestone
+**M3 Opportunity & Capital Allocation is READY.**
 
-No event trigger or autonomous workflow is enabled yet.
+Next sequence:
+1. Define deterministic Opportunity Ranking contract using production Decision Snapshots.
+2. Build new-cash deployment first.
+3. Build scenario simulation without portfolio mutation.
+4. Add trim/add logic only after traceability and scenario regressions pass.
+5. Activate Rebalance policy only after M3 regressions pass.
 
-## Security state
-
-`fwios` remains private. New consolidation tables have RLS enabled and `anon` / `authenticated` privileges revoked.
-
-Security Advisor after the migration reports only expected `RLS Enabled No Policy` INFO notices consistent with the private service-role/internal architecture; no warning/critical exposure was introduced.
-
-Supabase's 2026 platform change that new tables are not automatically exposed to Data/GraphQL APIs does not require public grants here because these tables intentionally remain private/internal.
-
-## Sheet cutover role
-
-Do not delete/restructure user-facing Sheet tabs during M2 Promotion hardening.
-
-After M3 traceability passes, reduce Google Sheets toward view-oriented surfaces and avoid duplicated writable production state. Deep evidence, policies, scoring and internal run state should remain in Supabase.
-
-## Remaining M2 blocker
-
-Comparable PINS/RDDT consensus evidence is present, but Promotion remains blocked because Revision and Chase raw→score mappings are not yet deterministic production policy versions.
-
-Next:
-
-1. Define/version Revision scoring rubric.
-2. Define/version Chase scoring rubric.
-3. Regression-test fail-closed boundaries.
-4. Activate policy versions only after tests pass.
-5. Rebuild Decision Snapshots.
-6. Complete M2 Promotion parity.
-7. Begin M3 on the scenario foundation only after M2 exits.
+Financials remains queued and sector automation remains manually paused while M3 is the Main Roadmap priority.
