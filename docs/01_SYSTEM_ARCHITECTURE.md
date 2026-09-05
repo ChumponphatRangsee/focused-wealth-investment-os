@@ -1,8 +1,8 @@
 # 01 — System Architecture
 
-Contract version: **FWIOS-CONTRACT-0.87.9**  
+Contract version: **FWIOS-CONTRACT-0.87.10**  
 Foundation compatibility: **0.87**  
-Architecture state: **CONSOLIDATION V1 LIVE / M2 + M3 COMPLETE / CUTOVER PASS**
+Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / DASHBOARD HANDOFF PASS**
 
 ## Authority model
 - **Supabase = System of Record / State**
@@ -52,7 +52,7 @@ Approval is an audit/state boundary, not a broker execution layer.
 | New-Cash Allocation v1 | ACTIVE |
 | Portfolio Scenario v1 | ACTIVE |
 | Rebalance v1 | ACTIVE |
-| Human Approval v1 | **ACTIVE** |
+| Human Approval v1 | ACTIVE |
 
 ## M3.1 Opportunity Ranking
 `POL-OPPORTUNITY-RANKING-V1`; 8/8 regressions. PINS Immediate #1; RDDT Value-Wait #1. Value-Wait cannot receive capital.
@@ -89,88 +89,81 @@ Policy `POL-HUMAN-APPROVAL-V1`; **30/30 regressions PASS**.
 - `fwios.m3_cutover_validations`
 - `fwios.v_human_approval_current`
 
-Functions:
-- `recommendation_snapshot_fingerprint_v1(...)`
-- `recommendation_traceability_gate_v1(...)`
-- `materialize_human_approval_packet_v1(...)`
-- `human_approval_packet_integrity_gate_v1(...)`
-- `human_approval_revalidation_gate_v1(...)`
-- `human_approval_transition_v1(...)`
-- `record_human_approval_event_v1(...)`
-- `m3_5_traceability_layers_v1(...)`
-
-### Immutable state model
+Architecture:
 ```text
-Rebalancing Recommendation Snapshot
-          [immutable]
-               ↓
-        Approval Packet
-          [immutable]
-               ↓
-        Approval Event
-         [append-only]
+Rebalancing Recommendation Snapshot [immutable]
+                  ↓
+          Approval Packet [immutable]
+                  ↓
+         Approval Event [append-only]
 ```
 
-Approvable scope: `PRODUCTION_USER_REQUESTED` only.
-`CUTOVER_VALIDATION` and `SYNTHETIC_TEST` are permanently non-actionable.
+Only `PRODUCTION_USER_REQUESTED` is approvable. Approval-time freshness, fingerprint, portfolio-batch, ranking and changed-asset valuation lineage are revalidated. APPROVED/REJECTED require HUMAN actor; EXPIRED/STALE require SYSTEM actor and are terminal. Approval events enforce `broker_order_created=false` and `portfolio_mutation_applied=false`.
 
-State semantics:
-- APPROVED / REJECTED = HUMAN actor only
-- EXPIRED / STALE = SYSTEM actor only
-- all four are terminal
-- stale or expired state requires a new recommendation/packet; no in-place refresh.
+Cutover traceability is **9/9 PASS**, with 29/29 transactions and 16/16 positions reconciled. Validation objects remain non-actionable.
 
-### Approval-time revalidation
-APPROVED requires:
-1. approval policy ACTIVE;
-2. packet PENDING + production-user scope;
-3. recommendation fingerprint match;
-4. recommendation traceability PASS;
-5. unchanged reconciled portfolio batch;
-6. unchanged active ranking run;
-7. current/fresh candidate Decision Snapshot price;
-8. current/fresh production valuation for every changed trim holding;
-9. packet freshness deadline not exceeded.
-
-Any failure blocks approval.
-
-### Execution isolation
-Approval events are constrained to:
-- `broker_order_created = false`
-- `portfolio_mutation_applied = false`
-
-Approval does not call a broker connector, create an order or edit the portfolio ledger. Any eventual real trade remains a separate human broker action with price verification.
-
-### Cutover proof
-Validation run `REBAL-M3-CUTOVER-20260905-01` and packet `APPROVAL-M3-CUTOVER-20260905-01` are non-actionable. End-to-end traceability = **9/9 PASS**:
-- source transactions 29/29
-- source positions 16/16
-- portfolio batch
-- candidate Decision Snapshot
-- Opportunity Ranking
-- source holding valuation
-- immutable recommendation fingerprint
-- immutable approval packet
-- execution isolation
-
-Cutover also verifies no production-user recommendation, approval event, allocation run, scenario run or system event was created during system activation, and live portfolio value remains reconciled.
-
-## Post-M3 Dashboard Read Model
-M3 is complete. Next architecture layer is a read-only experience surface:
+## Dashboard Read Model v1 — PASS / LIVE
+The post-M3 monitoring architecture is now:
 ```text
 Supabase System of Record
         ↓
-Stable Dashboard Read Models / Views
+Private security-invoker Dashboard Read Models
         ↓
-New Google Sheet Monitoring Dashboard
+Controlled Snapshot Export
+        ↓
+Focused Wealth Dashboard - Chumponphat
 ```
 
-The dashboard may display portfolio state, opportunity ranking, valuation/upside, allocation, rebalancing, approval state, freshness and system health. It must not duplicate production calculations in Sheet formulas.
+### Stable read models
+- `fwios.v_dashboard_holdings`
+- `fwios.v_dashboard_account_summary`
+- `fwios.v_dashboard_opportunities`
+- `fwios.v_dashboard_current_action`
+- `fwios.v_dashboard_alerts`
+- `fwios.v_dashboard_system_health`
 
-Legacy Sheets remain available for audit/reconciliation until the new dashboard handoff is verified, after which the old surface may be reduced.
+All six views are private `security_invoker` views; `public`, `anon`, and `authenticated` privileges are revoked. Dashboard regression parity is **17/17 PASS**. Security Advisor shows no new WARN/ERROR; only existing private-schema `rls_enabled_no_policy` INFO notices remain.
+
+### Monitoring Sheet
+Google Sheet: **Focused Wealth Dashboard - Chumponphat**  
+Sheet ID: `17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`
+
+Surface:
+- visible `Dashboard` tab
+- hidden `_Data` snapshot tab
+- Account View selector: All Accounts / Best / Loan Money / Mom
+- KPI cards: Portfolio Value / Total P&L / Unrealized P&L / Realized P&L
+- consolidated Phase-1 goal, largest position and crypto exposure
+- Current Action state
+- Opportunity board
+- account-filtered Holdings
+- consolidated Attention/guardrail alerts
+- compact System health
+
+### Account filter boundary
+Account View changes display-only portfolio/account fields:
+- Portfolio Value
+- Total P&L
+- Unrealized P&L
+- Realized P&L
+- Holdings
+
+It **does not** change production risk or decision context. Concentration, crypto exposure, Portfolio Fit and rebalancing always use consolidated exposure.
+
+Total P&L semantics are fixed as:
+`latest-batch realized P&L + current open-position unrealized P&L`.
+
+### Sheet logic boundary
+Google Sheets may use display/filter/format formulas such as XLOOKUP/FILTER/SORT. It must not calculate production scoring, valuation gates, allocation, scenario, rebalancing or approval policy. Those remain authoritative in Supabase/GitHub.
+
+### Refresh boundary
+The current integration is **CONTROLLED_SNAPSHOT_EXPORT**. It is not a direct real-time database connection. The Dashboard always displays source batch/as-of status. A later refresh workflow must be implemented and regression-verified before describing the Sheet as real-time/live-connected.
+
+## Legacy compatibility boundary
+The new monitoring Sheet is now the preferred monitoring surface. Legacy Sheets remain available for audit/reconciliation and research continuity. Their reduction is allowed after handoff, but deletion/restructuring should happen only after the controlled refresh workflow and retained audit access are explicitly verified.
 
 ## Security
-`fwios` remains private. Approval/cutover tables use RLS defense-in-depth; `anon`/`authenticated` privileges are revoked. Functions are SECURITY INVOKER and pin `search_path=pg_catalog, fwios`. Security Advisor after M3.5 shows no new WARN/ERROR attributable to the changes; expected private-schema `RLS Enabled No Policy` INFO notices remain.
+`fwios` remains private. RLS is defense-in-depth and `anon`/`authenticated` privileges are revoked. Dashboard views use SECURITY INVOKER semantics. Security Advisor after the dashboard migration shows no new WARN/ERROR attributable to the change; expected private-schema `RLS Enabled No Policy` INFO notices remain.
 
 ## Architectural invariants
 - live reconciled state outranks stale docs;
@@ -183,6 +176,12 @@ Legacy Sheets remain available for audit/reconciliation until the new dashboard 
 - recommendation and approval snapshots are immutable;
 - validation/test packets can never be approved;
 - approval cannot place orders or mutate holdings;
+- Account View never changes consolidated decision context;
+- Dashboard contains no production policy logic;
+- controlled snapshot export must not be called real-time;
 - human execution only.
 
-See `policies/rebalancing/REBALANCE_V1.md` and `policies/approval/HUMAN_APPROVAL_V1.md`.
+## Next architecture action
+**Verify controlled Supabase → Google Sheet refresh workflow, then plan legacy-surface reduction.** Financials remains queued; sector automation stays paused while this explicit post-M3 priority is active.
+
+See `policies/rebalancing/REBALANCE_V1.md`, `policies/approval/HUMAN_APPROVAL_V1.md`, and `tests/dashboard/test_post_m3_dashboard_read_models_v1.sql`.
