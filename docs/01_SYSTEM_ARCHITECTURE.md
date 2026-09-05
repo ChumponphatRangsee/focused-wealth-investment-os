@@ -1,130 +1,184 @@
 # 01 — System Architecture
 
-Contract version: **FWIOS-CONTRACT-0.87.0**
+Contract version: **FWIOS-CONTRACT-0.87.3**  
+Foundation compatibility: **0.87**  
+Architecture state: **CONSOLIDATION V1 LIVE**
 
-## System of record
+## Authority model
 
-The live control room is `US_Stock_Sector_Business_Model_Screener`. Supabase owns migrated research evidence/canonical/normalized records and native valuation compute records. Sheets still owns the downstream production decision compatibility layer. See the master roadmap and migration notes for cutover boundaries. This repository documents operating contracts and contains read-only reconciliation tools; it does not replace live sources.
+The Investment OS now uses a three-authority model:
 
-The separate `Investment Portfolio Tracker - Chumponphat` remains the source of truth for current holdings, allocation and transaction state.
+- **Supabase = System of Record / State**
+- **GitHub = System of Logic / Contracts / Tests / Migrations**
+- **Google Sheets = System of View / Compatibility / Reconciliation / Audit / Export**
 
-## Production data flow
+AI may research, interpret, explain and orchestrate within policy, but accounting, scoring math, gates and portfolio mutation must remain deterministic/system-controlled.
+
+## Layered architecture
 
 ```text
-Sector_Criteria
-  ↓
-Sector_Universe / AI Discovery Staging
-  ↓
-Source_Registry
-  ↓
-Evidence_Ledger
-  ↓
-Company_Metrics_v2
-  ↓
-Normalized_Metrics_v1
-  ↓
-Intrinsic_Valuation_v2
-  ↓
-Data_Scoring_v2
-  ↓
-Opportunity_Engine_v2
+Experience / Human Approval
+          ↑
+Decision & Capital Allocation
+          ↑
+Intelligence
+          ↑
+Domain State
+          ↑
+Knowledge / Evidence
+          ↑
+Orchestration / Events
 ```
 
-### 1. Sector_Criteria
-Defines business-model archetypes, mandatory KPIs, quality thresholds, red flags, preferred valuation methods, cycle sensitivity, valuation model IDs, required metric IDs, freshness and source-tier requirements.
+### 1. Orchestration / Events
 
-### 2. Sector_Universe / AI Discovery Staging
-Research intake and triage. These layers may contain AI interpretation but are not trusted as production valuation evidence by themselves.
+Owns run/controller state, blockers, dependency ordering and future event/delta refresh.
 
-### 3. Source_Registry
-Defines approved evidence-source policy and provenance expectations.
+Current foundations include research-stage/run state, operating/model-debt controllers, blocker queue and `fwios.system_events`.
 
-### 4. Evidence_Ledger
-Traceable source facts. A production-relevant fact should carry enough provenance to be independently checked.
+`system_events` is foundation only in v1; no automatic event trigger is enabled.
 
-Derived facts require a deterministic method and input lineage.
+### 2. Knowledge / Evidence
 
-### 5. Company_Metrics_v2
-Canonical factual snapshot by `Ticker × Metric ID`.
+Logical flow:
 
-This layer is **not** allowed to contain model forecasts or valuation assumptions.
+`Source → Evidence → Canonical Facts → Normalized Metrics`
 
-### 6. Normalized_Metrics_v1
-Standardized model-input layer. It may:
+Rules:
 
-- convert percentages to ratios;
-- standardize definitions and units;
-- create explicitly derived balance-sheet bridges;
-- perform economic/cycle normalization where the methodology is evidenced and versioned.
+- research provenance is mandatory;
+- facts cannot contain valuation forecasts;
+- derived facts need deterministic methods and input lineage;
+- normalization may standardize definitions/units or perform evidenced economic normalization but never overwrite reported evidence.
 
-It must never overwrite reported evidence.
+### 3. Domain State
 
-### 7. Intrinsic_Valuation_v2
-Model layer. Owns:
+Owns current portfolio/company/market state.
 
-- bear/base/bull assumptions;
-- target yields/multiples;
-- discount rates;
-- terminal assumptions;
-- probability weights;
-- model-specific fair value;
-- model readiness and sanity gates.
+Portfolio accounting comes from the reconciled private Supabase ledger. Portfolio transactions, positions, cost basis, allocation and exposure are deterministic state, not AI memory.
 
-### 8. Data_Scoring_v2
-Transforms verified valuation and research inputs into production scores and mispricing classification.
+Market state includes quote provenance, session date, freshness and conflict gates.
 
-### 9. Opportunity_Engine_v2
-Final formula-driven decision engine. Quality is necessary but insufficient. The final decision also depends on evidence, valuation, expected return, chase/FOMO, portfolio fit and mispricing gates.
+### 4. Intelligence
 
-## Write ownership
+Owns valuation, mispricing, Portfolio Fit, core scoring, Revision and Chase logic.
 
-| Layer | Ownership |
+Existing specialized policy tables remain live backing implementations. Architecture Consolidation v1 adds generic governance:
+
+- `fwios.policy_registry`
+- `fwios.policy_versions`
+
+A numeric scoring policy may become production-authoritative only when its version is ACTIVE and deterministic.
+
+Current policy state:
+
+| Policy | State |
 |---|---|
-| Portfolio holdings/allocation | Portfolio Tracker — read-only for screener work |
-| Market Data Refresh | system/formula |
-| AI Discovery Staging | AI research intake in permitted columns |
-| Evidence_Ledger | AI collector / research write under evidence policy |
-| Company_Metrics_v2 | formula/system canonicalization |
-| Normalized_Metrics_v1 | system/research normalization with explicit versioning |
-| Intrinsic_Valuation_v2 | research/model inputs + system formulas |
-| Data_Scoring_v2 | formula/system |
-| Opportunity_Engine_v2 | formula/system |
-| Sector_Run_History | append-only run record |
-| Data_Quality_Gates R:AJ | persistent root-cause blocker queue |
+| Data Scoring 30/30/25/15 | ACTIVE |
+| Mispricing | ACTIVE |
+| Portfolio Fit | ACTIVE |
+| Revision Score | DRAFT — raw→score map undefined |
+| Chase Risk | DRAFT — raw→score map undefined |
+| Rebalance | DRAFT |
 
-## Machine statuses
+### 5. Decision & Capital Allocation
 
-- **PASS** — all required inputs valid.
-- **READY** — all decision gates passed; still human execution only.
-- **WAIT** — valid data, but setup/valuation is not actionable.
-- **STALE** — input exists but is too old for decision use.
-- **BLOCKED** — missing, stale, invalid, conflicting or unverified critical input.
-- **REJECT** — thesis, quality or risk gate failed.
+`fwios.decision_snapshots` is the reproducibility boundary between candidate intelligence and portfolio allocation.
 
-## Freshness contract
+A decision snapshot references the exact portfolio batch, price snapshot, valuation run, mispricing snapshot, Portfolio Fit snapshot, Revision snapshot, Chase snapshot, core score snapshot and policy versions.
 
-- Stock market data: latest market session acceptable for screening; broker verification before trade.
-- Fundamental evidence: latest reported quarter; block if new earnings occurred after research.
-- Consensus revisions: comparable post-event evidence required; never guess missing deltas.
-- Catalysts: must be future-dated to support READY.
+Initial Decision Snapshots exist for PINS and RDDT. Both preserve current fail-closed Promotion state.
 
-## Phase 0.87 production state
+M3 is deliberately separated into:
 
-Live foundation currently reports:
+```text
+Decision Snapshot
+      ↓
+Opportunity Ranking
+      ↓
+Capital Allocation
+      ↓
+Portfolio Scenario Simulation
+      ↓
+Rebalancing Recommendation
+      ↓
+Human Approval
+```
 
-- `Normalized_Metrics_v1`: LIVE.
-- 17 archetype valuation contracts configured.
-- Production routes live for MEDTECH, E&P, Restaurant, Branded Retail and OFS.
-- Blocked Resolution Queue: live and dependency-aware.
-- Focused Wealth-Building 30/30/25/15 core scoring: live.
-- Chase/FOMO fail-closed regression: live.
-- Current foundation status: `PHASE 0.87 OPERATIONAL`.
+Foundation tables:
+
+- `fwios.capital_allocation_runs`
+- `fwios.capital_allocation_actions`
+- `fwios.capital_allocation_metrics`
+
+Allowed scenario modes:
+
+- NO_SELL
+- SOFT_REBALANCE
+- ACTIVE_REBALANCE
+
+No scenario may mutate the live portfolio and no output may auto-trade.
+
+### 6. Experience / Human Approval
+
+Google Sheets remains the current human-readable control/view layer while deeper production state moves to Supabase.
+
+Long-term user-facing Sheet target is a smaller set of views such as Dashboard, Portfolio, Candidates, Research, System Status and Audit/Export. Deep evidence, policy, scoring and run state should not remain duplicated writable Sheet data after cutover.
+
+## Production decision flow
+
+```text
+Sector Criteria / Discovery
+        ↓
+Source Registry / Evidence
+        ↓
+Canonical Facts
+        ↓
+Normalized Metrics
+        ↓
+Intrinsic Valuation
+        ↓
+Market Price → Mispricing
+        ↓
+Portfolio State → Portfolio Fit
+        ↓
+30/30/25/15 Core Score
+        ↓
+Revision + Chase hard gates
+        ↓
+Decision Snapshot
+        ↓
+Opportunity / Allocation / Scenario
+        ↓
+Human Approval
+```
+
+## Current live M2 state
+
+- Portfolio State migration: PASS — 29/29 transactions and 16/16 positions reconciled.
+- Native Market Price / Mispricing: PASS infrastructure.
+- Portfolio Fit: PASS.
+- Native 30/30/25/15 core scoring: LIVE.
+- Revision comparable consensus evidence: present for PINS/RDDT.
+- Revision scoring policy: DRAFT / BLOCKED until raw→score rubric is versioned.
+- Chase scoring policy: DRAFT / BLOCKED until raw→score rubric and component data are complete.
+- Promotion Gate: fail-closed.
+
+## Security
+
+The `fwios` schema remains private. New consolidation tables have RLS enabled and `anon` / `authenticated` privileges revoked. Service-role/internal execution remains the intended model.
 
 ## Architectural invariants
 
-1. Web research cannot jump directly to final valuation.
-2. Facts and model assumptions must remain separate.
-3. Unimplemented model contracts fail closed.
-4. No system output may auto-execute a trade.
-5. Portfolio context must be re-read before a recommendation.
-6. New system gaps must enter the central blocker queue rather than becoming undocumented manual exceptions.
+1. Web research cannot jump directly to final valuation or allocation.
+2. Facts and model assumptions remain separate.
+3. Portfolio accounting uses reconciled ledger state only.
+4. Policy versions are explicit and immutable enough to reproduce decisions.
+5. Draft/undefined raw→score policies cannot pass production gates.
+6. Decision Snapshots bridge intelligence into allocation.
+7. Scenario simulations do not mutate live holdings.
+8. Human execution only.
+9. New system gaps enter a persistent blocker/policy queue rather than undocumented exceptions.
+10. Future M4 automation should prefer event/delta refresh over unnecessary full-stack reruns.
+
+See `docs/02_ARCHITECTURE_CONSOLIDATION_V1.md` for the implementation record.
