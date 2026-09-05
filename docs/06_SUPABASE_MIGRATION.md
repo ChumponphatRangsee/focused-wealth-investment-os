@@ -1,223 +1,160 @@
 # Supabase Migration — Focused Wealth Investment OS
 
-Status: **PHASE 3 VALUATION CONTROL PLANE PASS / RPV2.1 HARDENED / M2 NEXT**  
+Status: **M2 CORE LIVE / ARCHITECTURE CONSOLIDATION V1 FOUNDATION LIVE**  
 Date: **2026-09-05**  
 Supabase project ref: `ysjbmeukwbfnxnwqchuq`  
-Execution contract: `FWIOS-CONTRACT-0.87.2`
+Execution contract: `FWIOS-CONTRACT-0.87.3`
 
 ## Objective
 
-Migrate the Investment OS from spreadsheet-centered architecture to a hybrid architecture without breaking the live decision workflow. Supabase becomes authoritative layer-by-layer only after lineage, gates and regression tests pass. Human execution remains mandatory; no automatic trading.
+Move the Investment OS from spreadsheet-centered operation to a durable hybrid architecture without breaking evidence lineage, fail-closed gates or human-only execution.
 
-Project-level status and next-action tracking live in `docs/00_SYSTEM_ROADMAP.md`. This migration document records Supabase/migration state and must not override newer live controller state or the Master Roadmap.
+Authority after Architecture Consolidation v1:
 
-## Phase 1 — Foundation PASS
+- Supabase = System of Record / State
+- GitHub = System of Logic / Contracts / Tests / Migrations
+- Google Sheets = System of View / Compatibility / Reconciliation / Audit / Export
 
-Private schema `fwios` contains system/model/company/run/source/evidence/metric/candidate/blocker/sync foundations. RLS is enabled; `anon` and `authenticated` have no `fwios` privileges. The schema remains private.
+## Completed migration layers
 
-Foundation snapshot began with 41 sector archetypes, 17 valuation contracts and 15 research candidates. Additional valuation contracts/models have since been configured without changing foundation compatibility 0.87.
+### Research / Evidence — PASS
 
-## Phase 2 — Research data parity PASS
+Supabase is authoritative for source/evidence/canonical/normalized research state and RPV2.1 controller/cache behavior.
 
-Supabase is authoritative for Evidence → Canonical → Normalized research layers.
+Current research snapshot:
 
-Original migration baseline:
-- Evidence rows: 181
-- Canonical rows: 47
-- Normalized rows: 53
-- duplicate Evidence IDs: 0
-- canonical/evidence/source lineage orphans: 0
+- Evidence-ready candidates: 18
+- Valuation-ready candidates: 13
+- Decision Coverage: 72.2%
+- Operating Controller: DISCOVERY
+- Open root model debt: 6
 
-Communication Services subsequently expanded the evidence-ready candidate set to 18.
+### Valuation — PASS for implemented routes
 
-## Research Pipeline v2.1 — CORE HARDENING PASS
+Reusable private kernels remain:
 
-Communication Services `SECTOR-CS-FULL-20260905-01` recorded the first staged production pilot:
-- Fast Discovery 20 → 8: 235.985 seconds
-- Light Research 8 → 5: 188.735 seconds
-- Deep Research 5 → 3: 439.009 seconds
-- total recorded stage time: 863.729 seconds / 14.4 minutes
-- deep Tier-A evidence: RDDT 8, PINS 8, NFLX 9
+- FCF_COMPOUNDER
+- MIDCYCLE_CASHFLOW
+- ASSET_NAV
 
-Post-closeout review found two correctness gaps. RPV2.1 now fixes both:
+Implemented production routes include MEDTECH, E&P, Restaurant, Branded Retail, OFS, SaaS, Materials Specialty Chemicals/Industrial Gases, IT Services, Mining NAV partial route and Digital Advertising.
 
-1. `v_latest_reusable_evidence` recomputes age at read time, requires exact Source Registry provenance, supports deterministic ISO and legacy Google Sheet serial dates, and invalidates older current reporting evidence after a later material reporting event. Historical-reference evidence remains separately eligible.
-2. `v_research_pipeline_controller` now allows the current sector to close in `MODEL_FACTORY_AFTER_CURRENT_SECTOR` while blocking a new sector. Under `DISCOVERY`, affected model-debt candidates remain fail-closed without blocking broader discovery.
+RDDT/PINS Digital Advertising intrinsic values remain validated under `DIGITAL_ADS_FCF_REVERSE_DCF_V1`.
 
-Behavioral regressions PASS:
-- `REG-M1-CACHE-EVENT-20260905`
-- `REG-M1-CACHE-AGE-20260905`
-- `REG-M1-CACHE-PROV-20260905`
-- `REG-M1-DATE-PARSE-20260905`
+### M2 Portfolio State — PASS
 
-The hardened reusable-evidence view currently exposes 221 eligible records. Parallel top-candidate execution remains a performance-validation item, not a correctness blocker for M2.
+Source: `Investment Portfolio Tracker - Chumponphat`.
 
-## Phase 3 — Valuation infrastructure PASS
+Reconciliation:
 
-Valuation control-plane structures include:
-- `metric_dependencies`
-- `valuation_kernel_families`
-- `valuation_model_versions`
-- `valuation_runs`
-- `valuation_scenarios`
-- `valuation_run_inputs`
-- `model_regression_runs`
-- `blocker_candidate_map`
-- `model_debt_profiles`
-- `v_model_debt_controller`
-- `v_operating_controller`
+- 29/29 transactions PASS
+- 16/16 positions PASS
+- latest recorded snapshot ≈ THB 340,906.10
 
-Reusable private kernels:
-- `FCF_COMPOUNDER`
-- `MIDCYCLE_CASHFLOW`
-- `ASSET_NAV`
+Supabase now owns the reconciled portfolio ledger/state used by Portfolio Fit and downstream decision logic. The original Sheet remains retained for reconciliation/audit/export until M3 traceability tests pass.
 
-### SaaS — PASS
+### M2 Market Price / Mispricing — PASS infrastructure
 
-Model: `SAAS_EV_FCF_REVERSE_DCF_V1` v1.1 on `FCF_COMPOUNDER`, confidence `PRODUCTION_V1`.
+Native quote/snapshot and mispricing structures are live with provenance, session/freshness and fail-closed gates.
 
-| Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV |
-|---|---:|---:|---:|---:|
-| ADBE | 340.7882 | 489.0870 | 731.7702 | 512.6831 |
-| CRM | 156.7065 | 230.0284 | 352.2504 | 242.2534 |
+### M2 Portfolio Fit — PASS
 
-ADBE/CRM canonical and normalized inputs plus independent regressions PASS. Price/mispricing remains downstream; neither candidate was promoted.
+Portfolio Fit uses reconciled portfolio weights/exposures rather than generic diversification bonuses.
 
-### Materials Specialty Chemicals / Industrial Gases — PASS
+### M2 Core Scoring — LIVE
 
-Model: `MATERIALS_MIDCYCLE_FCF_DCF_V1` v1.0 on `MIDCYCLE_CASHFLOW`, confidence `PRODUCTION_V1`.
+Production core is 30/30/25/15:
 
-| Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV |
-|---|---:|---:|---:|---:|
-| LIN | 115.6977 | 169.5095 | 254.6389 | 177.3389 |
-| PPG | 40.4529 | 64.8542 | 98.4271 | 67.1471 |
+- Business/Thesis 30%
+- Expected Return/Valuation 30%
+- Portfolio Fit 25%
+- Downside Risk 15%
 
-Independent regressions PASS at absolute tolerance 0.01. `BLK-MAT-CHEM-DEF-001` is CLOSED / PASS.
+PINS core 87.60 with Mispricing PASS. RDDT core 72.15 with insufficient Mispricing / WAIT FOR VALUE.
 
-### IT Services — PASS
+## Architecture Consolidation v1
 
-Model: `IT_SERVICES_FCF_COMPOUNDER_V1` v1.0 on `FCF_COMPOUNDER`, normalization `NORM_V1-IT-SERVICES`, confidence `PRODUCTION_V1`.
+Applied additively to private schema `fwios`.
 
-| Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV |
-|---|---:|---:|---:|---:|
-| ACN | 168.3159 | 225.4990 | 312.9248 | 233.0596 |
+### Policy governance
 
-The active route covers IT Services only. Hardware remains explicitly uncovered and must fail closed if a Hardware candidate enters the pipeline. Regression `REG-ACN-ITSERV-20260905` PASS.
+New tables:
 
-### Mining / Commodities ASSET_NAV — PARTIAL PASS
+- `policy_registry`
+- `policy_versions`
 
-Model: `MINING_ASSET_NAV_SOTP_V1` v1.0 on `ASSET_NAV`, normalization `NORM_V1-MINING-NAV`, confidence `PRODUCTION_V1`.
+Seeded families:
 
-| Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV |
-|---|---:|---:|---:|---:|
-| ALB | 84.2957 | 93.6770 | 103.0583 | 93.6770 |
+- DATA_SCORING — ACTIVE
+- MISPRICING — ACTIVE
+- PORTFOLIO_FIT — ACTIVE
+- REVISION_SCORE — DRAFT
+- CHASE_SCORE — DRAFT
+- REBALANCE — DRAFT
 
-Regression `REG-ALB-MIN-NAV-20260905` PASS. ALB remains `WAIT - PRICE/MISPRICING PENDING`.
+Draft Revision/Chase policies deliberately record `raw_to_score_map = UNDEFINED`; missing policy logic remains BLOCKED.
 
-MP remains intentionally fail-closed because Mountain Pass project NAV does not cover the material Magnetics business. `BLK-MP-MAGNETICS-NAV-001` remains open. The diagnostic Mountain Pass/balance-sheet floor stored in `raw_payload` is not a production intrinsic value.
+### Decision reproducibility
 
-### Digital Advertising — PASS
+New table:
 
-Model: `DIGITAL_ADS_FCF_REVERSE_DCF_V1` v1.0  
-Kernel: `FCF_COMPOUNDER`  
-Normalization: `NORM_V1-DIGADS`  
-Confidence: `PRODUCTION_V1`
+- `decision_snapshots`
 
-RDDT/PINS each have 9/9 normalized inputs PASS:
-- revenue LTM
-- ad/monetization growth
-- engagement growth
-- GAAP operating margin
-- FCF LTM
-- capex LTM
-- net cash
-- shares outstanding
-- SBC / revenue
+Initial snapshots:
 
-The v1.0 growth policy blends current ad/monetization growth and engagement growth, caps base long-duration growth at 22%, applies scenario-specific decay/discount/terminal assumptions, and uses GAAP operating margin, capex intensity, positive FCF and SBC/revenue as sanity gates. Forward guidance is a cross-check only and is never extrapolated directly as long-duration growth.
+- `DEC-PINS-M2-20260905-V1`
+- `DEC-RDDT-M2-20260905-V1`
 
-| Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV |
-|---|---:|---:|---:|---:|
-| RDDT | 92.3017 | 142.5985 | 237.7178 | 153.8041 |
-| PINS | 25.3199 | 40.6020 | 69.4854 | 44.0023 |
+Both preserve existing fail-closed Promotion state. No gate was relaxed.
 
-Independent regressions:
-- `REG-RDDT-DIGADS-20260905` PASS
-- `REG-PINS-DIGADS-20260905` PASS
+### M3 scenario foundation
 
-`BLK-COMM-DADS-MDL-001` is CLOSED / PASS. Both candidates still remain `WAIT - PRICE/MISPRICING PENDING`; current-price/expected-return promotion is intentionally blocked until M2.
+New tables:
 
-## Decision Coverage / Operating Controller
+- `capital_allocation_runs`
+- `capital_allocation_actions`
+- `capital_allocation_metrics`
 
-Current live snapshot after Digital Advertising closeout:
-- Evidence-ready candidates: **18**
-- Valuation-ready candidates: **13**
-- Decision Coverage: **72.2%**
-- Operating Controller: **`DISCOVERY`**
-- Controller action: decision coverage is sufficient to continue discovery
-- RPV2.1 `sector_discovery_allowed`: **true**
-- Open root model debt: **6**
+Allowed modes:
 
-Remaining model debt by current resolution value:
-1. QCOM / Semiconductor Designer — 73.80
-2. Streaming / Media — 73.70
-3. BALL / Packaging — 73.45
-4. AMAT / Semiconductor Equipment / Foundry — 72.00
-5. MP Magnetics full-company NAV — 71.55
-6. Telecom — 12.00
+- NO_SELL
+- SOFT_REBALANCE
+- ACTIVE_REBALANCE
 
-These remain fail-closed but no longer block broader discovery under the current controller. Main Roadmap priority nevertheless advances to M2 rather than automatically starting the queued Financials sector.
+No allocation run exists yet. These tables are foundation only.
 
-## Portfolio State migration dependency
+### M4 event foundation
 
-`Investment Portfolio Tracker - Chumponphat` is the designated source for M2/M3 portfolio-state migration.
+New table:
 
-Before Portfolio Fit/Rebalancing cutover, Supabase must reconcile at minimum:
-- accounts
-- transactions
-- assets / asset classes
-- quantity and net quantity
-- trade price, fees, currency and FX
-- THB cash flow
-- running quantity and cost basis
-- average cost
-- realized/unrealized state
-- holdings/allocation/exposure state
-- thesis/action context where available
+- `system_events`
 
-Do not retire or delete the tracker until transaction, position, cost-basis, realized-P&L and allocation parity pass. After cutover, the intended Sheet role is read-only reconciliation/audit/export/archive.
+No event trigger or autonomous workflow is enabled yet.
 
 ## Security state
 
-`fwios` remains private. `anon` and `authenticated` remain without `fwios` privileges; RLS remains enabled as defense in depth. Executable kernels remain private/internal. Human execution only; no automatic trading surface exists.
+`fwios` remains private. New consolidation tables have RLS enabled and `anon` / `authenticated` privileges revoked.
 
-Post-RPV2.1 DDL security advisor showed only expected `RLS Enabled No Policy` INFO notices for private `fwios` tables and no warning/critical exposure.
+Security Advisor after the migration reports only expected `RLS Enabled No Policy` INFO notices consistent with the private service-role/internal architecture; no warning/critical exposure was introduced.
 
-## Authority state
+Supabase's 2026 platform change that new tables are not automatically exposed to Data/GraphQL APIs does not require public grants here because these tables intentionally remain private/internal.
 
-Supabase is authoritative for:
-- Evidence / Canonical / Normalized research data
-- RPV2.1 reusable-evidence/controller state
-- dependency and model registry state
-- blocker/model-debt state
-- production valuation snapshots
-- executable valuation kernels
-- SaaS ADBE/CRM valuation compute
-- Materials Specialty Chemicals LIN/PPG valuation compute
-- IT Services ACN valuation compute
-- Mining ALB valuation compute and fail-closed MP lineage
-- Digital Advertising RDDT/PINS intrinsic valuation compute
+## Sheet cutover role
 
-Google Sheets remains a compatibility/control-room representation during migration. `Investment Portfolio Tracker - Chumponphat` remains the portfolio-state migration source until parity passes. Native market price/mispricing, Portfolio Fit, `Data_Scoring_v2`, `Opportunity_Engine_v2`, Capital Allocation/Rebalancing and final human decision logic remain downstream.
+Do not delete/restructure user-facing Sheet tabs during M2 Promotion hardening.
 
-## Roadmap governance cutover
+After M3 traceability passes, reduce Google Sheets toward view-oriented surfaces and avoid duplicated writable production state. Deep evidence, policies, scoring and internal run state should remain in Supabase.
 
-`docs/00_SYSTEM_ROADMAP.md` is the persistent project-status index required by `FWIOS-CONTRACT-0.87.2`.
+## Remaining M2 blocker
 
-For material work, AI must read the live foundation/controller plus `AGENTS.md`, `contracts/system-contract.yaml`, `VERSION` and the roadmap. Live state overrides stale documentation; material changes must be synchronized in the same workstream.
+Comparable PINS/RDDT consensus evidence is present, but Promotion remains blocked because Revision and Chase raw→score mappings are not yet deterministic production policy versions.
 
-## Next milestone
+Next:
 
-**M2 Decision Intelligence is now the Main Roadmap priority.**
-
-Financials is queued and currently technically eligible under the `DISCOVERY` controller, but is not auto-started in this workstream. M2 begins with Portfolio State migration from `Investment Portfolio Tracker - Chumponphat`, native Market Price/Mispricing, Portfolio Fit and Supabase `Data_Scoring_v2` parity. M3 Rebalancing depends on those M2 outputs.
+1. Define/version Revision scoring rubric.
+2. Define/version Chase scoring rubric.
+3. Regression-test fail-closed boundaries.
+4. Activate policy versions only after tests pass.
+5. Rebuild Decision Snapshots.
+6. Complete M2 Promotion parity.
+7. Begin M3 on the scenario foundation only after M2 exits.

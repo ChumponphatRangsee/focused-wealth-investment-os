@@ -1,218 +1,211 @@
 # AGENTS.md — Focused Wealth Investment OS
 
-This file is the **mandatory execution contract** for any AI agent or automation operating on the Portfolio investment system.
+This file is the mandatory execution contract for any AI agent or automation operating on the Portfolio investment system.
 
-Contract version: **FWIOS-CONTRACT-0.87.2**  
+Contract version: **FWIOS-CONTRACT-0.87.3**  
 Compatible live foundation: **0.87**
 
-## 1. Non-negotiable objective
+## 1. Objective
 
-Optimize for aggressive but disciplined capital growth toward the Phase-1 portfolio target of **THB 1,000,000**.
+Optimize for aggressive but disciplined capital growth toward the Phase-1 portfolio target of THB 1,000,000.
 
 Core principle:
 
 > Focus creates upside. Position sizing creates survival. Valuation creates margin of safety.
 
-Do not optimize for maximum diversification or maximum capital preservation. Preserve upside while controlling permanent-loss risk.
+Human execution only. Never auto-buy or auto-sell.
 
-## 2. Before any investment recommendation
+## 2. Authority model
+
+Architecture Consolidation v1 defines the durable authority split:
+
+- **Supabase = System of Record / State** for reconciled portfolio state, evidence/canonical/normalized research state, market-price/mispricing state, valuation state, Portfolio Fit, scoring state, policy versions, decision snapshots and future capital-allocation scenario state.
+- **GitHub = System of Logic / Contracts / Tests / Migrations**.
+- **Google Sheets = System of View / Compatibility / Reconciliation / Audit / Export** during and after cutover; it must not silently become a second production source of truth.
+- **AI = Research / interpretation / explanation / controlled orchestration**, not accounting, hidden scoring, or trade execution.
+
+Live portfolio/system/controller state overrides stale documentation.
+
+## 3. Before any investment recommendation
 
 The agent MUST:
 
-1. Read the latest portfolio holdings, allocation and transactions when available.
-2. Apply the Focused Wealth-Building rules.
+1. Read the latest reconciled portfolio state and relevant source transactions.
+2. Apply Focused Wealth-Building guardrails.
 3. Analyze the candidate in portfolio context, never in isolation.
 4. Verify current price, financials, valuation inputs and material news from current sources.
 5. Prefer primary company filings / IR for canonical financial evidence.
-6. Check concentration and crypto exposure before suggesting allocation.
+6. Check concentration and crypto exposure.
 7. Challenge FOMO, anchoring, confirmation bias and narrative-driven reasoning.
+8. Use the latest reproducible decision snapshot when available.
 
-Current portfolio data always overrides older assumptions.
+## 4. Portfolio guardrails
 
-## 3. Portfolio construction guardrails
-
-- Prefer **5–8 meaningful positions**.
-- Exceptional single-stock allocation is approximately **30% maximum**; above that requires explicit concentration review.
-- Phase-1 crypto target is approximately **15–20%**; deviations require explicit justification.
+- Prefer 5–8 meaningful positions.
+- Exceptional single-stock allocation is approximately 30% maximum; above that requires explicit concentration review.
+- Phase-1 crypto target is approximately 15–20%; deviations require explicit justification.
 - Prefer soft rebalancing with new cash before selling high-quality winners.
-- Never recommend trimming merely because a position appreciated.
-- Maximum **5 active watchlist candidates**.
-- Maximum **3 immediate buy candidates**.
-- Human execution only. Never auto-buy or auto-sell.
-- `Investment Portfolio Tracker - Chumponphat` is the designated portfolio-state migration source for M2/M3 and must not be retired until Supabase transaction/position/cost-basis/allocation reconciliation passes.
+- Never trim merely because a position appreciated.
+- Maximum 5 active watchlist candidates.
+- Maximum 3 immediate buy candidates.
+- `Investment Portfolio Tracker - Chumponphat` remains retained for reconciliation/audit/export until M3 traceability tests pass.
 
-## 4. Production scoring contract
+## 5. Production scoring contract
 
-The production core is exactly:
+Production core weights are exactly:
 
-- Business / Thesis Quality: **30%**
-- Expected Return / Valuation: **30%**
-- Portfolio Fit: **25%**
-- Downside / Thesis Risk: **15%**
+- Business / Thesis Quality: 30%
+- Expected Return / Valuation: 30%
+- Portfolio Fit: 25%
+- Downside / Thesis Risk: 15%
 
-Revision, catalyst and timing/chase signals are **non-core modifiers** and may not dominate the core score or bypass hard gates.
+Revision, catalyst and timing/chase signals are non-core modifiers and hard gates. They may not dominate the core score or bypass required evidence.
 
-Every new candidate must pass the four conceptual gates:
+## 6. Canonical data path
 
-1. Business Quality
-2. Growth
-3. Valuation
-4. Portfolio Fit
+The logical production path is:
 
-## 5. Canonical data path
-
-The allowed production path is:
-
-`Sector_Criteria → AI collection/staging → Source_Registry → Evidence_Ledger → Company_Metrics_v2 → Normalized_Metrics_v1 → Intrinsic_Valuation_v2 → Data_Scoring_v2 → Opportunity_Engine_v2`
+`Source → Evidence → Canonical Facts → Normalized Metrics → Valuation → Market Price/Mispricing + Portfolio State/Fit → Core Scoring → Revision/Chase Gates → Decision Snapshot → Opportunity → Capital Allocation → Scenario Simulation → Human Approval`
 
 Rules:
 
-- Never write web values directly into production valuation formulas without evidence lineage.
-- `Evidence_Ledger` stores traceable source facts.
-- `Company_Metrics_v2` stores factual/canonical metric snapshots only.
-- Forecast/model assumptions are prohibited in `Company_Metrics_v2`.
-- `Normalized_Metrics_v1` is the standardized/economic-normalization layer.
-- `Intrinsic_Valuation_v2` owns model assumptions and scenario outputs.
-- `Opportunity_Engine_v2` owns final formula-driven decision logic.
-- Current price/mispricing and portfolio state must pass their own gates before intrinsic value can become an expected-return or capital-allocation signal.
+- Web research cannot jump directly to final valuation or allocation.
+- Facts and model assumptions remain separate.
+- `Evidence_Ledger` / Supabase evidence state stores traceable facts.
+- Canonical metric state stores factual snapshots only.
+- Normalization owns standardized/economic model inputs.
+- Valuation owns model assumptions and scenario outputs.
+- Portfolio accounting comes only from reconciled ledger state.
+- Capital-allocation scenarios never mutate live holdings.
 
-## 6. Fail-closed rule
+## 7. Policy versioning
 
-Missing, stale, conflicting, schema-invalid, unverified or provenance-free critical data must become **BLOCKED**.
+Production decision logic must reference explicit policy versions.
 
-Do not guess values to make a model pass.
-Do not use AI-only valuation as verified valuation.
-Do not promote a candidate on Quality Score alone.
-Do not force-fill a shortlist.
-Do not promote intrinsic valuation into an expected-return signal without a fresh current-price layer.
+Generic governance lives in:
 
-If an archetype model is configured but not implemented, status must remain:
+- `fwios.policy_registry`
+- `fwios.policy_versions`
 
-`BLOCKED - MODEL NOT IMPLEMENTED`
+Existing specialized policy tables remain backing implementations until individually cut over.
 
-until a model is explicitly implemented and regression-tested.
+A policy is production-authoritative only when its version is `ACTIVE` and, when scoring is required, `deterministic_scoring = true`.
 
-## 7. Evidence requirements
+`REVISION_SCORE_V1` and `CHASE_SCORE_V1` remain DRAFT until raw evidence/data → 0–100 mappings are explicit and regression-tested. AI must not invent scores to make a gate pass.
 
-For production evidence, record when applicable:
+## 8. Decision snapshots
+
+`fwios.decision_snapshots` is the reproducibility boundary for downstream capital allocation.
+
+A decision snapshot must identify the exact:
+
+- portfolio batch
+- price snapshot
+- valuation run
+- mispricing snapshot
+- Portfolio Fit snapshot
+- Revision snapshot
+- Chase snapshot
+- core score snapshot
+- applicable policy versions
+
+Missing/incomplete critical references or draft promotion policies => BLOCKED.
+
+## 9. Capital allocation / rebalancing boundary
+
+M3 must separate:
+
+1. Opportunity Ranking
+2. Capital Allocation
+3. Portfolio Scenario Simulation
+4. Rebalancing Recommendation
+5. Human Approval
+
+Allowed scenario modes:
+
+- NO_SELL
+- SOFT_REBALANCE
+- ACTIVE_REBALANCE
+
+Every action must trace to reconciled portfolio state and, for candidate adds, an applicable decision snapshot. No scenario output can auto-execute a trade.
+
+## 10. Fail-closed rule
+
+Missing, stale, conflicting, schema-invalid, unverified, provenance-free or policy-incomplete critical data becomes BLOCKED.
+
+Do not:
+
+- guess values or component scores;
+- use AI-only valuation as verified valuation;
+- promote on Quality Score alone;
+- force-fill a shortlist;
+- treat intrinsic value as expected return without a fresh price layer;
+- bypass Portfolio Fit;
+- modify live holdings/transactions during research/system work unless explicitly instructed.
+
+Unimplemented model contracts remain `BLOCKED - MODEL NOT IMPLEMENTED`.
+
+## 11. Evidence requirements
+
+Production evidence should record when applicable:
 
 - exact source URL
 - source tier
 - evidence class
 - metric ID
 - reported/derived status
-- formula/method for derived facts
-- input lineage
+- derivation method + inputs
 - period/date
 - confidence / verification state
 
-Use primary company/SEC/IR evidence for canonical financial metrics where available.
+RPV2.1 reusable evidence must match Source Registry provenance, recompute age at read time, parse supported legacy Sheet serial dates deterministically, invalidate older current reporting evidence after a later material event, and keep historical-reference evidence separate from current aging rules.
 
-RPV2.1 reusable evidence must additionally:
-
-- match `Source_Registry` on source ID, tier and URL;
-- recompute age at read time rather than trusting a persisted freshness label alone;
-- parse supported legacy Google Sheet serial dates deterministically;
-- invalidate older current reporting evidence when a later material reporting event exists;
-- keep historical-reference evidence separate from current-evidence aging rules.
-
-## 8. Facts vs assumptions
-
-Never mix factual source evidence with valuation assumptions.
-
-Examples:
-
-- Reported revenue, FCF, debt and shares → evidence/canonical layers.
-- Target FCF yield, discount rate, terminal assumptions, probability weights → valuation layer.
-- Cycle-normalized commodity deck → normalization/valuation methodology with explicit provenance and version.
-
-## 9. Autonomous sector-run rules
+## 12. Research pipeline / controller rules
 
 - One full sector per scheduled run.
-- If a sector is incomplete or RUNNING, resume it before starting another.
-- Maximum universe per sector: **20**.
-- Maximum sector shortlist: **5**, never force-fill.
-- Compare sector winners against existing active candidates; retain the best **5 overall**.
-- Missing/stale/conflicting/unverified data → BLOCKED and resume later.
-- Production score requires traceable Tier A/B evidence; model contracts may require Tier A specifically.
-- Under `MODEL_FACTORY_AFTER_CURRENT_SECTOR`, the current sector may close but a new sector may not start.
-- Under `DISCOVERY`, model debt remains fail-closed for affected candidates but does not block the sector loop.
-- Communication Services research is complete. The next queued sector snapshot is **Financials**, but `Sector_Run_Control` and the live Supabase controller must always be re-read immediately before execution. Live state overrides this snapshot.
+- Resume incomplete/RUNNING sector before another.
+- Maximum universe 20.
+- Maximum sector shortlist 5; never force-fill.
+- Compare sector winners against global active candidates; maximum 5 active.
+- Model debt remains fail-closed for affected candidates.
+- Communication Services research is complete.
+- Financials is the queued sector snapshot, but live `Sector_Run_Control` and Supabase controller must be reread before execution.
+- Main Roadmap currently prioritizes M2 Promotion hardening; sector automation remains paused until that priority changes.
 
-## 10. Blocked Resolution Orchestrator
+## 13. Orchestration
 
-All root blockers must be represented in the persistent queue in `Data_Quality_Gates` columns R:AJ.
+Root blockers remain persistent and dependency-aware. Do not create undocumented ad-hoc retry logic.
 
-The orchestrator must respect:
+Architecture Consolidation v1 also adds `fwios.system_events` as a future M4 event/delta foundation. No event trigger is production-active merely because an event row/table exists.
 
-- dependency block IDs
-- retry mode
-- retry frequency
-- next eligible check
-- resolver type
-- orchestrator state
+## 14. Documentation handshake
 
-Allowed orchestrator states are conceptually:
+Before material work:
 
-- READY
-- WAIT_DEPENDENCY
-- WAIT_RETRY
-- CLOSED
+1. Read `System_Foundation`.
+2. Read `AGENTS.md`.
+3. Read `contracts/system-contract.yaml`.
+4. Read `VERSION`.
+5. Read `docs/00_SYSTEM_ROADMAP.md`.
+6. Re-read relevant Supabase/Sheet controller state.
+7. Resolve drift before changing production logic.
 
-Never create ad-hoc per-ticker retry logic when the central queue can represent the dependency.
+After material work, synchronize live foundation plus repository roadmap/architecture in the same workstream when capability, authority, blocker, contract or next action changes.
 
-## 11. Documentation handshake
+## 15. Regression discipline
 
-Before mutating the live system:
+Changes to normalization, valuation routing, policies, scoring, gates, decision snapshots or capital-allocation logic require deterministic regression tests.
 
-1. Read `System_Foundation` and confirm live foundation version.
-2. Read this repository's `contracts/system-contract.yaml` and `VERSION`.
-3. Read `docs/00_SYSTEM_ROADMAP.md`.
-4. Confirm the live foundation is compatible with the contract.
-5. Re-read the live controller / run state relevant to the requested work.
-6. If versions are incompatible, the handshake status is BLOCKED, or unresolved documentation drift could change the action, do not run a new sector or change production logic.
-7. After a material system change, update both the live foundation and this repository in the same workstream.
-8. If the material change affects project status, capability, blockers, authority/cutover state or next action, update `docs/00_SYSTEM_ROADMAP.md` in the same workstream.
+Reference regression tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT and PINS.
 
-### Roadmap governance
+## 16. Source precedence
 
-`docs/00_SYSTEM_ROADMAP.md` is the persistent project-status index for AI agents. It is not a substitute for live state.
-
-- Live portfolio/system/controller state always overrides a stale roadmap snapshot.
-- Main Roadmap work has priority over Side Quests unless a Side Quest becomes a hard blocker for the active main milestone.
-- Do not silently keep stale roadmap values after discovering drift.
-- Correct roadmap drift in the same material workstream.
-- If drift cannot be resolved safely, use `BLOCKED - DOCUMENTATION DRIFT` rather than guessing.
-- Routine evidence refreshes that do not alter project status do not require a roadmap edit.
-
-## 12. Regression discipline
-
-Any change to normalization, valuation routing, scoring, gates or formulas must preserve or deliberately update regression checks.
-
-Current Phase 0.87 reference regressions include ISRG, EOG, BKR, CAVA, TPR, RDDT and PINS.
-
-A changed output is acceptable only if the economic/model logic was intentionally changed and the change is documented.
-
-## 13. Forbidden shortcuts
-
-Do not:
-
-- bypass the evidence path;
-- silently relabel company-specific metrics as standardized metrics;
-- extrapolate peak-cycle economics as normalized economics;
-- treat positive company news as automatic investment attractiveness;
-- override portfolio-fit rules because a standalone stock score is high;
-- auto-execute trades;
-- modify portfolio holdings/transactions during screener/system work unless explicitly instructed.
-
-## 14. Source precedence
-
-1. Latest portfolio data
+1. Latest reconciled portfolio data
 2. Focused Wealth-Building rules
 3. Personal Investment Strategist framework
-4. Screener/system outputs
+4. Production screener/system outputs
 5. Current primary-source research
 6. Wall Street consensus
 7. News/social narratives
 
-When conflict exists, use the higher-priority source.
+When conflict exists, use the higher-priority source and fail closed if the conflict is material and unresolved.
