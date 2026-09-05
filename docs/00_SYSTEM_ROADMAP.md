@@ -2,7 +2,7 @@
 
 Status: **ACTIVE**  
 Live foundation: **0.87**  
-Execution contract: **FWIOS-CONTRACT-0.87.9**  
+Execution contract: **FWIOS-CONTRACT-0.87.10**  
 Last updated: **2026-09-05 Asia/Bangkok**  
 Execution mode: **HUMAN EXECUTION ONLY**
 
@@ -13,7 +13,7 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 | Item | Current state |
 |---|---|
 | Foundation | 0.87 |
-| Contract | FWIOS-CONTRACT-0.87.9 |
+| Contract | FWIOS-CONTRACT-0.87.10 |
 | Portfolio batch | PORTFOLIO-M2-20260905-01 |
 | Portfolio review flags | 10 assets / NVDA ~41.25% / crypto ~38.09% |
 | M2 Decision Intelligence | PASS |
@@ -21,11 +21,13 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 | M3.2 New-Cash Allocation | PASS / LIVE |
 | M3.3 Scenario Simulation | PASS / LIVE |
 | M3.4 Rebalancing Recommendation | PASS / LIVE |
-| M3.5 Human Approval / Cutover | **PASS / LIVE** |
+| M3.5 Human Approval / Cutover | PASS / LIVE |
 | M3 overall | **COMPLETE / CUTOVER PASS** |
-| Sector automation | PAUSED — dashboard/read-model priority |
+| Dashboard Read Model v1 | **PASS / LIVE — 17/17** |
+| Monitoring Google Sheet | **CREATED / HANDOFF PASS** |
+| Sector automation | PAUSED — dashboard refresh/handoff priority |
 | Next queued sector | Financials |
-| Immediate next action | **Dashboard Read Model + Monitoring Google Sheet** |
+| Immediate next action | **Verify controlled dashboard refresh workflow + plan legacy reduction** |
 
 ## M1 — Research Pipeline v2
 **CORE HARDENING PASS / PERFORMANCE VALIDATION OPEN.** Performance optimization remains side work and does not invalidate M2/M3 production capabilities.
@@ -63,74 +65,65 @@ Synthetic examples remain regression parity only, never trade instructions.
 ## M3.5 — Human Approval / Cutover
 **PASS / PRODUCTION LIVE.** Policy `POL-HUMAN-APPROVAL-V1`; deterministic regressions **30/30 PASS**.
 
-### Production architecture
-`Immutable Recommendation Snapshot → Immutable Approval Packet → Append-only Approval Event`
+Architecture: `Immutable Recommendation Snapshot → Immutable Approval Packet → Append-only Approval Event`.
+Only `PRODUCTION_USER_REQUESTED` packets are actionable; approval does not place broker orders or mutate portfolio accounting.
 
-Approval rules:
-- only `PRODUCTION_USER_REQUESTED` packets can be approved;
-- `CUTOVER_VALIDATION` and `SYNTHETIC_TEST` are non-actionable;
-- APPROVED/REJECTED require HUMAN actor;
-- EXPIRED/STALE require SYSTEM actor;
-- approval requires fresh price/valuation lineage, unchanged reconciled portfolio batch, unchanged active ranking and matching recommendation fingerprint;
-- stale/expired packets require a new packet;
-- terminal packets cannot transition again;
-- approval itself cannot submit an order or mutate portfolio accounting.
-
-### Cutover proof
-Reference validation objects:
-- recommendation: `REBAL-M3-CUTOVER-20260905-01` (`CUTOVER_VALIDATION`)
-- approval packet: `APPROVAL-M3-CUTOVER-20260905-01` (`VALIDATION_ONLY`)
-- cutover certificate: `CUTOVER-M3-20260905-01` PASS before final GitHub handshake; final merge-SHA certificate is created during cutover sync.
-
-End-to-end traceability layers: **9/9 PASS**
-1. Source transactions — 29/29 reconciled
-2. Source positions — 16/16 reconciled
-3. Portfolio batch
-4. Candidate Decision Snapshot
-5. Opportunity Ranking
-6. Source holding valuation
-7. Immutable recommendation fingerprint
-8. Immutable approval packet
-9. Execution isolation
-
-Additional invariants at cutover:
-- production-user recommendation runs = 0
-- human approval events = 0
-- allocation runs = 0
-- scenario runs = 0
-- system events = 0
-- current portfolio remains ~THB 340,906.10
-- no broker order and no portfolio mutation were created by M3.5.
+Cutover proof remains **9/9 PASS** with 29/29 transactions and 16/16 positions reconciled. Validation objects are non-actionable and no production-user recommendation, human approval event, allocation run or scenario run was created by cutover.
 
 ## M3 exit
 **M3 = COMPLETE / CUTOVER PASS.**
 
-The complete production chain is now:
+The production chain is:
 `source transaction → reconciled position → portfolio batch → valuation / Decision Snapshot → Opportunity Ranking → New-Cash Allocation → Scenario → Rebalancing Recommendation → Human Approval`.
 
 Human Approval is still not trade execution. A later approved packet requires a separate human broker action and broker-price verification.
 
 ## Post-M3 — Dashboard Read Model + Monitoring Google Sheet
-**NEXT / USER PRIORITY.**
+**PASS / LIVE — HANDOFF COMPLETE.**
 
-Build stable Supabase read models first, then create a new Google Sheet as the primary monitoring surface. Proposed read models:
-- portfolio / Phase-1 progress
-- opportunities / watchlist
-- valuation & expected upside
-- new-cash allocation
-- rebalancing recommendation
-- human approval state
-- freshness / blockers / system health
+Supabase now exposes six stable private `security_invoker` read models:
+- `fwios.v_dashboard_holdings`
+- `fwios.v_dashboard_account_summary`
+- `fwios.v_dashboard_opportunities`
+- `fwios.v_dashboard_current_action`
+- `fwios.v_dashboard_alerts`
+- `fwios.v_dashboard_system_health`
 
-The new Sheet must consume read models only. Do not duplicate production scoring, allocation, scenario, rebalance or approval logic in Sheets.
+Dashboard regressions: **17/17 PASS**. Security Advisor shows no new WARN/ERROR; only existing INFO `rls_enabled_no_policy` notices for the private service-role design.
 
-After the new dashboard is verified, reduce the existing `US_Stock_Sector_Business_Model_Screener` and legacy Portfolio Tracker to the minimum research/audit/reconciliation surface needed.
+Monitoring surface:
+- Google Sheet: **Focused Wealth Dashboard - Chumponphat**
+- Sheet ID: `17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`
+- visible tab: `Dashboard`
+- hidden data snapshot tab: `_Data`
+- Account View: All Accounts / Best / Loan Money / Mom
+
+Account View affects only Portfolio Value, Total P&L, Unrealized P&L, Realized P&L and Holdings display. Portfolio risk, Portfolio Fit, concentration, crypto and rebalancing always use consolidated exposure.
+
+Current consolidated dashboard parity:
+- Portfolio Value ~THB 340,906.10
+- Total P&L ~+THB 27,360.05
+- Unrealized P&L ~+THB 5,566.00
+- Realized P&L ~+THB 21,794.05
+- Phase-1 progress ~34.1%
+- Largest position NVDA ~41.3% — REVIEW
+- Crypto ~38.1% — ABOVE TARGET
+- PINS Immediate #1 / RDDT Value-Wait #1
+
+The Sheet contains display/filter formulas only. Production scoring, allocation, scenario, rebalance and approval logic remain in Supabase/GitHub.
+
+### Refresh boundary
+The Google Sheet currently uses a **controlled snapshot export**, not a direct live database connection. It displays source observed-at/batch status and must not be described as real-time until a refresh workflow is implemented and verified.
+
+## Immediate next action
+**Verify controlled Supabase → Sheet refresh workflow, then plan legacy-surface reduction.**
+Do not delete legacy audit/reconciliation history automatically. The legacy `US_Stock_Sector_Business_Model_Screener` and Portfolio Tracker remain available until the refresh and reduction plan are explicitly accepted.
 
 ## M4 — Autonomous Investment OS
-**PENDING DASHBOARD HANDOFF / FUTURE PRIORITY.** Event/delta refresh, thesis refresh, opportunity refresh, concentration alerts and blocker recovery remain future work. `system_events` remains foundation-only until explicitly activated and regression-tested.
+**PENDING REFRESH/HANDOFF FOLLOW-THROUGH / FUTURE PRIORITY.** Event/delta refresh, thesis refresh, opportunity refresh, concentration alerts and blocker recovery remain future work. `system_events` remains foundation-only until explicitly activated and regression-tested.
 
 ## Remaining side work
 Research/model coverage debt remains fail-closed for affected names. Financials remains queued. Completing valuation coverage for other holdings improves full-portfolio expected-upside analytics but does not invalidate the completed M3 changed-assets path.
 
 ## Google Sheet rule
-Until the new monitoring dashboard is created and verified, the current Sheet remains view/audit/research compatibility. Do not add new production logic to it. M3 cutover now permits planned legacy-surface reduction after dashboard handoff.
+The new monitoring Dashboard is now the preferred monitoring surface. Google Sheets remains downstream and read-only from a production-logic perspective. Legacy reduction is permitted after handoff, but deletion/restructuring requires explicit verification of the controlled refresh workflow and retained audit access.
