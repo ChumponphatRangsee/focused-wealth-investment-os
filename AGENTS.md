@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.4**  
+Contract version: **FWIOS-CONTRACT-0.87.5**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -28,8 +28,8 @@ Live portfolio/system/controller state overrides stale documentation.
 5. Prefer primary company/SEC/IR evidence for canonical facts.
 6. Check concentration and crypto exposure.
 7. Challenge FOMO, anchoring, confirmation bias and narrative-driven reasoning.
-8. Use latest reproducible decision snapshot where available.
-9. Broker-verify price before any trade decision.
+8. Use the latest reproducible Decision Snapshot and active Opportunity Ranking when applicable.
+9. Broker-verify price before any real trade decision.
 
 ## 4. Portfolio guardrails
 - Prefer 5–8 meaningful positions.
@@ -50,29 +50,28 @@ Core weights are exactly 30/30/25/15:
 Revision/catalyst/timing/chase are non-core and cannot override hard gates.
 
 ## 6. Production path
-`Source → Evidence → Canonical Facts → Normalized Metrics → Valuation → Market Price/Mispricing + Portfolio State/Fit → Core Scoring → Revision/Chase Gates → Decision Snapshot → Opportunity → Capital Allocation → Scenario Simulation → Human Approval`
+`Source → Evidence → Canonical Facts → Normalized Metrics → Valuation → Market Price/Mispricing + Portfolio State/Fit → Core Scoring → Revision/Chase Gates → Decision Snapshot → Opportunity Ranking → Capital Allocation → Scenario Simulation → Human Approval`
 
 Facts and model assumptions remain separate. Web research cannot jump directly to valuation/allocation. Portfolio accounting comes only from reconciled ledger state. Scenario simulations never mutate live holdings.
 
 ## 7. Policy versioning
 Production policy governance lives in `fwios.policy_registry` and `fwios.policy_versions`.
 
-A numeric policy is production-authoritative only when its version is ACTIVE and deterministic.
-
-Active promotion policies:
+Production-active deterministic policies include:
 - `POL-REVISION-SCORE-V1`
 - `POL-CHASE-SCORE-V1`
+- `POL-OPPORTUNITY-RANKING-V1`
 
-Their raw→score mappings are documented under `policies/revision/REVISION_SCORE_V1.md` and `policies/chase/CHASE_RISK_V1.md`. AI must never invent or retune component scores for a candidate.
+`REBALANCE` remains DRAFT until M3 scenario/rebalancing design and regressions pass.
 
-`REBALANCE` remains DRAFT until M3 policy design/regressions pass.
+AI must never invent or retune component scores, ranking weights, allocation math or trim logic to make a candidate pass.
 
-## 8. Decision snapshots
+## 8. Decision Snapshots
 `fwios.decision_snapshots` is the reproducibility boundary for downstream allocation. It must reference exact portfolio batch, price, valuation, mispricing, Portfolio Fit, Revision, Chase, core score and policy versions.
 
 Missing/incomplete critical references or non-active required policies => BLOCKED.
 
-## 9. Current M2 exit state
+## 9. M2 exit state
 M2 Promotion hardening is PASS with 16/16 decision-policy regressions.
 
 - PINS: core 87.60; Revision 60.5531 PASS; Chase 0.0000 PASS; Mispricing PASS; Promotion PASS; `READY - HUMAN REVIEW`.
@@ -80,42 +79,62 @@ M2 Promotion hardening is PASS with 16/16 decision-policy regressions.
 
 READY never means auto-execution.
 
-## 10. M3 boundary
-Implementation order:
-1. Opportunity Ranking
-2. Capital Allocation
+## 10. M3.1 Opportunity Ranking — production live
+Policy: `POL-OPPORTUNITY-RANKING-V1`.
+
+Rules:
+- consume only latest production Decision Snapshot per ticker;
+- `priority_score = core_score`; do not create another weighted score;
+- tie-break: Expected Return → Portfolio Fit → Downside → Business/Thesis → ticker;
+- `promotion_gate = PASS` + input integrity PASS → `IMMEDIATE_BUY_CANDIDATE`;
+- only `FAIL - INSUFFICIENT MISPRICING`, while every other M2 hard gate passes → `WATCHLIST_VALUE_WAIT`;
+- all other states → `EXCLUDED`;
+- maximum 3 Immediate and 5 Watchlist; never force-fill.
+
+M3.1 regression suite: **8/8 PASS**.
+
+First production run: `OPPRANK-M3-20260905-01` on `PORTFOLIO-M2-20260905-01`.
+- PINS → Immediate rank 1 / priority 87.6000.
+- RDDT → Value-Wait rank 1 / priority 72.1500.
+
+Ranking is not an allocation or buy instruction.
+
+## 11. M3 boundary
+Current order:
+1. Opportunity Ranking — **PASS / LIVE**
+2. Capital Allocation — **NEXT**
 3. Portfolio Scenario Simulation
 4. Rebalancing Recommendation
 5. Human Approval
 
 Allowed scenario modes: `NO_SELL`, `SOFT_REBALANCE`, `ACTIVE_REBALANCE`.
 
-Each candidate add must trace to a production Decision Snapshot. Each trim must trace to reconciled portfolio state and an explicit economic/risk rationale. No scenario can mutate live holdings.
+Each candidate add must trace to active Opportunity Ranking + production Decision Snapshot. Each trim must trace to reconciled portfolio state and explicit economic/risk rationale. No scenario can mutate live holdings.
 
-## 11. Fail-closed rule
+M3.2 must implement new-cash allocation first. It may not activate Rebalance policy or perform hard-trim recommendations until scenario traceability/regressions pass.
+
+## 12. Fail-closed rule
 Missing, stale, conflicting, schema-invalid, unverified, provenance-free or policy-incomplete critical data => BLOCKED.
 
-Never guess values/scores, use AI-only valuation as verified valuation, promote on quality alone, force-fill a shortlist, bypass Portfolio Fit/Mispricing, or modify live holdings during system work unless explicitly instructed.
+Never guess values/scores, use AI-only valuation as verified valuation, promote on quality alone, force-fill a shortlist, bypass Portfolio Fit/Mispricing, convert a non-mispricing hard failure into the value watchlist, or modify live holdings during system work unless explicitly instructed.
 
-Unimplemented model contracts remain `BLOCKED - MODEL NOT IMPLEMENTED`.
-
-## 12. Evidence requirements
+## 13. Evidence requirements
 Production evidence should carry exact URL, source tier/class, metric ID where applicable, reported/derived status, derivation inputs, period/date, confidence and verification state.
 
 RPV2.1 reusable evidence must match Source Registry provenance, recompute age at read time, invalidate older current evidence after later material events, and keep historical references separate from current aging rules.
 
-## 13. Research/controller rules
+## 14. Research/controller rules
 - One full sector per scheduled run; resume incomplete run first.
 - Max universe 20; max sector shortlist 5; never force-fill.
 - Max 5 global active candidates.
 - Model debt remains fail-closed for affected candidates.
-- Communication Services research is complete; Financials is queued.
-- Sector automation remains manually PAUSED while the Main Roadmap advances through M3 unless live controller/roadmap explicitly changes that priority.
+- Communication Services is complete; Financials is queued.
+- Sector automation remains manually PAUSED while M3 is the Main Roadmap priority unless live controller/roadmap explicitly changes.
 
-## 14. Orchestration
-Root blockers remain persistent and dependency-aware. `fwios.system_events` is an M4 foundation only; no event trigger is production-active merely because the table exists.
+## 15. Orchestration
+Root blockers remain persistent and dependency-aware. `fwios.system_events` is M4 foundation only; no event trigger is production-active merely because the table exists.
 
-## 15. Documentation handshake
+## 16. Documentation handshake
 Before material work read:
 1. live `System_Foundation`
 2. `AGENTS.md`
@@ -127,10 +146,12 @@ Before material work read:
 
 Resolve drift before changing production logic. After material changes synchronize live foundation plus repository roadmap/architecture when capability, authority, blocker, contract or next action changes.
 
-## 16. Regression discipline
-Changes to normalization, valuation, policies, scoring, gates, decision snapshots or capital allocation require deterministic regression tests. Reference tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT and PINS.
+## 17. Regression discipline
+Changes to normalization, valuation, policies, scoring, gates, Decision Snapshots, Opportunity Ranking or capital-allocation logic require deterministic regressions.
 
-## 17. Source precedence
+Reference tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT and PINS.
+
+## 18. Source precedence
 1. Latest reconciled portfolio data
 2. Focused Wealth-Building rules
 3. Personal Investment Strategist framework
