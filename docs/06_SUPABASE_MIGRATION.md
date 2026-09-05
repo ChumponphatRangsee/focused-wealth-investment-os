@@ -232,7 +232,7 @@ Supabase is authoritative for:
 Google Sheets remains the compatibility/control-room representation. Current-price/mispricing integration, `Data_Scoring_v2`, `Opportunity_Engine_v2`, portfolio holdings/transactions/positions and final human decision logic remain downstream.
 
 ## Next milestone
-1. Follow the live Operating Controller and run-lock contract. The current sector is **Communication Services** and run `SECTOR-COMM-FULL-20260905-01` is already **RUNNING**; resume that run before starting another sector.
+1. Follow the live Operating Controller and run-lock contract. `Sector_Run_Control` currently shows **Communication Services** as the current sector, **READY** stage, **IDLE** run lock and no current run ID; Supabase also has no Communication Services run record. Therefore the next discovery action is to **start** the Communication Services full-sector run, not resume an existing run.
 2. Keep QCOM, BALL, AMAT and MP Magnetics model debt in the persistent queue. They do not need to be force-cleared before discovery while decision coverage remains >=70%.
 3. Build current market-price / mispricing gating in Supabase as a separate market-data layer; never mix quote data into reported evidence/canonical facts.
 4. Add deterministic stale/missing/conflicting-input tests around executable kernels.
