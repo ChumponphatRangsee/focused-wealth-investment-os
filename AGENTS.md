@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.9**  
+Contract version: **FWIOS-CONTRACT-0.87.10**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -125,26 +125,41 @@ Cutover validation:
 
 M3 is complete. A later real approval still does not execute a trade; broker execution remains an explicit human step outside the approval ledger.
 
-## 16. Fail-closed rule
+## 16. Dashboard Read Model v1 — PASS / LIVE
+Supabase exposes six private `security_invoker` monitoring views:
+- `fwios.v_dashboard_holdings`
+- `fwios.v_dashboard_account_summary`
+- `fwios.v_dashboard_opportunities`
+- `fwios.v_dashboard_current_action`
+- `fwios.v_dashboard_alerts`
+- `fwios.v_dashboard_system_health`
+
+Regression parity is **17/17 PASS**. The monitoring Sheet is **Focused Wealth Dashboard - Chumponphat** (`17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`). It has one visible `Dashboard` tab and one hidden `_Data` snapshot tab.
+
+Account View may change only Portfolio Value, P&L and Holdings display. Risk, Portfolio Fit, concentration, crypto and rebalancing decisions always use the consolidated portfolio. Total P&L means latest-batch realized P&L + current open-position unrealized P&L. Google Sheets must not recalculate production scoring, allocation, rebalancing or approval rules.
+
+The current Sheet refresh mode is controlled snapshot export; do not claim a direct live database connection until a refresh workflow is explicitly implemented and verified.
+
+## 17. Fail-closed rule
 Missing, stale, conflicting, schema-invalid, unverified, provenance-free or policy-incomplete critical data => BLOCKED. Never substitute historical return, cost basis, narrative target or unverified consensus for missing expected-return valuation. Never force-fill or bypass hard gates. Rejected, expired, stale or non-actionable approval packets cannot execute.
 
-## 17. Research/controller
-Communication Services complete; Financials queued. Sector automation remains manually PAUSED while the post-M3 dashboard/read-model work is the explicit priority. `fwios.system_events` remains M4 foundation only.
+## 18. Research/controller
+Communication Services complete; Financials queued. Sector automation remains manually PAUSED while dashboard refresh/handoff work is the explicit priority. `fwios.system_events` remains M4 foundation only.
 
-## 18. Post-M3 next action
-**Build Dashboard Read Model + New Monitoring Google Sheet.**
-- Supabase remains source of truth.
-- Create stable dashboard views/read models first.
-- New Google Sheet consumes read models only; no duplicate production scoring/allocation/rebalance/approval logic.
-- Preserve legacy audit/reconciliation access until dashboard handoff is verified, then reduce the old Sheet surface.
+## 19. Post-M3 next action
+**Verify Dashboard Refresh Workflow + Plan Legacy Reduction.**
+- Keep Supabase as source of truth.
+- Keep the new monitoring Sheet read-only/display-only.
+- Define and verify controlled Supabase → Sheet refresh behavior before calling the Sheet real-time/live-connected.
+- Preserve legacy audit/reconciliation access until a reduction plan is explicitly verified; do not delete history automatically.
 
-## 19. Documentation handshake
+## 20. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
 
-## 20. Regression discipline
-Changes to normalization, valuation, policies, Decision Snapshots, ranking, allocation, scenario, rebalancing or approval logic require deterministic regressions. Reference tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS and NVDA.
+## 21. Regression discipline
+Changes to normalization, valuation, policies, Decision Snapshots, ranking, allocation, scenario, rebalancing, approval or dashboard read-model semantics require deterministic regressions. Reference tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS and NVDA.
 
-## 21. Source precedence
+## 22. Source precedence
 1. Latest reconciled portfolio data
 2. Focused Wealth-Building rules
 3. Personal Investment Strategist framework
