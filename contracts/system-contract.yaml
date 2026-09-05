@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.4
+  id: FWIOS-CONTRACT-0.87.5
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-05"
   timezone: Asia/Bangkok
@@ -82,19 +82,15 @@ policy_governance:
     PORTFOLIO_FIT: ACTIVE
     REVISION_SCORE: ACTIVE
     CHASE_SCORE: ACTIVE
+    OPPORTUNITY_RANKING: ACTIVE
     REBALANCE: DRAFT
 
 revision_score_v1:
   policy_version_id: POL-REVISION-SCORE-V1
   weights: {guidance: 0.30, consensus: 0.25, kpi_acceleration: 0.25, margin_fcf: 0.20}
   common_delta_score: "clamp(50 + 5 * delta, 0, 100)"
-  guidance_raw: "forward revenue guidance midpoint surprise percent vs pre-guidance analyst consensus for same period"
-  consensus_raw: "same-provider same-metric same-fiscal-period consensus revision percent"
-  kpi_acceleration_raw: "average pp acceleration of configured monetization/growth and engagement YoY growth vs immediately prior quarter"
-  margin_fcf_raw: "average of same-quarter YoY adjusted EBITDA-margin delta pp and FCF-margin delta pp"
   full_component_coverage_required: true
   pass_min_score: 50
-  negative_revision_status: "FAIL - NEGATIVE FUNDAMENTAL REVISION"
   missing_data_status: BLOCKED
 
 chase_score_v1:
@@ -103,12 +99,6 @@ chase_score_v1:
   anchor_price: "last regular-session close before latest material earnings release"
   excess_risk_score: "clamp(max(excess_pct, 0) * 2.5, 0, 100)"
   price_vs_fv_reference: "min(base_fv, probability_weighted_fv)"
-  price_vs_fv_breakpoints:
-    - [-20, 0]
-    - [-10, 15]
-    - [0, 40]
-    - [10, 65]
-    - [25, 100]
   full_component_coverage_required: true
   pass_max_score: 60
   missing_data_status: "BLOCKED - INCOMPLETE CHASE DATA"
@@ -116,14 +106,7 @@ chase_score_v1:
 promotion_gate:
   active_revision_policy_required: true
   active_chase_policy_required: true
-  required_hard_gates:
-    - quality
-    - valuation
-    - mispricing
-    - portfolio_fit
-    - downside
-    - revision
-    - chase
+  required_hard_gates: [quality, valuation, mispricing, portfolio_fit, downside, revision, chase]
   all_required_gates_must_pass_for_ready: true
   ready_status: "READY - HUMAN REVIEW"
   human_execution_only: true
@@ -143,24 +126,38 @@ decision_snapshot:
     - policy_versions
   incomplete_promotion_policy: BLOCKED
 
+opportunity_ranking_v1:
+  policy_version_id: POL-OPPORTUNITY-RANKING-V1
+  run_table: fwios.opportunity_ranking_runs
+  candidate_table: fwios.opportunity_ranked_candidates
+  current_view: fwios.v_opportunity_ranking_current
+  source: "latest production Decision Snapshot per ticker"
+  priority_score: "core_score only"
+  no_second_weighted_score: true
+  immediate_rule: "input_integrity PASS and promotion_gate PASS"
+  watchlist_rule: "input_integrity PASS and only mispricing FAIL - INSUFFICIENT MISPRICING while all other M2 hard gates PASS"
+  tie_break_order:
+    - expected_return_score_desc
+    - portfolio_fit_score_desc
+    - downside_risk_score_desc
+    - business_thesis_score_desc
+    - ticker_asc
+  max_immediate: 3
+  max_watchlist: 5
+  force_fill: false
+  regressions: "8/8 PASS"
+  first_production_run: OPPRANK-M3-20260905-01
+  human_execution_only: true
+
 capital_allocation:
   run_table: fwios.capital_allocation_runs
   action_table: fwios.capital_allocation_actions
   metric_table: fwios.capital_allocation_metrics
   scenario_modes: [NO_SELL, SOFT_REBALANCE, ACTIVE_REBALANCE]
-  required_outputs:
-    - new_cash_deployment
-    - trim_add_amounts
-    - before_after_weights
-    - expected_portfolio_upside_change
-    - concentration_and_theme_change
+  source_opportunities_must_use_active_ranking_policy: true
+  new_cash_first: true
   human_approval_required: true
   auto_trade: false
-
-event_foundation:
-  table: fwios.system_events
-  production_triggers_enabled: false
-  intended_event_classes: [PRICE_CHANGED, EARNINGS_RELEASED, CONSENSUS_UPDATED, PORTFOLIO_CHANGED, THESIS_CHANGED, VALUATION_CHANGED]
 
 fail_closed:
   missing_critical_data: BLOCKED
@@ -173,6 +170,7 @@ fail_closed:
   quality_alone_can_promote: false
   force_fill_shortlist: false
   intrinsic_value_without_current_price_can_promote: false
+  non_mispricing_hard_gate_failure_can_enter_value_watchlist: false
   unimplemented_model_status: "BLOCKED - MODEL NOT IMPLEMENTED"
 
 research_pipeline:
@@ -214,6 +212,7 @@ security:
   anon_authenticated_privileges: revoked
   rls_defense_in_depth: true
   service_role_internal_execution: true
+  security_invoker_views_required: true
 
 documentation_handshake:
   repository: ChumponphatRangsee/focused-wealth-investment-os
@@ -225,4 +224,6 @@ regressions:
   reference_tickers: [ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS]
   m2_promotion_policy_suite: "REG-M2-POLICY-V1-*"
   m2_promotion_policy_pass: "16/16"
+  m3_opportunity_ranking_suite: "REG-M3-OPPRANK-V1-*"
+  m3_opportunity_ranking_pass: "8/8"
   formula_errors_forbidden: ["#REF!", "#DIV/0!", "#VALUE!", "#N/A"]
