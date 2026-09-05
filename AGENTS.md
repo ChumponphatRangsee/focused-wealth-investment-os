@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.8**  
+Contract version: **FWIOS-CONTRACT-0.87.9**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -28,7 +28,7 @@ Live portfolio/system/controller state overrides stale documentation.
 5. Prefer primary company/SEC/IR evidence for canonical facts.
 6. Check concentration and crypto exposure.
 7. Challenge FOMO, anchoring, confirmation bias and narrative-driven reasoning.
-8. Use latest Decision Snapshot, Opportunity Ranking, New-Cash Allocation, Scenario and Rebalance policies where applicable.
+8. Use latest Decision Snapshot, Opportunity Ranking, New-Cash Allocation, Scenario, Rebalance and Human Approval policies where applicable.
 9. Broker-verify price before any real trade decision.
 
 ## 4. Portfolio guardrails
@@ -39,7 +39,7 @@ Live portfolio/system/controller state overrides stale documentation.
 - Never trim merely because a position appreciated.
 - Max 5 active watchlist candidates; max 3 immediate buy candidates.
 - Actual new purchase per decision cycle is normally 0–1.
-- Legacy portfolio Sheet remains retained for reconciliation/audit/export until M3 traceability/cutover passes.
+- M3 cutover is PASS. Legacy Sheets may be reduced only after the new monitoring dashboard/read-model handoff preserves required audit access.
 
 ## 5. Production scoring
 Core weights are exactly 30/30/25/15: Business/Thesis 30%, Expected Return/Valuation 30%, Portfolio Fit 25%, Downside/Thesis Risk 15%.
@@ -48,7 +48,7 @@ Revision/catalyst/timing/chase are non-core and cannot override hard gates.
 ## 6. Production path
 `Source → Evidence → Canonical Facts → Normalized Metrics → Valuation → Market Price/Mispricing + Portfolio State/Fit → Core Scoring → Revision/Chase → Decision Snapshot → Opportunity Ranking → New-Cash Allocation → Portfolio Scenario Simulation → Rebalancing Recommendation → Human Approval`
 
-Facts and assumptions stay separate. Preview/scenario/recommendation functions never mutate live holdings.
+Facts and assumptions stay separate. Preview/scenario/recommendation/approval functions never place orders or mutate live holdings.
 
 ## 7. Production-active deterministic policies
 - `POL-REVISION-SCORE-V1`
@@ -57,8 +57,9 @@ Facts and assumptions stay separate. Preview/scenario/recommendation functions n
 - `POL-NEW-CASH-ALLOCATION-V1`
 - `POL-PORTFOLIO-SCENARIO-V1`
 - `POL-REBALANCE-V1`
+- `POL-HUMAN-APPROVAL-V1`
 
-AI must never invent or retune scoring, ranking, allocation, scenario or trim math to make a candidate pass.
+AI must never invent or retune scoring, ranking, allocation, scenario, trim or approval gates to make a candidate pass.
 
 ## 8. M2 exit
 M2 PASS with 16/16 decision-policy regressions. PINS Promotion PASS / READY - HUMAN REVIEW. RDDT Mispricing FAIL / GOOD COMPANY - WAIT FOR VALUE. READY never means auto-execution.
@@ -72,69 +73,78 @@ M2 PASS with 16/16 decision-policy regressions. PINS Promotion PASS / READY - HU
 ## 11. M3.3 Portfolio Scenario Simulation — PASS / LIVE
 `POL-PORTFOLIO-SCENARIO-V1`; 28/28 regressions. Modes: `NO_SELL`, `SOFT_REBALANCE`, `ACTIVE_REBALANCE`. ADD traces to active ranking + Decision Snapshot. TRIM must target a current holding, stay within current value and carry explicit economic/risk rationale. Appreciation-only trim rationale is forbidden. Full-portfolio expected upside fails closed when coverage is incomplete.
 
-Holding valuation coverage may come from fresh production holding valuation lineage. Current NVDA route `SEMIS_MIDCYCLE_DCF_V1::1.0` is production-live, so NVDA↔PINS changed-assets expected-value comparison is now covered. Other uncovered holdings remain blocked; no proxy is allowed.
-
 ## 12. Semiconductor Designer valuation v1 — production live
 Model: `SEMIS_MIDCYCLE_DCF_V1::1.0`, kernel `FCF_COMPOUNDER`.
-Required inputs: revenue LTM, gross margin, inventory days, direct-customer concentration, FCF LTM, conservative net cash, shares outstanding, plus signed pending acquisition consideration when applicable.
-
-NVDA 2026-09-05 production parity:
-- Bear FV 87.03032203
-- Base FV 166.16708908
-- Bull FV 273.20947981
-- PW FV 173.14349500
-- Price snapshot `PX-NVDA-20260904` = 230.34
-- model regression `REG-SEMIS-V1-NVDA-PARITY` = PASS.
-
-The valuation is an opportunity-cost input, not a standalone trim instruction.
+NVDA reference parity: Bear 87.03032203 / Base 166.16708908 / Bull 273.20947981 / PW 173.14349500 at `PX-NVDA-20260904`; `REG-SEMIS-V1-NVDA-PARITY` PASS. This is an opportunity-cost input, not a standalone trim instruction.
 
 ## 13. M3.4 Rebalancing Recommendation — PASS / LIVE
 Policy: `POL-REBALANCE-V1`; 12/12 regressions PASS.
+- consume new cash before trim;
+- ADD must be active Immediate with Decision Snapshot valuation;
+- trim source must be a current holding with fresh production valuation and concentration review;
+- minimum PW expected-return edge = 25 percentage points;
+- trim = min(remaining approved candidate capacity, source concentration excess above 30%);
+- never sell more than can be redeployed;
+- 30% is review threshold, not forced target;
+- appreciation-only rationale forbidden;
+- human review + broker price verification required.
+
+Synthetic parity remains regression-only; it is never a live trade instruction.
+
+## 14. M3.5 Human Approval / Cutover — PASS / LIVE
+Policy: `POL-HUMAN-APPROVAL-V1`; **30/30 regressions PASS**.
+
+Architecture:
+`Immutable Recommendation Snapshot → Immutable Approval Packet → Append-only Approval Event`.
 
 Rules:
-- consume new cash before considering a trim;
-- ADD must be active Immediate candidate with Decision Snapshot valuation;
-- trim source must be a current holding with fresh production valuation and concentration review in v1;
-- minimum PW expected-return edge = 25 percentage points;
-- recommended trim = min(remaining approved candidate capacity after new cash, source concentration excess above 30%);
-- never sell more than can be redeployed into the approved opportunity;
-- 30% is a review threshold, not a mandatory target;
-- `PRICE_APPRECIATION_ONLY` / appreciation-only rationale is forbidden;
-- uncovered holdings are excluded, not proxied;
-- full-portfolio valuation coverage is not required for a changed-assets comparison when every changed non-cash asset is covered;
-- all outputs require human review and broker price verification before any real trade.
+- only `PRODUCTION_USER_REQUESTED` packets are approvable;
+- `CUTOVER_VALIDATION` and `SYNTHETIC_TEST` can never be approved;
+- APPROVED/REJECTED require HUMAN actor; EXPIRED/STALE require SYSTEM actor;
+- approval requires fingerprint integrity, same current portfolio batch, same active ranking and fresh changed-asset price/valuation lineage;
+- terminal states are APPROVED / REJECTED / EXPIRED / STALE;
+- stale or expired packets require a new recommendation/packet;
+- approval events constrain `broker_order_created=false` and `portfolio_mutation_applied=false`.
 
-Synthetic parity only:
-- THB 0 new cash → NVDA trim ~17,045.30 → PINS add ~17,045.30.
-- THB 10k new cash → use 10k first, then NVDA trim ~7,545.30 to fill PINS starter capacity.
-- THB 50k new cash → PINS starter cap funded by new cash; NVDA trim = 0.
+Cutover validation:
+- 29/29 transactions PASS;
+- 16/16 positions PASS;
+- 9/9 end-to-end traceability layers PASS;
+- validation recommendation `REBAL-M3-CUTOVER-20260905-01` is `CUTOVER_VALIDATION` only;
+- validation packet `APPROVAL-M3-CUTOVER-20260905-01` is `VALIDATION_ONLY`;
+- production-user recommendation count at cutover = 0;
+- human approval-event count at cutover = 0;
+- M3 cutover certificate = PASS.
 
-These are regression previews, not live trade instructions. No recommendation run has been materialized by activation.
-
-## 14. M3 boundary
+## 15. M3 boundary — COMPLETE
 1. Opportunity Ranking — PASS / LIVE
 2. New-Cash Allocation — PASS / LIVE
 3. Portfolio Scenario Simulation — PASS / LIVE
 4. Rebalancing Recommendation — PASS / LIVE
-5. Human Approval / Cutover — **NEXT**
+5. Human Approval / Cutover — PASS / LIVE
 
-M3.5 must prove end-to-end traceability from source transaction → position → portfolio batch → Decision Snapshot / holding valuation → ranking → allocation/scenario → recommendation → explicit human approval, with no unexplained quantity, value, cost basis or realized-P&L differences.
+M3 is complete. A later real approval still does not execute a trade; broker execution remains an explicit human step outside the approval ledger.
 
-## 15. Fail-closed rule
-Missing, stale, conflicting, schema-invalid, unverified, provenance-free or policy-incomplete critical data => BLOCKED. Never substitute historical return, cost basis, narrative target or unverified consensus for missing expected-return valuation. Never force-fill or bypass hard gates.
+## 16. Fail-closed rule
+Missing, stale, conflicting, schema-invalid, unverified, provenance-free or policy-incomplete critical data => BLOCKED. Never substitute historical return, cost basis, narrative target or unverified consensus for missing expected-return valuation. Never force-fill or bypass hard gates. Rejected, expired, stale or non-actionable approval packets cannot execute.
 
-## 16. Research/controller
-Communication Services complete; Financials queued. Sector automation remains manually PAUSED while M3 is Main Roadmap priority. `fwios.system_events` remains M4 foundation only.
+## 17. Research/controller
+Communication Services complete; Financials queued. Sector automation remains manually PAUSED while the post-M3 dashboard/read-model work is the explicit priority. `fwios.system_events` remains M4 foundation only.
 
-## 17. Documentation handshake
+## 18. Post-M3 next action
+**Build Dashboard Read Model + New Monitoring Google Sheet.**
+- Supabase remains source of truth.
+- Create stable dashboard views/read models first.
+- New Google Sheet consumes read models only; no duplicate production scoring/allocation/rebalance/approval logic.
+- Preserve legacy audit/reconciliation access until dashboard handoff is verified, then reduce the old Sheet surface.
+
+## 19. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
 
-During remaining M3, Google Sheets receives only `System_Foundation` / audit-status updates; do not add production logic/config there.
+## 20. Regression discipline
+Changes to normalization, valuation, policies, Decision Snapshots, ranking, allocation, scenario, rebalancing or approval logic require deterministic regressions. Reference tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS and NVDA.
 
-## 18. Regression discipline
-Changes to normalization, valuation, policies, Decision Snapshots, ranking, allocation, scenario or rebalancing logic require deterministic regressions. Reference tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS and NVDA.
-
-## 19. Source precedence
+## 21. Source precedence
 1. Latest reconciled portfolio data
 2. Focused Wealth-Building rules
 3. Personal Investment Strategist framework
