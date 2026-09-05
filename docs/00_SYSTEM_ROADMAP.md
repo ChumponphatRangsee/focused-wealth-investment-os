@@ -10,13 +10,13 @@ Execution mode: **HUMAN EXECUTION ONLY**
 
 This file is the persistent project-status index for AI agents and automations working on the Focused Wealth Investment OS. It tracks what is complete, what is being built next, what remains blocked, and which tasks are Main Roadmap versus Side Quest.
 
-This roadmap is **not allowed to override live state**. Before acting, always re-read the live sources named below. If this file conflicts with live state, live state wins and this file must be corrected in the same workstream.
+This roadmap is not allowed to override live state. Live portfolio state, `System_Foundation`, `Sector_Run_Control`, and authoritative Supabase state win when conflicts exist.
 
 ## Authority / precedence for operational state
 
 1. Latest portfolio holdings / transactions when an investment decision is involved.
 2. `System_Foundation` and `Sector_Run_Control` in the live screener.
-3. Supabase `fwios` controller, blocker, evidence, metric and valuation state for layers where Supabase is authoritative.
+3. Supabase `fwios` controller, portfolio, evidence, metric, valuation and decision state for layers where Supabase is authoritative.
 4. `contracts/system-contract.yaml`, `AGENTS.md` and `VERSION` for execution rules and compatibility.
 5. This roadmap as the persistent project-status summary.
 6. Migration / implementation notes under `docs/`.
@@ -37,84 +37,81 @@ This roadmap is **not allowed to override live state**. Before acting, always re
 | Current sector stage | DONE — research closeout |
 | Next queued sector | Financials |
 | Run lock | IDLE |
-| Sector automation | PAUSED — manual control while Main Roadmap advances to M2 |
+| Sector automation | PAUSED — manual control while M2 promotion hardening finishes |
 | Current run ID | none |
-| Supabase authority | RESEARCH + VALUATION COMPUTE CONTROL PLANE |
+| Supabase authority | RESEARCH + VALUATION + PORTFOLIO STATE + MARKET PRICE/MISPRICING + PORTFOLIO FIT + SCORING CORE |
 | Portfolio execution | Human only; no auto-buy / auto-sell |
 
-Current valuation/model infrastructure includes reusable private kernels for `FCF_COMPOUNDER`, `MIDCYCLE_CASHFLOW` and `ASSET_NAV`. Digital Advertising is now implemented on `FCF_COMPOUNDER`. Current-price/mispricing integration, portfolio-state cutover, final scoring and opportunity/capital-allocation authority remain incomplete.
+M2.1–M2.4 core layers are live. Portfolio migration reconciled **29/29 transactions** and **16/16 positions** into private Supabase state. The latest reconciled portfolio snapshot is approximately **THB 340,906.10**. Current guardrail reviews include NVDA at approximately **41.25%**, crypto at approximately **38.09%**, and **10** unique open assets versus the preferred 5–8 meaningful positions. These are review flags, not automatic sell instructions.
 
-### Designated portfolio migration source
+### Portfolio migration / authority
 
-`Investment Portfolio Tracker - Chumponphat` is the designated live/legacy migration source for portfolio-state data required by M2/M3. It must **not** be retired, deleted, or treated as disposable legacy output until Supabase portfolio-state parity, transaction reconciliation and downstream rebalancing tests pass.
+`Investment Portfolio Tracker - Chumponphat` was the designated migration source for M2/M3. Supabase now holds the reconciled portfolio ledger/state used by Portfolio Fit and downstream decision logic. The Sheet remains retained as reconciliation / audit / export / archive compatibility until downstream M3 rebalancing traceability tests pass.
 
-Migration scope includes at minimum: accounts, transactions, asset / asset class, quantity, price, fees, currency / FX, net quantity, THB cash flow, cost-basis changes, realized P&L, running quantity, running cost basis, average cost, holdings/allocation state, thesis/action context and data-quality lineage where available.
-
-Target authority after cutover:
+Target authority:
 
 - **Supabase** = portfolio ledger/state source of truth used by Portfolio Fit, Opportunity, Capital Allocation and Rebalancing engines.
 - **GitHub** = schema, migration, contract, regression and decision-engine implementation authority.
-- **Investment Portfolio Tracker - Chumponphat** = read-only reconciliation / audit / export / archive layer unless a later roadmap explicitly keeps a live compatibility use case.
+- **Investment Portfolio Tracker - Chumponphat** = retained reconciliation / audit / export / archive layer until final cutover criteria pass.
 
 ---
 
 # MAIN ROADMAP
 
-Main Roadmap work directly advances the system toward a complete research → valuation → portfolio-fit → capital-allocation decision loop. Main Roadmap work takes precedence over Side Quests unless a Side Quest becomes a hard blocker for the active main milestone.
-
 ## M1 — Research Pipeline v2
 
 **Status: CORE HARDENING PASS / PERFORMANCE VALIDATION OPEN**
 
-Goal: reduce full-sector discovery/research latency without weakening evidence lineage, source quality or fail-closed behavior.
+- [x] Research Run Telemetry.
+- [x] Fast Discovery up to 20 → approximately 8 candidates.
+- [x] Light Research approximately 8 → maximum 5 candidates.
+- [x] Deep Research strongest approximately 3 first.
+- [x] Evidence cache / delta refresh with exact provenance, read-time age, legacy date parsing and later-material-event invalidation.
+- [x] Deterministic Source Router.
+- [x] Model-debt decoupling at the controller boundary.
+- [x] Fail-closed regression / acceptance checks.
+- [ ] Parallel top-candidate execution/performance validation where dependency ordering permits it.
 
-- [x] Research Run Telemetry: persist stage `started_at`, `completed_at`, `duration_seconds`, candidates in/out, sources checked, evidence created/reused, cache-hit rate and failure reason.
-- [x] Fast Discovery stage: universe up to 20 → approximately 8 candidates using only high-signal screening data.
-- [x] Light Research stage: approximately 8 → maximum 5 candidates using Business Quality, Growth, rough Valuation, Downside and Portfolio Fit.
-- [x] Deep Research stage: production-grade evidence collection for the strongest approximately 3 candidates first; expand to candidates 4–5 only when justified.
-- [x] Evidence cache / delta refresh core: exact registry provenance, read-time age recomputation, legacy Sheet date parsing and later-material-event invalidation are live in RPV2.1.
-- [x] Deterministic Source Router: route filings, guidance, balance-sheet facts, technical reports, market quotes and material news to defined source classes.
-- [x] Model-debt decoupling: affected candidates remain fail-closed while sector completion/new-sector permission follows the Operating Controller boundary.
-- [ ] Parallel top-candidate execution/performance validation where source/dependency ordering permits it.
-- [x] Regression/acceptance checks proving cache aging, later-event invalidation, provenance failure and date parsing fail closed correctly.
-
-Communication Services completed the recorded 20→8→5→3 funnel in 863.729 seconds (14.4 minutes). RPV2.1 then repaired the two closeout defects found by review:
-
-- `v_latest_reusable_evidence` now recomputes current-evidence age, validates exact Source Registry provenance, parses ISO and supported legacy Sheet serial dates, and invalidates older current reporting evidence after a later material reporting event.
-- `v_research_pipeline_controller` now permits current-sector completion in `MODEL_FACTORY_AFTER_CURRENT_SECTOR` while keeping new-sector discovery blocked until the controller returns `DISCOVERY`.
-
-Behavioral regressions `REG-M1-CACHE-EVENT-20260905`, `REG-M1-CACHE-AGE-20260905`, `REG-M1-CACHE-PROV-20260905` and `REG-M1-DATE-PARSE-20260905` all PASS. Current reusable-evidence count is 221. RDDT/PINS/NFLX current Tier-A sets are eligible under the hardened cache rules.
-
-Parallel-worker speedup is still an optimization/measurement item; it no longer blocks progression to M2 because correctness and fail-closed M1 hardening criteria now pass.
-
-### M1 exit criteria
-
-- [x] Stage timings are measured rather than estimated.
-- [x] Sector discovery can finish even when a candidate creates Model Debt when the live controller permits it.
-- [x] Fresh evidence is reused deterministically and fails closed on provenance/age/event invalidation.
-- [x] No production candidate is promoted without evidence / valuation / current-price / portfolio-fit gates.
-- [x] Communication Services data is compatible with the hardened RPV2.1 cache/controller behavior without breaking the recorded run closeout.
+Communication Services completed the recorded 20→8→5→3 funnel in 863.729 seconds. RPV2.1 cache/controller correctness passes; parallel-worker speedup remains optimization work and does not block M2.
 
 ## M2 — Decision Intelligence
 
-**Status: NEXT / ACTIVE PRIORITY**
+**Status: CORE LIVE / PROMOTION-GATE HARDENING OPEN**
 
-Goal: answer not only whether a company is good, but whether it is attractive at the current price and suitable for the live portfolio.
+Goal: answer whether a company is attractive at the current price and suitable for the reconciled live portfolio, while keeping missing decision evidence fail-closed.
 
-- [ ] Native Market Price layer with quote timestamp, session status and freshness gate.
-- [ ] Mispricing engine: current price vs Bear/Base/Bull/PW fair value, upside/downside and margin-of-safety classification.
-- [ ] **Portfolio State migration from `Investment Portfolio Tracker - Chumponphat` into Supabase**, with reconciled accounts, transactions, positions, cost basis, realized/unrealized state, allocation and exposure inputs. The Sheet remains authoritative/retained until parity and reconciliation pass.
-- [ ] Portfolio Fit Engine: live position weight, sector/theme dependency, concentration, crypto exposure, thesis overlap and opportunity-cost context.
-- [ ] Supabase parity for `Data_Scoring_v2` using the production weights: Business/Thesis 30%, Expected Return/Valuation 30%, Portfolio Fit 25%, Downside Risk 15%.
-- [ ] Fail-closed parity tests for stale price, stale earnings, missing portfolio context and incomplete valuation.
+- [x] Native Market Price layer with quote timestamp/session freshness handling.
+- [x] Mispricing engine: current price vs Bear/Base/Bull/PW fair value, upside/downside and margin-of-safety classification.
+- [x] Portfolio State migration from `Investment Portfolio Tracker - Chumponphat` into private Supabase with transaction and position reconciliation.
+- [x] Portfolio Fit Engine using reconciled live portfolio weights/exposures rather than generic diversification bonuses.
+- [x] Native Supabase 30/30/25/15 scoring core: Business/Thesis 30%, Expected Return/Valuation 30%, Portfolio Fit 25%, Downside Risk 15%.
+- [ ] Version and regression-test the `Revision_Data_v2` raw-evidence → component-score rubric.
+- [ ] Version and regression-test the Chase raw-data → component-score rubric.
+- [ ] Complete final fail-closed promotion parity for stale price, stale earnings, missing portfolio context, incomplete valuation, incomplete Revision and incomplete Chase data.
+
+### Current M2 candidate state
+
+| Candidate | Price snapshot | Business | Expected Return | Portfolio Fit | Downside | Core Score | Current decision |
+|---|---:|---:|---:|---:|---:|---:|---|
+| PINS | $20.28 (2026-09-04 close) | 82 | 100 | 90 | 70 | 87.60 | RESEARCH PRIORITY — MISPRICING; Promotion blocked |
+| RDDT | $154.79 (2026-09-04 close) | 88 | 45 | 90 | 65 | 72.15 | GOOD COMPANY — WAIT FOR VALUE |
+
+PINS intrinsic value remains Bear $25.3199 / Base $40.6020 / Bull $69.4854 / PW $44.0023. Its current mispricing gate passes strongly. RDDT intrinsic value remains Bear $92.3017 / Base $142.5985 / Bull $237.7178 / PW $153.8041; at $154.79 it does not clear the required margin of safety.
+
+Comparable consensus evidence has now been recovered for both candidates using same-provider, same-metric, same-fiscal-period snapshots:
+
+- PINS FY2026 EPS consensus: **$1.92 pre-earnings → $2.05 post/current**, revision **+6.7708%**.
+- RDDT FY2026 EPS consensus: **$4.85 pre-earnings → $5.27 post/current**, revision **+8.6598%**.
+
+The consensus evidence gate therefore passes. However, the production configuration defines Revision component weights and Chase component weights but does **not** yet define a versioned mapping from raw evidence/data into 0–100 component scores. The system must not invent those scores. Therefore Revision remains `BLOCKED - COMPONENT SCORING INCOMPLETE`, Chase remains fail-closed, and no candidate may bypass Promotion Gate.
 
 ### M2 exit criteria
 
-The system can state, with traceable inputs: **good business + current valuation + expected return + portfolio fit + downside risk**, using reconciled live portfolio state rather than a manually copied snapshot.
+M2 exits only when the system can state, with traceable inputs: **good business + current valuation + expected return + portfolio fit + downside risk + versioned Promotion evidence**, with stale/missing inputs deterministically blocked.
 
 ## M3 — Opportunity & Capital Allocation
 
-**Status: PENDING M2**
+**Status: PENDING M2 PROMOTION HARDENING**
 
 Goal: rank where the next unit of capital should go and simulate portfolio changes without auto-trading.
 
@@ -122,28 +119,26 @@ Goal: rank where the next unit of capital should go and simulate portfolio chang
 - [ ] Global candidate ranking with maximum 5 active watchlist candidates and maximum 3 immediate buy candidates.
 - [ ] New-cash deployment logic.
 - [ ] Soft-rebalancing sequence: new cash → reduce DCA → reassess thesis/valuation → allow weights to normalize → hard trim only when justified.
-- [ ] Rebalancing signal engine with trim/add amounts and before/after portfolio exposure, using the migrated `Investment Portfolio Tracker - Chumponphat` portfolio ledger/state as the portfolio-side input.
+- [ ] Rebalancing signal engine with trim/add amounts and before/after portfolio exposure.
 - [ ] Trim/Add simulation with estimated change in portfolio expected return and concentration risk.
-- [ ] Scenario outputs for **No-Sell / Soft Rebalance / Active Rebalance**, including recommended trim amount, destination asset(s), before/after position weights, concentration/theme effects and expected portfolio-upside change.
+- [ ] Scenario outputs for **No-Sell / Soft Rebalance / Active Rebalance**.
 - [ ] Explicit concentration review for exceptional single-stock weights above approximately 30%.
-- [ ] Explicit Phase-1 crypto exposure review around the approximately 15–20% target.
+- [ ] Explicit Phase-1 crypto exposure review around approximately 15–20% target.
 
 ### M3 exit criteria
 
 The system can answer: **“If new capital is available today, where should it go; if new cash is insufficient, should anything be reduced, by how much, where should those proceeds move, and what changes in expected portfolio outcome?”** Human approval/execution remains mandatory.
 
-The M3 cutover is not complete until recommendations are generated from the reconciled Supabase portfolio ledger and can be traced back to source transactions from `Investment Portfolio Tracker - Chumponphat` without unexplained quantity, cost-basis, realized-P&L or allocation differences.
+M3 cutover requires traceability back to reconciled Supabase source transactions without unexplained quantity, cost-basis, realized-P&L or allocation differences.
 
 ## M4 — Autonomous Investment OS
 
 **Status: PENDING M3**
 
-Goal: automate monitoring and research refresh while keeping final portfolio execution human-controlled.
-
 - [ ] Scheduled sector discovery under run-lock/controller rules.
 - [ ] Evidence freshness / delta-refresh scheduler.
 - [ ] Thesis-monitor refresh and material-change alerts.
-- [ ] Opportunity ranking refresh when price, earnings, thesis or portfolio state changes materially.
+- [ ] Opportunity ranking refresh on material price/earnings/thesis/portfolio changes.
 - [ ] Portfolio concentration / allocation alerts.
 - [ ] Recovery logic for failed/blocked runs using the central blocker orchestrator.
 - [ ] End-to-end audit trail from source evidence to final human-review recommendation.
@@ -156,18 +151,16 @@ Goal: automate monitoring and research refresh while keeping final portfolio exe
 
 `DIGITAL_ADS_FCF_REVERSE_DCF_V1` v1.0 is implemented on the reusable `FCF_COMPOUNDER` kernel with normalization `NORM_V1-DIGADS`.
 
-RDDT and PINS each have 9/9 required normalized inputs PASS. The model blends current monetization/ad growth with engagement growth and caps long-duration extrapolation; GAAP operating margin, capex intensity, positive FCF and SBC/revenue are sanity gates. Independent regressions pass at absolute tolerance 0.01.
+RDDT and PINS each have 9/9 required normalized inputs PASS and independent valuation regressions pass at absolute tolerance 0.01.
 
-| Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV |
-|---|---:|---:|---:|---:|
-| RDDT | 92.3017 | 142.5985 | 237.7178 | 153.8041 |
-| PINS | 25.3199 | 40.6020 | 69.4854 | 44.0023 |
-
-These are intrinsic-value outputs only. Both candidates remain `WAIT - PRICE/MISPRICING PENDING`; no Buy/Ready promotion is allowed until M2 provides a fresh price/mispricing layer.
+| Ticker | Bear FV | Base FV | Bull FV | Probability-weighted FV | M2 state |
+|---|---:|---:|---:|---:|---|
+| RDDT | 92.3017 | 142.5985 | 237.7178 | 153.8041 | GOOD COMPANY — WAIT FOR VALUE |
+| PINS | 25.3199 | 40.6020 | 69.4854 | 44.0023 | MISPRICING PASS; Promotion blocked on Revision/Chase scoring |
 
 ## Remaining open model debt
 
-The live controller is now `DISCOVERY`, so these are fail-closed coverage tasks rather than blockers to the next Main Roadmap milestone. Priority values are model-resolution values, not investment scores.
+The live controller remains `DISCOVERY`; these stay fail-closed coverage tasks rather than blockers to M2 completion.
 
 | Rank | Blocker | Scope | Resolution value |
 |---|---|---|---:|
@@ -186,7 +179,7 @@ The live controller is now `DISCOVERY`, so these are fail-closed coverage tasks 
 - [ ] Advanced thesis-monitor enhancements.
 - [ ] Specialist crisis/regime trackers such as AI-bubble monitoring.
 - [ ] XRP-specific thesis/dashboard enhancements.
-- [ ] Supplemental money-flow, news-sentiment and Wall Street comparison layers; these may inform decisions but may not override core evidence/valuation/portfolio-fit gates.
+- [ ] Supplemental money-flow, news-sentiment and Wall Street comparison layers; these may inform but not override core evidence/valuation/portfolio-fit gates.
 - [ ] Additional archetype-specific valuation models when live candidates justify the work.
 
 ---
@@ -195,92 +188,78 @@ The live controller is now `DISCOVERY`, so these are fail-closed coverage tasks 
 
 ## Immediate next action
 
-**Begin M2 Decision Intelligence.**
+**Finish M2 Promotion-Gate Hardening.**
 
 1. Preserve the completed Communication Services run; do not repeat it.
-2. Keep Financials queued and eligible under the live `DISCOVERY` controller, but do not auto-start it while the Main Roadmap is advancing to M2.
-3. Migrate Portfolio State from `Investment Portfolio Tracker - Chumponphat` into private Supabase tables with transaction/position/cost-basis/allocation reconciliation and fail-closed parity checks.
-4. Implement the native Market Price freshness layer and Mispricing engine.
-5. Build Portfolio Fit from reconciled live portfolio weights/exposures.
-6. Cut over `Data_Scoring_v2` to Supabase parity with 30/30/25/15 weights.
-7. Re-read portfolio/controller state before any investment recommendation or new sector execution.
+2. Keep Financials queued and eligible under `DISCOVERY`, but do not auto-start it while M2 is the active Main Roadmap priority.
+3. Version the `Revision_Data_v2` component-score rubric for Guidance 30% / Consensus 25% / KPI Acceleration 25% / Margin-FCF 20%.
+4. Version the Chase component-score rubric for Price Extension 25% / Price vs Revision 30% / Multiple Expansion 25% / Price vs FV 20%, with Chase Risk Max 60.
+5. Use already traceable consensus/earnings/valuation/price evidence plus explicitly defined Chase raw inputs; do not invent missing scores.
+6. Recompute PINS/RDDT immutable Revision/Chase/decision snapshots and run fail-closed regressions.
+7. If M2 Promotion parity passes, advance to M3 Opportunity & Capital Allocation; otherwise keep the affected candidate blocked and record the exact unresolved dependency.
 
-The six remaining model-debt items stay fail-closed and can be resolved opportunistically or when the controller/bottleneck promotes them again. M3 Rebalancing depends on M2 portfolio-state, price, mispricing and portfolio-fit outputs.
+The six remaining model-debt items remain fail-closed and can be resolved opportunistically or when the controller/bottleneck promotes them again.
 
 ---
 
 # AI ROADMAP UPDATE CONTRACT
 
-Every AI agent or automation performing a **material system change** must:
+Every AI agent or automation performing a material system change must:
 
 ### Before work
 
 1. Read `AGENTS.md`.
 2. Read `contracts/system-contract.yaml`.
 3. Read `VERSION`.
-4. Read this file, `docs/00_SYSTEM_ROADMAP.md`.
-5. Read the live `System_Foundation` and relevant run/controller state.
-6. Confirm compatibility and resolve any drift before changing production logic.
+4. Read this file.
+5. Read live `System_Foundation` and relevant controller state.
+6. Resolve documentation drift before changing production logic.
 
 ### After work
 
-Update this roadmap in the same workstream when the change materially affects any of the following:
-
-- milestone or task status;
-- current system capability;
-- current bottleneck / blocker;
-- authority or cutover state;
-- current execution queue / next action;
-- sector-run state where it changes the project’s next action;
-- contract/foundation compatibility;
-- completed implementation that changes what the next AI should do.
-
-Do **not** update this file for trivial wording changes or routine evidence refreshes that do not change project status.
+Update this roadmap when milestone status, capability, blockers, authority/cutover state, next action, sector-run state, or contract/foundation compatibility materially changes.
 
 ### Drift rule
 
-If live state conflicts with this roadmap:
-
-- live state wins;
-- do not silently keep the stale roadmap value;
-- correct the roadmap during the same material workstream;
-- if the conflict cannot be resolved safely, mark the affected action `BLOCKED - DOCUMENTATION DRIFT` rather than guessing.
+Live state wins. If a conflict cannot be resolved safely, use `BLOCKED - DOCUMENTATION DRIFT` rather than guessing.
 
 ---
 
 # Change Log
 
+## 2026-09-05 — M2.1–M2.4 core live / consensus evidence recovered
+
+- Reconciled 29/29 portfolio transactions and 16/16 positions into private Supabase portfolio state; snapshot approximately THB 340,906.10.
+- Activated native Market Price / Mispricing, reconciled Portfolio Fit, and native 30/30/25/15 core scoring.
+- PINS core score = 87.60 and Mispricing Gate PASS; RDDT core score = 72.15 and remains GOOD COMPANY — WAIT FOR VALUE.
+- Added traceable same-provider FY2026 EPS consensus snapshots: PINS +6.7708% and RDDT +8.6598%; consensus evidence gate now passes.
+- Preserved fail-closed behavior: Revision remains blocked until a versioned component-score rubric exists; Chase remains blocked until its raw-data definitions and score mapping are versioned and populated.
+- Synchronized `Revision_Data_v2` and `System_Foundation` to reflect M2.1–M2.4 core-live state and the narrowed Promotion blocker.
+- No trades were executed.
+
 ## 2026-09-05 — M1 core hardening PASS / Digital Ads model PASS
 
 - Upgraded research pipeline controller/cache semantics to RPV2.1.
 - Added exact provenance validation, read-time freshness aging, legacy Sheet date parsing and later-material-event invalidation.
-- Corrected the `MODEL_FACTORY_AFTER_CURRENT_SECTOR` completion boundary and added behavioral negative regressions.
-- Removed five legacy `#VALUE!` errors in `Sector_Universe` without inventing missing scores; incomplete numeric inputs now remain blank/fail-closed.
-- Implemented `DIGITAL_ADS_FCF_REVERSE_DCF_V1` v1.0 for RDDT/PINS on `FCF_COMPOUNDER`; 9/9 normalized metrics and independent regressions PASS.
-- Closed `BLK-COMM-DADS-MDL-001` while preserving current-price/mispricing as a downstream M2 gate.
-- Decision coverage improved from 61.1% (11/18) to 72.2% (13/18); controller returned to `DISCOVERY`; open root model debt fell from seven to six.
-- Advanced Main Roadmap priority to M2 Decision Intelligence. Financials remains queued, not automatically started.
+- Corrected `MODEL_FACTORY_AFTER_CURRENT_SECTOR` completion boundary and added behavioral negative regressions.
+- Implemented `DIGITAL_ADS_FCF_REVERSE_DCF_V1` v1.0 for RDDT/PINS on `FCF_COMPOUNDER`; 9/9 normalized metrics and regressions PASS.
+- Decision coverage improved from 61.1% to 72.2%; open root model debt fell from seven to six.
+- Advanced Main Roadmap priority to M2. Financials remains queued, not automatically started.
 
 ## 2026-09-05 — Portfolio tracker migration dependency recorded
 
 - Designated `Investment Portfolio Tracker - Chumponphat` as the portfolio-side migration source for M2/M3.
 - Added Supabase Portfolio State migration before Portfolio Fit / Rebalancing cutover.
 - Added M3 No-Sell / Soft Rebalance / Active Rebalance scenario requirement with trim/add and expected-upside comparison.
-- Added a retirement guard: do not delete/retire the portfolio tracker until transaction/position/cost-basis/allocation reconciliation passes.
-- Target post-cutover role for the Sheet is read-only reconciliation / audit / export / archive.
+- Added retirement guard for the portfolio tracker until reconciliation/cutover criteria pass.
 
 ## 2026-09-05 — Recover Communication Services closeout
 
 - Reconciled completed Supabase research with the previously RUNNING Sheets controller.
-- Restored the 20-name universe, run history and three Communication Services blockers.
-- Corrected coverage to 61.1%, root blockers to seven and next action to controller-required model work.
-- Added a read-only closeout checker and failure-case tests.
-- Kept M1 hardening, M2, M3 and M4 open; no claim of whole-project completion.
+- Restored the 20-name universe, run history and Communication Services blockers.
+- Added read-only closeout checker and failure-case tests.
 
 ## 2026-09-05 — Master roadmap introduced
 
-- Created a persistent Main Roadmap / Side Quest tracker.
-- Made Research Pipeline v2 the immediate main priority before Communication Services.
-- Recorded live 73.3% decision coverage and DISCOVERY operating mode.
-- Recorded four current root model-debt side quests.
-- Added mandatory AI roadmap read/update governance.
+- Created persistent Main Roadmap / Side Quest tracker.
+- Added mandatory roadmap read/update governance.
