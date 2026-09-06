@@ -1,5 +1,8 @@
 -- PAYMENT_NETWORK_FCF_DCF_V1 deterministic acceptance
 -- Run after implementation migration and before activation migration.
+-- Visa-like arithmetic fixture refreshed from the 2026-06-30 10-Q:
+-- LTM FCF 21.013B; net cash -9.916B = cash 12.359 + marketable securities 1.583 - carrying debt 23.858;
+-- as-converted Class A equivalent shares 1.880B. These are regression fixtures, not a recommendation.
 
 insert into fwios.decision_policy_regression_runs(regression_id,policy_key,policy_version_id,test_case,status,notes)
 select 'REG-PAYNET-MDL-01','VALUATION_MODEL','PAYMENT_NETWORK_FCF_DCF_V1::1.0','Version is installed in experimental state',
@@ -16,28 +19,28 @@ on conflict(regression_id) do update set status=excluded.status,notes=excluded.n
 
 insert into fwios.decision_policy_regression_runs(regression_id,policy_key,policy_version_id,test_case,status,notes)
 select 'REG-PAYNET-MDL-03','VALUATION_MODEL','PAYMENT_NETWORK_FCF_DCF_V1::1.0','Bear fixture is deterministic',
-       case when abs(fwios.payment_network_fcf_dcf_fv_v1(21.013,-10.066,1898,0.07,0.04,0.10,0.03)-193.72850797) < 0.0001 then 'PASS' else 'FAIL' end,
-       'Fixture uses Visa-like normalized inputs only to verify arithmetic; it is not a market recommendation.'
+       case when abs(fwios.payment_network_fcf_dcf_fv_v1(21.013,-9.916,1880,0.07,0.04,0.10,0.03)-195.66314262) < 0.0001 then 'PASS' else 'FAIL' end,
+       'Current Visa-like normalized fixture verifies arithmetic only; not a market recommendation.'
 on conflict(regression_id) do update set status=excluded.status,notes=excluded.notes,created_at=now();
 
 insert into fwios.decision_policy_regression_runs(regression_id,policy_key,policy_version_id,test_case,status,notes)
 select 'REG-PAYNET-MDL-04','VALUATION_MODEL','PAYMENT_NETWORK_FCF_DCF_V1::1.0','Base fixture is deterministic',
-       case when abs(fwios.payment_network_fcf_dcf_fv_v1(21.013,-10.066,1898,0.10,0.06,0.09,0.035)-294.59357804) < 0.0001 then 'PASS' else 'FAIL' end,
+       case when abs(fwios.payment_network_fcf_dcf_fv_v1(21.013,-9.916,1880,0.10,0.06,0.09,0.035)-297.49394208) < 0.0001 then 'PASS' else 'FAIL' end,
        'Base arithmetic is pinned for regression safety.'
 on conflict(regression_id) do update set status=excluded.status,notes=excluded.notes,created_at=now();
 
 insert into fwios.decision_policy_regression_runs(regression_id,policy_key,policy_version_id,test_case,status,notes)
 select 'REG-PAYNET-MDL-05','VALUATION_MODEL','PAYMENT_NETWORK_FCF_DCF_V1::1.0','Bull fixture is deterministic',
-       case when abs(fwios.payment_network_fcf_dcf_fv_v1(21.013,-10.066,1898,0.12,0.08,0.0825,0.04)-438.77232796) < 0.0001 then 'PASS' else 'FAIL' end,
+       case when abs(fwios.payment_network_fcf_dcf_fv_v1(21.013,-9.916,1880,0.12,0.08,0.0825,0.04)-443.05312684) < 0.0001 then 'PASS' else 'FAIL' end,
        'Bull arithmetic is pinned for regression safety.'
 on conflict(regression_id) do update set status=excluded.status,notes=excluded.notes,created_at=now();
 
 insert into fwios.decision_policy_regression_runs(regression_id,policy_key,policy_version_id,test_case,status,notes)
 select 'REG-PAYNET-MDL-06','VALUATION_MODEL','PAYMENT_NETWORK_FCF_DCF_V1::1.0','Scenario ordering is monotonic',
-       case when fwios.payment_network_fcf_dcf_fv_v1(21.013,-10.066,1898,0.07,0.04,0.10,0.03)
-                  < fwios.payment_network_fcf_dcf_fv_v1(21.013,-10.066,1898,0.10,0.06,0.09,0.035)
-              and fwios.payment_network_fcf_dcf_fv_v1(21.013,-10.066,1898,0.10,0.06,0.09,0.035)
-                  < fwios.payment_network_fcf_dcf_fv_v1(21.013,-10.066,1898,0.12,0.08,0.0825,0.04)
+       case when fwios.payment_network_fcf_dcf_fv_v1(21.013,-9.916,1880,0.07,0.04,0.10,0.03)
+                  < fwios.payment_network_fcf_dcf_fv_v1(21.013,-9.916,1880,0.10,0.06,0.09,0.035)
+              and fwios.payment_network_fcf_dcf_fv_v1(21.013,-9.916,1880,0.10,0.06,0.09,0.035)
+                  < fwios.payment_network_fcf_dcf_fv_v1(21.013,-9.916,1880,0.12,0.08,0.0825,0.04)
             then 'PASS' else 'FAIL' end,
        'Bear < Base < Bull.'
 on conflict(regression_id) do update set status=excluded.status,notes=excluded.notes,created_at=now();
