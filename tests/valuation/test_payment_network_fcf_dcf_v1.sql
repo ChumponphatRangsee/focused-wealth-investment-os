@@ -1,5 +1,5 @@
 -- PAYMENT_NETWORK_FCF_DCF_V1 deterministic acceptance
--- Run after implementation migration and before activation migration.
+-- Run after implementation + valuation-governance migrations and before activation migration.
 -- Visa-like arithmetic fixture refreshed from the 2026-06-30 10-Q:
 -- LTM FCF 21.013B; net cash -9.916B = cash 12.359 + marketable securities 1.583 - carrying debt 23.858;
 -- as-converted Class A equivalent shares 1.880B. Fixtures validate arithmetic only.
@@ -35,14 +35,14 @@ with model as (
          '{"fv":297.49394208}'::jsonb,
          jsonb_build_object('fv',fwios.payment_network_fcf_dcf_fv_v1(f.fcf_b,f.net_cash_b,f.shares_m,0.10,0.06,0.09,0.035)),
          case when abs(fwios.payment_network_fcf_dcf_fv_v1(f.fcf_b,f.net_cash_b,f.shares_m,0.10,0.06,0.09,0.035)-297.49394208)<0.0001 then 'PASS' else 'FAIL' end,
-         0.0001,'Base arithmetic pinned for regression safety.' from fixture f
+         0.0001,'Base arithmetic is pinned for regression safety.' from fixture f
   union all
   select 'REG-PAYNET-MDL-05','Bull fixture is deterministic',
          jsonb_build_object('fcf_b',f.fcf_b,'net_cash_b',f.net_cash_b,'shares_m',f.shares_m,'g1_5',0.12,'g6_10',0.08,'r',0.0825,'tg',0.04),
          '{"fv":443.05312684}'::jsonb,
          jsonb_build_object('fv',fwios.payment_network_fcf_dcf_fv_v1(f.fcf_b,f.net_cash_b,f.shares_m,0.12,0.08,0.0825,0.04)),
          case when abs(fwios.payment_network_fcf_dcf_fv_v1(f.fcf_b,f.net_cash_b,f.shares_m,0.12,0.08,0.0825,0.04)-443.05312684)<0.0001 then 'PASS' else 'FAIL' end,
-         0.0001,'Bull arithmetic pinned for regression safety.' from fixture f
+         0.0001,'Bull arithmetic is pinned for regression safety.' from fixture f
   union all
   select 'REG-PAYNET-MDL-06','Scenario ordering is monotonic',
          '{}'::jsonb,'{"ordering":"bear<base<bull"}'::jsonb,
@@ -89,7 +89,7 @@ with model as (
 insert into fwios.decision_policy_regression_runs(
   regression_id,policy_key,policy_version_id,test_case,input_payload,expected_payload,actual_payload,status,tolerance,notes
 )
-select regression_id,'VALUATION_MODEL','PAYMENT_NETWORK_FCF_DCF_V1::1.0',test_case,input_payload,expected_payload,actual_payload,status,tolerance,notes
+select regression_id,'VALUATION_MODEL','POL-VALUATION-MODEL-GOVERNANCE-V1',test_case,input_payload,expected_payload,actual_payload,status,tolerance,notes
 from results
 on conflict(regression_id) do update set
   policy_key=excluded.policy_key,
