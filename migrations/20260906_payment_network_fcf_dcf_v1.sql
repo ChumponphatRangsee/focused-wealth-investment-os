@@ -47,7 +47,7 @@ values(
   'PAYMENT_NETWORK_FCF_DCF_V1::1.0',
   'PAYMENT_NETWORK_FCF_DCF_V1',
   '1.0',
-  'VALIDATING',
+  'EXPERIMENTAL',
   'FCF_COMPOUNDER',
   '{
     "required_metrics":["payments_volume_growth","cross_border_growth","take_rate","operating_margin","fcf_ltm","net_cash","shares_outstanding"],
@@ -75,7 +75,7 @@ values(
     "bull":{"growth_y1_5":0.12,"growth_y6_10":0.08,"discount_rate":0.0825,"terminal_growth":0.04},
     "assumption_rationale":"Near-term growth is anchored below/around verified payment-network operating growth and explicitly decays over years 6-10; discount rates retain a material premium over the current risk-free backdrop."
   }'::jsonb,
-  'VALIDATING',
+  'EXPERIMENTAL_V1',
   'NOT_RUN',
   '2026-09-06',
   'github',
@@ -94,10 +94,10 @@ on conflict(version_id) do update set
   source_ref=excluded.source_ref;
 
 update fwios.valuation_models
-set production_status='IMPLEMENTED_VALIDATING',
+set production_status='CONFIGURED_NOT_IMPLEMENTED',
     model_version='1.0',
     regression_status='NOT_RUN',
-    confidence_status='VALIDATING',
-    notes='Payment Network FCF DCF implementation installed; activation requires deterministic regression PASS.',
+    confidence_status='EXPERIMENTAL_V1',
+    notes='Payment Network FCF DCF implementation installed in experimental state; activation requires deterministic regression PASS.',
     updated_at=now()
 where model_id='PAYMENT_NETWORK_FCF_DCF_V1';
