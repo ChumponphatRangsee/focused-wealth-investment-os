@@ -2,8 +2,8 @@
 -- Run after implementation migration and before activation migration.
 
 insert into fwios.decision_policy_regression_runs(regression_id,policy_key,policy_version_id,test_case,status,notes)
-select 'REG-PAYNET-MDL-01','VALUATION_MODEL','PAYMENT_NETWORK_FCF_DCF_V1::1.0','Version is installed in validating state',
-       case when exists(select 1 from fwios.valuation_model_versions where version_id='PAYMENT_NETWORK_FCF_DCF_V1::1.0' and status='VALIDATING') then 'PASS' else 'FAIL' end,
+select 'REG-PAYNET-MDL-01','VALUATION_MODEL','PAYMENT_NETWORK_FCF_DCF_V1::1.0','Version is installed in experimental state',
+       case when exists(select 1 from fwios.valuation_model_versions where version_id='PAYMENT_NETWORK_FCF_DCF_V1::1.0' and status='EXPERIMENTAL') then 'PASS' else 'FAIL' end,
        'Production activation must occur only after this suite passes.'
 on conflict(regression_id) do update set status=excluded.status,notes=excluded.notes,created_at=now();
 
