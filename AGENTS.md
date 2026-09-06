@@ -89,24 +89,51 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 
 AI must never retune deterministic gates ad hoc to make a name pass.
 
-## 9. Current Communication Services decision state
-Quality-hardening regressions: **20/20 PASS**; live verification: **11/11 PASS**.
+## 9. Current Communication Services decision state — REVALIDATED
+Base Quality-Hardening suite remains **20/20 PASS**; downstream production verification remains **11/11 PASS**; Communication Services quality-filter acceptance is **8/8 PASS**.
 
-PINS is no longer Immediate:
-- Hardening snapshot: `HARD-PINS-20260906-V1`
-- Expected Return score: 100 → **40**
-- Core score: 87.6 → **69.6**
-- Hardening: **BLOCKED**
+PINS current immutable lineage:
+- Hardening: `HARD-PINS-20260906-V2`
+- Score: `SCORE-PINS-QH-20260906-V2`
+- Decision: `DEC-PINS-QH-20260906-V2`
+- Business / Thesis: 82
+- Expected Return: **77.5000**
+- Core: **80.8500**
+- Valuation confidence: **0.7750**
+- Durability: **PASS**
+- Owner Earnings: **REVIEW**
+- Value Trap: **REVIEW**
+- Valuation Robustness: **REVIEW**
+- Overall Hardening: **REVIEW**
 - Bucket: **WATCHLIST_MODEL_REVIEW**
-- Reason: durability, owner-earnings/dilution, extreme-mispricing counter-thesis and valuation-robustness evidence are incomplete.
 
-RDDT remains:
-- Expected Return score: **24.7607**
-- Core score: **66.0782**
+Interpretation: verified FY2022–FY2025 revenue durability and sustained user growth prove the business is not rejected merely because the share chart is weak. However, material SBC, owner-economics/buyback sustainability, extreme-mispricing counter-thesis and valuation robustness remain unresolved enough to prevent Immediate promotion.
+
+RDDT current immutable lineage:
+- Hardening: `HARD-RDDT-20260906-V2`
+- Score: `SCORE-RDDT-QH-20260906-V2`
+- Decision: `DEC-RDDT-QH-20260906-V2`
+- Business / Thesis: 88
+- Expected Return: **41.6431**
+- Core: **71.1429**
+- Valuation confidence: **0.9250**
+- Durability: **PASS** via explicitly verified 8-quarter alternative anchor
+- Owner Earnings: **PASS**
+- Value Trap: **PASS**
+- Valuation Robustness: **REVIEW**
 - Bucket: **WATCHLIST_VALUE_WAIT**
-- Mispricing remains insufficient; hardening is also incomplete before any future Immediate promotion.
+- Mispricing: **FAIL - INSUFFICIENT MISPRICING**
 
-Current Immediate count = **0**. New-cash preview with no Immediate candidate must HOLD CASH.
+Interpretation: RDDT is explicitly recognized as a high-quality operating business while remaining unattractive at the current valuation. Business quality and buy eligibility are separate dimensions.
+
+NFLX regression anchor:
+- Business / quality score: **94**
+- Evidence: PASS
+- Valuation: **BLOCKED - MODEL NOT IMPLEMENTED**
+
+Interpretation: missing valuation-model coverage must not downgrade a high-quality business into a low-quality classification.
+
+Current Immediate count = **0**. New-cash preview with THB 50,000 continues to HOLD CASH rather than force-fill.
 
 ## 10. Opportunity Ranking v2 — PASS / LIVE
 Policy `POL-OPPORTUNITY-RANKING-V2`.
@@ -116,7 +143,7 @@ Policy `POL-OPPORTUNITY-RANKING-V2`.
 - Otherwise → EXCLUDED
 - Priority remains Core Score; max Immediate 3 / Watchlist 5; no force-fill.
 
-Current run: `OPPRANK-QH-20260906-01`.
+Current run: `OPPRANK-QH-REVAL-20260906-02`.
 
 ## 11. M3.2 New-Cash Allocation — PASS / LIVE
 `POL-NEW-CASH-ALLOCATION-V1`; 20/20 regressions. New cash first, Immediate Stock candidates only, max one deployed asset/run, starter cap 5% post-money, residual cash held, non-mutating.
@@ -159,36 +186,47 @@ Supabase private dashboard read models remain the source; Google Sheet is downst
 Auto-refresh:
 `dashboard read models → dashboard_refresh_payload_v1() → dashboard-refresh-csv-v1 → IMPORTDATA → _Data → Dashboard`.
 
-Dashboard read-model regressions 17/17 PASS; auto-refresh 14/14 PASS. Current refresh payload remains PASS and Current Action is `NO_ACTIONABLE_OPPORTUNITY`.
+Dashboard read-model regressions 17/17 PASS; auto-refresh 14/14 PASS. Current Action remains `NO_ACTIONABLE_OPPORTUNITY`.
 
 Do not describe auto-pull as guaranteed realtime or 24/7 closed-file streaming.
 
-## 17. Fail-closed rule
+## 17. Legacy Google Sheets surface — REDUCED
+`US_Stock_Sector_Business_Model_Screener` is retained for compatibility/audit/research but is no longer a parallel production authority.
+
+Visible operational tabs are reduced to **6**:
+- `Sector_Scan`
+- `Sector_Run_Control`
+- `Thesis Monitor`
+- `System_Foundation`
+- `Evidence_Ledger`
+- `Data_Quality_Gates`
+
+Duplicate production/config surfaces are hidden, not deleted. Historical evidence, formulas and reconciliation lineage remain available.
+
+## 18. Fail-closed rule
 Missing, stale, conflicting, schema-invalid, unverified, provenance-free, policy-incomplete **or quality-hardening-incomplete** critical data => BLOCKED.
 
 Never force-fill. Historical return cannot substitute expected return. Rejected/expired/stale/non-actionable approval packets cannot execute.
 
-## 18. Research/controller
-Communication Services remains completed, but its decision layer is under hardened evidence revalidation. Financials stays queued and sector automation stays PAUSED while this work has priority.
+## 19. Research/controller
+Communication Services research is complete and its quality filter has passed the 8/8 acceptance suite. Financials remains queued but sector automation stays **PAUSED** by explicit user instruction. Do not start Part 3 automatically.
 
-## 19. Immediate next action
-**Collect Quality-Hardening Evidence + Revalidate Communication Services.**
+## 20. Immediate next action
+**HOLD — Part 1 and Part 2 are complete. Financials remains PAUSED pending explicit user resume.**
 
-For PINS/RDDT collect verified:
-- >=3-year durable growth / KPI anchors;
-- SBC, dilution, buyback and owner-earnings reconciliation;
-- value-trap / structural counter-thesis evidence where required;
-- conservative valuation robustness evidence.
+Quality-filter proof must be preserved:
+- RDDT = quality passes on durability/owner/value-trap dimensions but remains Value-Wait because valuation is insufficient;
+- PINS = durability passes but unresolved owner/value-trap/robustness concerns keep it Model-Review;
+- NFLX = high-quality classification survives missing valuation-model coverage;
+- zero Immediate candidates means hold cash, not force-fill.
 
-Then generate new immutable hardening/score/Decision Snapshots and rerank. Only after this should we resume Financials or return to legacy reduction.
-
-## 20. Documentation handshake
+## 21. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
 
-## 21. Regression discipline
+## 22. Regression discipline
 Changes to normalization, valuation, hardening, scoring, Decision Snapshots, ranking, allocation, scenario, rebalancing, approval or dashboard semantics require deterministic regressions. Reference names include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS and NVDA.
 
-## 22. Source precedence
+## 23. Source precedence
 1. Latest reconciled portfolio data
 2. Focused Wealth-Building rules
 3. Production policy/hardening state

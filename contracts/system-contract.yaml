@@ -60,18 +60,11 @@ quality_hardening_v1:
   policy_version_id: POL-QUALITY-HARDENING-V1
   status: ACTIVE
   promotion_requires_all_gates_pass: true
-  gates:
-    - BUSINESS_DURABILITY
-    - OWNER_EARNINGS
-    - VALUE_TRAP
-    - VALUATION_ROBUSTNESS
-  confidence_map:
-    PASS: 1.00
-    REVIEW: 0.70
-    BLOCKED: 0.40
-    FAIL: 0.00
+  gates: [BUSINESS_DURABILITY, OWNER_EARNINGS, VALUE_TRAP, VALUATION_ROBUSTNESS]
+  confidence_map: {PASS: 1.00, REVIEW: 0.70, BLOCKED: 0.40, FAIL: 0.00}
   valuation_confidence_method: mean_four_gate_factors
   durability_anchor_min_years: 3
+  explicitly_verified_alternative_durability_anchor_allowed: true
   owner_earnings:
     sbc_clean_pass_max: 0.10
     sbc_reconciliation_required_above: 0.10
@@ -83,7 +76,9 @@ quality_hardening_v1:
   bear_case_fail_below: -0.50
   long_horizon_price_weakness_role: review_trigger_only
   missing_critical_evidence: BLOCKED
-  regressions: "20/20 PASS"
+  base_regressions: "20/20 PASS"
+  production_verification: "11/11 PASS"
+  comm_services_quality_filter_acceptance: "8/8 PASS"
 
 expected_return_v3:
   continuous_upside_score: "clamp(50 + 100 * upside, 0, 100)"
@@ -118,39 +113,50 @@ opportunity_ranking_v2:
   watchlist_value_wait_rule: "mispricing insufficient while other required gates pass"
   watchlist_model_review_rule: "mispricing PASS but quality hardening not PASS"
   capital_eligible_buckets: [IMMEDIATE_BUY_CANDIDATE]
-  current_run_id: OPPRANK-QH-20260906-01
+  current_run_id: OPPRANK-QH-REVAL-20260906-02
   current_immediate_count: 0
   current_candidates:
     PINS: WATCHLIST_MODEL_REVIEW
     RDDT: WATCHLIST_VALUE_WAIT
 
 pins_hardening_snapshot:
-  hardening_snapshot_id: HARD-PINS-20260906-V1
-  decision_snapshot_id: DEC-PINS-QH-20260906-V1
-  score_snapshot_id: SCORE-PINS-QH-20260906-V1
-  business_durability_gate: BLOCKED
-  owner_earnings_gate: BLOCKED
-  value_trap_gate: BLOCKED
-  valuation_robustness_gate: BLOCKED
-  valuation_confidence: 0.40
+  hardening_snapshot_id: HARD-PINS-20260906-V2
+  decision_snapshot_id: DEC-PINS-QH-20260906-V2
+  score_snapshot_id: SCORE-PINS-QH-20260906-V2
+  business_durability_gate: PASS
+  owner_earnings_gate: REVIEW
+  value_trap_gate: REVIEW
+  valuation_robustness_gate: REVIEW
+  hardening_gate: REVIEW
+  valuation_confidence: 0.775
   sbc_to_revenue_approx: 0.2243
-  expected_return_score_previous: 100
-  expected_return_score_current: 40
-  core_score_previous: 87.6
-  core_score_current: 69.6
+  expected_return_score_current: 77.5000
+  core_score_current: 80.8500
   opportunity_bucket: WATCHLIST_MODEL_REVIEW
-  reason: "Large modeled mispricing is not sufficient for Immediate promotion without verified multi-year durability, owner-earnings/dilution reconciliation, counter-thesis evidence and robust valuation anchors."
+  quality_interpretation: "Verified multi-year durability exists, but owner economics, extreme-mispricing counter-thesis and valuation robustness remain review items; high DCF upside cannot create Immediate status."
 
 rddt_hardening_snapshot:
-  hardening_snapshot_id: HARD-RDDT-20260906-V1
-  decision_snapshot_id: DEC-RDDT-QH-20260906-V1
-  score_snapshot_id: SCORE-RDDT-QH-20260906-V1
-  hardening_gate: BLOCKED
-  valuation_confidence: 0.55
-  expected_return_score_current: 24.7607
-  core_score_current: 66.0782
+  hardening_snapshot_id: HARD-RDDT-20260906-V2
+  decision_snapshot_id: DEC-RDDT-QH-20260906-V2
+  score_snapshot_id: SCORE-RDDT-QH-20260906-V2
+  business_durability_gate: PASS
+  owner_earnings_gate: PASS
+  value_trap_gate: PASS
+  valuation_robustness_gate: REVIEW
+  hardening_gate: REVIEW
+  valuation_confidence: 0.925
+  expected_return_score_current: 41.6431
+  core_score_current: 71.1429
   opportunity_bucket: WATCHLIST_VALUE_WAIT
   mispricing_gate: "FAIL - INSUFFICIENT MISPRICING"
+  quality_interpretation: "High-quality operating profile is recognized independently from current valuation attractiveness."
+
+nflx_quality_regression_anchor:
+  quality_score: 94
+  business_thesis_score: 94
+  evidence_gate: PASS
+  valuation_gate: "BLOCKED - MODEL NOT IMPLEMENTED"
+  invariant: "missing valuation-model coverage does not imply low business quality"
 
 new_cash_allocation_v1:
   policy_version_id: POL-NEW-CASH-ALLOCATION-V1
@@ -235,8 +241,17 @@ dashboard_auto_refresh_v1:
   edge_function: dashboard-refresh-csv-v1
   semantics: AUTO_PULL_NOT_GUARANTEED_REALTIME
   regressions: "14/14 PASS"
-  latest_payload_gate_after_hardening: PASS
   latest_current_action: NO_ACTIONABLE_OPPORTUNITY
+
+legacy_google_sheets:
+  spreadsheet_id: 1Oxp7Vm_F510Idy7JWxOkerz8VGPUgWt7tFGuUjWFLfY
+  role: VIEW_COMPATIBILITY_RECONCILIATION_AUDIT_EXPORT
+  reduction_status: PASS
+  data_deleted: false
+  visible_operational_tab_count: 6
+  visible_tabs: [Sector_Scan, Sector_Run_Control, Thesis_Monitor, System_Foundation, Evidence_Ledger, Data_Quality_Gates]
+  duplicate_production_surfaces_hidden: true
+  primary_monitoring_surface: "Focused Wealth Dashboard - Chumponphat"
 
 fail_closed:
   missing_critical_data: BLOCKED
@@ -256,42 +271,8 @@ fail_closed:
 
 sector_loop:
   current_sector: Communication Services
+  current_quality_filter_status: PASS_8_OF_8
   next_sector_snapshot: Financials
   automation_mode: PAUSED
-  pause_reason: QUALITY_HARDENING_EVIDENCE_REVALIDATION_PRIORITY
-
-freshness:
-  stock_market_data: latest_market_session_for_screening
-  pre_trade_price_verification: broker_required
-  fundamentals: latest_reported_quarter
-  new_earnings_after_research: BLOCKED
-  approval_packet: min_changed_asset_price_freshness
-  dashboard_snapshot: must_show_source_observed_at_and_batch_status
-
-security:
-  private_schema: fwios
-  anon_authenticated_privileges: revoked
-  rls_defense_in_depth: true
-  service_role_internal_execution: true
-  security_invoker_views_required: true
-
-post_m3_next_action:
-  id: COLLECT_QUALITY_HARDENING_EVIDENCE_AND_REVALIDATE_COMMUNICATION_SERVICES
-  scope: "Collect verified multi-year durability, owner-earnings/dilution, counter-thesis and valuation-robustness evidence for PINS/RDDT; rerun hardened scoring before resuming Financials or legacy reduction."
-
-documentation_handshake:
-  repository: ChumponphatRangsee/focused-wealth-investment-os
-  required_files: [AGENTS.md, contracts/system-contract.yaml, VERSION, docs/00_SYSTEM_ROADMAP.md, docs/01_SYSTEM_ARCHITECTURE.md]
-  block_material_work_on_version_mismatch: true
-  roadmap_update_after_material_change: true
-
-regressions:
-  reference_tickers: [ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS, NVDA]
-  quality_hardening_stored: "20/20 PASS"
-  quality_hardening_production_verification: "11/11 PASS"
-  m3_new_cash_allocation_pass: "20/20"
-  m3_portfolio_scenario_pass: "28/28"
-  m3_rebalance_pass: "12/12"
-  m3_human_approval_cutover_pass: "30/30"
-  dashboard_read_model_pass: "17/17"
-  dashboard_auto_refresh_pass: "14/14"
+  pause_reason: USER_HOLD_AFTER_PART1_PART2
+  auto_resume_allowed: false
