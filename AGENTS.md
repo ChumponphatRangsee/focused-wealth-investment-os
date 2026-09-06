@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.10**  
+Contract version: **FWIOS-CONTRACT-0.87.11**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -28,8 +28,9 @@ Live portfolio/system/controller state overrides stale documentation.
 5. Prefer primary company/SEC/IR evidence for canonical facts.
 6. Check concentration and crypto exposure.
 7. Challenge FOMO, anchoring, confirmation bias and narrative-driven reasoning.
-8. Use latest Decision Snapshot, Opportunity Ranking, New-Cash Allocation, Scenario, Rebalance and Human Approval policies where applicable.
-9. Broker-verify price before any real trade decision.
+8. Clear **Quality / Durability Hardening** before treating a candidate as Immediate.
+9. Use latest Decision Snapshot, Opportunity Ranking, New-Cash Allocation, Scenario, Rebalance and Human Approval policies where applicable.
+10. Broker-verify price before any real trade decision.
 
 ## 4. Portfolio guardrails
 - Prefer 5–8 meaningful positions.
@@ -39,147 +40,160 @@ Live portfolio/system/controller state overrides stale documentation.
 - Never trim merely because a position appreciated.
 - Max 5 active watchlist candidates; max 3 immediate buy candidates.
 - Actual new purchase per decision cycle is normally 0–1.
-- M3 cutover is PASS. Legacy Sheets may be reduced only after the monitoring dashboard preserves required audit access.
+- No force-fill: if nothing clears the gates, hold cash.
 
 ## 5. Production scoring
-Core weights are exactly 30/30/25/15: Business/Thesis 30%, Expected Return/Valuation 30%, Portfolio Fit 25%, Downside/Thesis Risk 15%.
-Revision/catalyst/timing/chase are non-core and cannot override hard gates.
+Core weights remain exactly:
+- Business / Thesis 30%
+- Expected Return / Valuation 30%
+- Portfolio Fit 25%
+- Downside / Thesis Risk 15%
 
-## 6. Production path
-`Source → Evidence → Canonical Facts → Normalized Metrics → Valuation → Market Price/Mispricing + Portfolio State/Fit → Core Scoring → Revision/Chase → Decision Snapshot → Opportunity Ranking → New-Cash Allocation → Portfolio Scenario Simulation → Rebalancing Recommendation → Human Approval`
+Active scoring policy: `POL-DATA-SCORING-V3-DURABILITY` / `FWB-DATA-SCORING-V3-DURABILITY`.
+
+Expected Return v3 is continuous and confidence-adjusted:
+`(60% × base-upside score + 40% × PW-upside score) × valuation confidence`.
+
+`continuous_upside_score(u) = clamp(50 + 100*u, 0, 100)`.
+
+Historical stock return, cost basis, narrative targets or unverified consensus can never substitute for expected return.
+
+## 6. Quality / Durability Hardening — ACTIVE
+Policy: `POL-QUALITY-HARDENING-V1`.
+
+Immediate promotion requires **all four** gates to PASS:
+1. **Business Durability** — point-in-time growth cannot be extrapolated into a multi-year valuation without a verified durability anchor. Default anchor is >=3 years of comparable evidence or an explicitly justified alternative.
+2. **Owner Earnings** — reported FCF must be reconciled with dilution/SBC economics when SBC is material. <=10% SBC/revenue is a clean narrow pass; >10% requires reconciliation; >20% hard review; >30% fail.
+3. **Value Trap** — extreme modeled mispricing (>=75% trigger) requires verified counter-thesis evidence explaining why the market discount is likely wrong. Long-horizon price weakness is only a review trigger.
+4. **Valuation Robustness** — assumptions must remain defensible under conservative scenarios. Bear downside worse than 30% triggers review; worse than 50% fails v1.
+
+Gate confidence factors: PASS 1.0 / REVIEW 0.7 / BLOCKED 0.4 / FAIL 0.0. Missing critical hardening evidence => BLOCKED.
+
+AI must never invent durability, owner-earnings, value-trap or robustness evidence merely to make a candidate pass.
+
+## 7. Production path
+`Source → Evidence → Canonical Facts → Normalized Metrics → Valuation → Market Price/Mispricing + Portfolio State/Fit → Quality/Durability Hardening → Core Scoring → Revision/Chase → Decision Snapshot → Opportunity Ranking → New-Cash Allocation → Portfolio Scenario → Rebalancing Recommendation → Human Approval`.
 
 Facts and assumptions stay separate. Preview/scenario/recommendation/approval functions never place orders or mutate live holdings.
 
-## 7. Production-active deterministic policies
+## 8. Production-active deterministic policies
+- `POL-DATA-SCORING-V3-DURABILITY`
+- `POL-QUALITY-HARDENING-V1`
 - `POL-REVISION-SCORE-V1`
 - `POL-CHASE-SCORE-V1`
-- `POL-OPPORTUNITY-RANKING-V1`
+- `POL-OPPORTUNITY-RANKING-V2`
 - `POL-NEW-CASH-ALLOCATION-V1`
 - `POL-PORTFOLIO-SCENARIO-V1`
 - `POL-REBALANCE-V1`
 - `POL-HUMAN-APPROVAL-V1`
 
-AI must never invent or retune scoring, ranking, allocation, scenario, trim or approval gates to make a candidate pass.
+AI must never retune deterministic gates ad hoc to make a name pass.
 
-## 8. M2 exit
-M2 PASS with 16/16 decision-policy regressions. PINS Promotion PASS / READY - HUMAN REVIEW. RDDT Mispricing FAIL / GOOD COMPANY - WAIT FOR VALUE. READY never means auto-execution.
+## 9. Current Communication Services decision state
+Quality-hardening regressions: **20/20 PASS**; live verification: **11/11 PASS**.
 
-## 9. M3.1 Opportunity Ranking — PASS / LIVE
-`POL-OPPORTUNITY-RANKING-V1`; 8/8 regressions. Priority = Core Score only. PINS Immediate #1; RDDT Value-Wait #1. Max 3 Immediate / 5 Watchlist; never force-fill.
+PINS is no longer Immediate:
+- Hardening snapshot: `HARD-PINS-20260906-V1`
+- Expected Return score: 100 → **40**
+- Core score: 87.6 → **69.6**
+- Hardening: **BLOCKED**
+- Bucket: **WATCHLIST_MODEL_REVIEW**
+- Reason: durability, owner-earnings/dilution, extreme-mispricing counter-thesis and valuation-robustness evidence are incomplete.
 
-## 10. M3.2 New-Cash Allocation — PASS / LIVE
-`POL-NEW-CASH-ALLOCATION-V1`; 20/20 regressions. New cash first, Immediate Stock candidates only, max one deployed asset/run, new-position starter cap 5% post-money, existing-position staged add capped by 30% ceiling, residual `CASH_THB`, non-mutating.
+RDDT remains:
+- Expected Return score: **24.7607**
+- Core score: **66.0782**
+- Bucket: **WATCHLIST_VALUE_WAIT**
+- Mispricing remains insufficient; hardening is also incomplete before any future Immediate promotion.
 
-## 11. M3.3 Portfolio Scenario Simulation — PASS / LIVE
-`POL-PORTFOLIO-SCENARIO-V1`; 28/28 regressions. Modes: `NO_SELL`, `SOFT_REBALANCE`, `ACTIVE_REBALANCE`. ADD traces to active ranking + Decision Snapshot. TRIM must target a current holding, stay within current value and carry explicit economic/risk rationale. Appreciation-only trim rationale is forbidden. Full-portfolio expected upside fails closed when coverage is incomplete.
+Current Immediate count = **0**. New-cash preview with no Immediate candidate must HOLD CASH.
 
-## 12. Semiconductor Designer valuation v1 — production live
-Model: `SEMIS_MIDCYCLE_DCF_V1::1.0`, kernel `FCF_COMPOUNDER`.
-NVDA reference parity: Bear 87.03032203 / Base 166.16708908 / Bull 273.20947981 / PW 173.14349500 at `PX-NVDA-20260904`; `REG-SEMIS-V1-NVDA-PARITY` PASS. This is an opportunity-cost input, not a standalone trim instruction.
+## 10. Opportunity Ranking v2 — PASS / LIVE
+Policy `POL-OPPORTUNITY-RANKING-V2`.
+- Promotion PASS + Hardening PASS → `IMMEDIATE_BUY_CANDIDATE`
+- Mispricing insufficient + other required gates pass → `WATCHLIST_VALUE_WAIT`
+- Mispricing PASS but Hardening not PASS → `WATCHLIST_MODEL_REVIEW`
+- Otherwise → EXCLUDED
+- Priority remains Core Score; max Immediate 3 / Watchlist 5; no force-fill.
 
-## 13. M3.4 Rebalancing Recommendation — PASS / LIVE
-Policy: `POL-REBALANCE-V1`; 12/12 regressions PASS.
-- consume new cash before trim;
-- ADD must be active Immediate with Decision Snapshot valuation;
-- trim source must be a current holding with fresh production valuation and concentration review;
-- minimum PW expected-return edge = 25 percentage points;
-- trim = min(remaining approved candidate capacity, source concentration excess above 30%);
-- never sell more than can be redeployed;
-- 30% is review threshold, not forced target;
-- appreciation-only rationale forbidden;
+Current run: `OPPRANK-QH-20260906-01`.
+
+## 11. M3.2 New-Cash Allocation — PASS / LIVE
+`POL-NEW-CASH-ALLOCATION-V1`; 20/20 regressions. New cash first, Immediate Stock candidates only, max one deployed asset/run, starter cap 5% post-money, residual cash held, non-mutating.
+
+With the current zero-Immediate ranking, allocation preview holds all new cash rather than forcing a candidate.
+
+## 12. M3.3 Portfolio Scenario — PASS / LIVE
+`POL-PORTFOLIO-SCENARIO-V1`; 28/28 regressions. NO_SELL / SOFT_REBALANCE / ACTIVE_REBALANCE. ADD requires active ranking + Decision Snapshot. Appreciation-only trim rationale is forbidden. Full-portfolio expected upside fails closed when valuation coverage is incomplete.
+
+## 13. Holding valuation / M3.4 Rebalancing
+Semiconductor Designer model `SEMIS_MIDCYCLE_DCF_V1::1.0` remains production-live for NVDA lineage.
+
+`POL-REBALANCE-V1`; 12/12 PASS:
+- new cash before trim;
+- ADD requires active Immediate + traceable Decision Snapshot valuation;
+- source trim requires current valuation-covered concentration-review holding;
+- minimum PW expected-return edge 25pp;
+- 30% is a review threshold, not forced target;
+- appreciation-only trim forbidden;
 - human review + broker price verification required.
 
-Synthetic parity remains regression-only; it is never a live trade instruction.
+Because the current ranking has no Immediate candidate, the prior synthetic NVDA→PINS path is not a current actionable path.
 
 ## 14. M3.5 Human Approval / Cutover — PASS / LIVE
-Policy: `POL-HUMAN-APPROVAL-V1`; **30/30 regressions PASS**.
+`POL-HUMAN-APPROVAL-V1`; 30/30 PASS.
 
-Architecture:
 `Immutable Recommendation Snapshot → Immutable Approval Packet → Append-only Approval Event`.
+Only `PRODUCTION_USER_REQUESTED` is approvable. Validation/test scopes are never actionable. Approval does not place broker orders or mutate portfolio accounting.
 
-Rules:
-- only `PRODUCTION_USER_REQUESTED` packets are approvable;
-- `CUTOVER_VALIDATION` and `SYNTHETIC_TEST` can never be approved;
-- APPROVED/REJECTED require HUMAN actor; EXPIRED/STALE require SYSTEM actor;
-- approval requires fingerprint integrity, same current portfolio batch, same active ranking and fresh changed-asset price/valuation lineage;
-- terminal states are APPROVED / REJECTED / EXPIRED / STALE;
-- stale or expired packets require a new recommendation/packet;
-- approval events constrain `broker_order_created=false` and `portfolio_mutation_applied=false`.
+Cutover proof remains 29/29 transactions, 16/16 positions and 9/9 traceability layers PASS.
 
-Cutover validation:
-- 29/29 transactions PASS;
-- 16/16 positions PASS;
-- 9/9 end-to-end traceability layers PASS;
-- validation recommendation `REBAL-M3-CUTOVER-20260905-01` is `CUTOVER_VALIDATION` only;
-- validation packet `APPROVAL-M3-CUTOVER-20260905-01` is `VALIDATION_ONLY`;
-- production-user recommendation count at cutover = 0;
-- human approval-event count at cutover = 0;
-- M3 cutover certificate = PASS.
+## 15. M3 boundary
+M3.1–M3.5 remain **COMPLETE / CUTOVER PASS**. Quality hardening changes candidate eligibility, not the human-execution boundary.
 
-## 15. M3 boundary — COMPLETE
-1. Opportunity Ranking — PASS / LIVE
-2. New-Cash Allocation — PASS / LIVE
-3. Portfolio Scenario Simulation — PASS / LIVE
-4. Rebalancing Recommendation — PASS / LIVE
-5. Human Approval / Cutover — PASS / LIVE
+## 16. Dashboard + Auto Refresh — PASS / LIVE
+Monitoring Sheet: **Focused Wealth Dashboard - Chumponphat** (`17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`).
 
-M3 is complete. A later real approval still does not execute a trade; broker execution remains an explicit human step outside the approval ledger.
+Supabase private dashboard read models remain the source; Google Sheet is downstream/display-only. Account View may change Value/P&L/Holdings display only; risk/fit/rebalancing remain consolidated.
 
-## 16. Dashboard Read Model + Auto Refresh — PASS / LIVE
-Supabase exposes six private `security_invoker` monitoring views:
-- `fwios.v_dashboard_holdings`
-- `fwios.v_dashboard_account_summary`
-- `fwios.v_dashboard_opportunities`
-- `fwios.v_dashboard_current_action`
-- `fwios.v_dashboard_alerts`
-- `fwios.v_dashboard_system_health`
+Auto-refresh:
+`dashboard read models → dashboard_refresh_payload_v1() → dashboard-refresh-csv-v1 → IMPORTDATA → _Data → Dashboard`.
 
-Dashboard read-model regression parity is **17/17 PASS**. Dashboard Auto Refresh v1 regression parity is **14/14 PASS**.
+Dashboard read-model regressions 17/17 PASS; auto-refresh 14/14 PASS. Current refresh payload remains PASS and Current Action is `NO_ACTIONABLE_OPPORTUNITY`.
 
-The monitoring Sheet is **Focused Wealth Dashboard - Chumponphat** (`17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`). It has one visible `Dashboard` tab and one hidden `_Data` tab.
-
-Account View may change only Portfolio Value, P&L and Holdings display. Risk, Portfolio Fit, concentration, crypto and rebalancing decisions always use the consolidated portfolio. Total P&L means latest-batch realized P&L + current open-position unrealized P&L. Google Sheets must not recalculate production scoring, allocation, rebalancing or approval rules.
-
-Auto-refresh architecture:
-`Dashboard read models → fwios.dashboard_refresh_payload_v1() → dashboard-refresh-csv-v1 Edge Function → Google Sheets IMPORTDATA → _Data → Dashboard`.
-
-Refresh rules:
-- `_Data!A1` is the IMPORTDATA entrypoint and `_Data!T100` contains the feed URL;
-- the Edge feed uses a high-entropy custom token because IMPORTDATA cannot send a Supabase Authorization header;
-- Supabase stores only the token SHA-256 hash in private `fwios.dashboard_refresh_access`;
-- current PASS payloads best-effort refresh private `fwios.dashboard_refresh_cache` as last-good state;
-- BLOCKED current payloads serve last-good cache with `STALE_BLOCKED`; if no cache exists, fail instead of fabricating data;
-- the transport cannot mutate portfolio, allocation, scenario, recommendation, approval or broker state;
-- raw feed tokens must never be committed to GitHub and should be rotated if the Sheet is shared beyond trusted editors.
-
-The current Sheet refresh mode is **automatic pull refresh through Google Sheets IMPORTDATA**. This is not push/realtime streaming and Google controls recalculation cadence/background behavior. Do not describe it as guaranteed real-time or guaranteed 24/7 closed-file refresh.
+Do not describe auto-pull as guaranteed realtime or 24/7 closed-file streaming.
 
 ## 17. Fail-closed rule
-Missing, stale, conflicting, schema-invalid, unverified, provenance-free or policy-incomplete critical data => BLOCKED. Never substitute historical return, cost basis, narrative target or unverified consensus for missing expected-return valuation. Never force-fill or bypass hard gates. Rejected, expired, stale or non-actionable approval packets cannot execute.
+Missing, stale, conflicting, schema-invalid, unverified, provenance-free, policy-incomplete **or quality-hardening-incomplete** critical data => BLOCKED.
+
+Never force-fill. Historical return cannot substitute expected return. Rejected/expired/stale/non-actionable approval packets cannot execute.
 
 ## 18. Research/controller
-Communication Services complete; Financials queued. Sector automation remains manually PAUSED while post-dashboard legacy reduction planning is the explicit priority. `fwios.system_events` remains M4 foundation only.
+Communication Services remains completed, but its decision layer is under hardened evidence revalidation. Financials stays queued and sector automation stays PAUSED while this work has priority.
 
-## 19. Post-M3 next action
-**Plan Legacy Reduction, then decide when to resume the Financials sector loop.**
-- Keep Supabase as source of truth.
-- Keep the monitoring Sheet read-only/display-only for production logic.
-- Preserve legacy audit/reconciliation access while reducing duplicated operational surfaces.
-- Do not delete historical evidence, reconciliation or audit records automatically.
+## 19. Immediate next action
+**Collect Quality-Hardening Evidence + Revalidate Communication Services.**
+
+For PINS/RDDT collect verified:
+- >=3-year durable growth / KPI anchors;
+- SBC, dilution, buyback and owner-earnings reconciliation;
+- value-trap / structural counter-thesis evidence where required;
+- conservative valuation robustness evidence.
+
+Then generate new immutable hardening/score/Decision Snapshots and rerank. Only after this should we resume Financials or return to legacy reduction.
 
 ## 20. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
 
 ## 21. Regression discipline
-Changes to normalization, valuation, policies, Decision Snapshots, ranking, allocation, scenario, rebalancing, approval, dashboard read-model semantics or dashboard refresh transport require deterministic regressions. Reference tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS and NVDA.
+Changes to normalization, valuation, hardening, scoring, Decision Snapshots, ranking, allocation, scenario, rebalancing, approval or dashboard semantics require deterministic regressions. Reference names include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS and NVDA.
 
 ## 22. Source precedence
 1. Latest reconciled portfolio data
 2. Focused Wealth-Building rules
-3. Personal Investment Strategist framework
-4. Production system outputs
-5. Current primary-source research
-6. Wall Street consensus
-7. News/social narratives
+3. Production policy/hardening state
+4. Current primary-source research
+5. Wall Street consensus
+6. News/social narratives
 
 Use the higher-priority source when conflicts occur; fail closed when material conflicts remain unresolved.
