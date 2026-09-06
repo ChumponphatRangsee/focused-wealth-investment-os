@@ -2,7 +2,7 @@
 
 Status: **ACTIVE**  
 Live foundation: **0.87**  
-Execution contract: **FWIOS-CONTRACT-0.87.10**  
+Execution contract: **FWIOS-CONTRACT-0.87.11**  
 Last updated: **2026-09-06 Asia/Bangkok**  
 Execution mode: **HUMAN EXECUTION ONLY**
 
@@ -13,143 +13,144 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 | Item | Current state |
 |---|---|
 | Foundation | 0.87 |
-| Contract | FWIOS-CONTRACT-0.87.10 |
+| Contract | FWIOS-CONTRACT-0.87.11 |
 | Portfolio batch | PORTFOLIO-M2-20260905-01 |
 | Portfolio review flags | 10 assets / NVDA ~41.25% / crypto ~38.09% |
-| M2 Decision Intelligence | PASS |
-| M3.1 Opportunity Ranking | PASS / LIVE |
-| M3.2 New-Cash Allocation | PASS / LIVE |
-| M3.3 Scenario Simulation | PASS / LIVE |
-| M3.4 Rebalancing Recommendation | PASS / LIVE |
-| M3.5 Human Approval / Cutover | PASS / LIVE |
-| M3 overall | **COMPLETE / CUTOVER PASS** |
-| Dashboard Read Model v1 | **PASS / LIVE — 17/17** |
-| Dashboard Auto Refresh v1 | **PASS / LIVE — 14/14** |
-| Monitoring Google Sheet | **PRIMARY MONITORING SURFACE / AUTO REFRESH LIVE** |
-| Sector automation | PAUSED — legacy reduction / post-dashboard follow-through |
+| M3.1–M3.5 | **COMPLETE / CUTOVER PASS** |
+| Quality / Durability Hardening v1 | **PASS / LIVE — 20/20 + 11/11 verification** |
+| Data Scoring | **V3 DURABILITY ACTIVE** |
+| Opportunity Ranking | **V2 ACTIVE** |
+| Current Immediate candidates | **0** |
+| PINS | **WATCHLIST_MODEL_REVIEW — core 69.6** |
+| RDDT | **WATCHLIST_VALUE_WAIT — core 66.0782** |
+| Dashboard Read Model | PASS / LIVE — 17/17 |
+| Dashboard Auto Refresh | PASS / LIVE — 14/14 |
+| Monitoring Google Sheet | PRIMARY MONITORING SURFACE / AUTO REFRESH LIVE |
+| Sector automation | PAUSED — quality-hardening evidence revalidation priority |
 | Next queued sector | Financials |
-| Immediate next action | **Plan legacy-surface reduction, then decide when to resume sector loop** |
+| Immediate next action | **Collect hardening evidence + revalidate Communication Services** |
 
 ## M1 — Research Pipeline v2
-**CORE HARDENING PASS / PERFORMANCE VALIDATION OPEN.** Performance optimization remains side work and does not invalidate M2/M3 production capabilities.
+**CORE HARDENING PASS / PERFORMANCE VALIDATION OPEN.** Research/model coverage debt remains fail-closed for affected names.
 
-## M2 — Decision Intelligence
-**PASS.** Revision/Chase active, 16/16 regressions. PINS Promotion PASS / READY - HUMAN REVIEW. RDDT remains Value-Wait because Mispricing FAIL.
+## M2/M3 historical boundary
+M2 and M3 cutover remain valid historical system milestones. M3.1–M3.5 are still LIVE, with human execution only.
 
-## M3.1 — Opportunity Ranking
-**PASS / LIVE.** `POL-OPPORTUNITY-RANKING-V1`, 8/8 regressions. PINS Immediate #1; RDDT Value-Wait #1. Priority = Core Score only; max 3 Immediate / 5 Watchlist; no force-fill.
+However, candidate eligibility has been hardened after the PINS audit. Historical PINS snapshots that previously passed remain immutable audit history; they are superseded by new Quality-Hardening snapshots and are not current trade instructions.
 
-## M3.2 — New-Cash Capital Allocation
-**PASS / LIVE.** `POL-NEW-CASH-ALLOCATION-V1`, 20/20 regressions. New cash first, one deployed asset/run, new-position starter cap 5% post-money, residual cash held, no live mutation.
+## Quality / Durability Hardening v1
+**PASS / PRODUCTION LIVE.**
 
-## M3.3 — Portfolio Scenario Simulation
-**PASS / LIVE.** `POL-PORTFOLIO-SCENARIO-V1`, 28/28 regressions. Modes: NO_SELL / SOFT_REBALANCE / ACTIVE_REBALANCE. Scenario previews never mutate holdings. Full-portfolio expected upside remains fail-closed until every risk asset has valuation coverage.
+New production path:
+`Evidence → Normalization → Valuation/Mispricing → Portfolio Fit → Quality/Durability Hardening → Core Scoring → Revision/Chase → Decision Snapshot → Opportunity Ranking → Allocation/Scenario/Rebalance/Approval`.
 
-### Holding valuation coverage
-`SEMIS_MIDCYCLE_DCF_V1::1.0` is production-live for Semiconductor Designer holdings. NVDA has traceable expected-return coverage through `VAL-NVDA-SEMIS-20260905`; full risk-asset coverage remains incomplete, but changed-assets NVDA↔PINS comparison is valid because both changed assets are covered.
+Promotion requires four independent gates:
+1. Business Durability
+2. Owner Earnings
+3. Value Trap
+4. Valuation Robustness
 
-## M3.4 — Rebalancing Recommendation
-**PASS / LIVE.** `POL-REBALANCE-V1`, **12/12 PASS**.
+Missing critical evidence fails closed.
 
-Key behavior:
-1. New cash is consumed before trim.
-2. ADD must be active Immediate + Decision Snapshot valuation lineage.
-3. Trim source must be current, valuation-covered and concentration-review eligible.
-4. Minimum PW expected-return edge = 25pp.
-5. Trim is capped by both remaining candidate capacity and concentration excess above 30%.
-6. 30% is a review threshold, not a forced sell target.
-7. Appreciation-only rationale is forbidden.
-8. Human review + broker price verification remain required.
+Expected Return v3 removes the old >=30% upside = 100 staircase. It now uses a continuous upside score multiplied by valuation confidence. Core weights remain 30/30/25/15.
 
-Synthetic examples remain regression parity only, never trade instructions.
+Hardening thresholds are intentionally compatible with aggressive Phase 1:
+- >=3-year durability anchor by default;
+- SBC/revenue >10% requires owner-economics reconciliation; >20% hard review; >30% fail;
+- extreme modeled mispricing >=75% requires counter-thesis evidence;
+- bear downside worse than 30% reviews, worse than 50% fails.
 
-## M3.5 — Human Approval / Cutover
-**PASS / PRODUCTION LIVE.** Policy `POL-HUMAN-APPROVAL-V1`; deterministic regressions **30/30 PASS**.
+Historical share-price weakness is a review trigger only, never a substitute for expected return.
 
-Architecture: `Immutable Recommendation Snapshot → Immutable Approval Packet → Append-only Approval Event`.
-Only `PRODUCTION_USER_REQUESTED` packets are actionable; approval does not place broker orders or mutate portfolio accounting.
+## PINS revalidation
+Current immutable lineage:
+- Hardening: `HARD-PINS-20260906-V1`
+- Score: `SCORE-PINS-QH-20260906-V1`
+- Decision: `DEC-PINS-QH-20260906-V1`
 
-Cutover proof remains **9/9 PASS** with 29/29 transactions and 16/16 positions reconciled. Validation objects are non-actionable and no production-user recommendation, human approval event, allocation run or scenario run was created by cutover.
+Result:
+- Business / Thesis: 82
+- Expected Return: **100 → 40**
+- Portfolio Fit: 90
+- Downside Risk: 70
+- Core Score: **87.6 → 69.6**
+- Valuation confidence: **0.40**
+- Promotion: **BLOCKED - QUALITY HARDENING**
+- Bucket: **WATCHLIST_MODEL_REVIEW**
 
-## M3 exit
-**M3 = COMPLETE / CUTOVER PASS.**
+Reason: current 18% revenue / 11% MAU growth is not a verified multi-year durability anchor; SBC/revenue ~22.43% lacks owner-earnings/dilution reconciliation; extreme modeled upside lacks canonical counter-thesis evidence; valuation still depends on an insufficiently anchored five-year growth assumption.
 
-The production chain is:
-`source transaction → reconciled position → portfolio batch → valuation / Decision Snapshot → Opportunity Ranking → New-Cash Allocation → Scenario → Rebalancing Recommendation → Human Approval`.
+This is not a conclusion that Pinterest has no future. It is a conclusion that the current evidence is insufficient for an Immediate allocation signal.
 
-Human Approval is still not trade execution. A later approved packet requires a separate human broker action and broker-price verification.
+## RDDT revalidation
+Current lineage:
+- Hardening: `HARD-RDDT-20260906-V1`
+- Score: `SCORE-RDDT-QH-20260906-V1`
+- Decision: `DEC-RDDT-QH-20260906-V1`
 
-## Post-M3 — Dashboard Read Model + Monitoring Google Sheet
-**PASS / LIVE — HANDOFF COMPLETE.**
+Result:
+- Expected Return: **24.7607**
+- Core: **66.0782**
+- Mispricing: FAIL - INSUFFICIENT MISPRICING
+- Bucket: **WATCHLIST_VALUE_WAIT**
 
-Supabase exposes six stable private `security_invoker` read models:
-- `fwios.v_dashboard_holdings`
-- `fwios.v_dashboard_account_summary`
-- `fwios.v_dashboard_opportunities`
-- `fwios.v_dashboard_current_action`
-- `fwios.v_dashboard_alerts`
-- `fwios.v_dashboard_system_health`
+Hardening evidence is also incomplete, so even a future valuation improvement cannot create Immediate status until hardening clears.
 
-Dashboard regressions: **17/17 PASS**. Security Advisor shows no new WARN/ERROR; expected private-schema `rls_enabled_no_policy` INFO notices remain.
+## Opportunity Ranking v2
+Current run: `OPPRANK-QH-20260906-01`.
 
-Monitoring surface:
-- Google Sheet: **Focused Wealth Dashboard - Chumponphat**
-- Sheet ID: `17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`
-- visible tab: `Dashboard`
-- hidden data tab: `_Data`
-- Account View: All Accounts / Best / Loan Money / Mom
+Current board:
+- Immediate: **none**
+- RDDT: `WATCHLIST_VALUE_WAIT`
+- PINS: `WATCHLIST_MODEL_REVIEW`
 
-Account View affects only Portfolio Value, Total P&L, Unrealized P&L, Realized P&L and Holdings display. Portfolio risk, Portfolio Fit, concentration, crypto and rebalancing always use consolidated exposure.
+No force-fill. Max 3 Immediate / 5 Watchlist remains unchanged.
 
-Current consolidated dashboard parity:
-- Portfolio Value ~THB 340,906.10
-- Total P&L ~+THB 27,360.05
-- Unrealized P&L ~+THB 5,566.00
-- Realized P&L ~+THB 21,794.05
-- Phase-1 progress ~34.1%
-- Largest position NVDA ~41.3% — REVIEW
-- Crypto ~38.1% — ABOVE TARGET
-- PINS Immediate #1 / RDDT Value-Wait #1
+## Capital Allocation effect
+`POL-NEW-CASH-ALLOCATION-V1` remains unchanged and consumes only Immediate candidates.
 
-The Sheet contains display/filter formulas only. Production scoring, allocation, scenario, rebalance and approval logic remain in Supabase/GitHub.
+Production verification with THB 50,000 new cash now returns:
+**HOLD CASH THB 50,000 — NO ALLOCATABLE IMMEDIATE CANDIDATE.**
 
-## Dashboard Auto Refresh v1
-**PASS / LIVE — 14/14 regressions.**
+No allocation run, scenario run, rebalancing recommendation, approval event or portfolio mutation was created by the hardening activation.
 
-Architecture:
-`Supabase read models → fwios.dashboard_refresh_payload_v1() → dashboard-refresh-csv-v1 Edge Function → Google Sheets IMPORTDATA → hidden _Data → Dashboard`.
+## M3.3 Scenario / M3.4 Rebalance / M3.5 Approval
+All remain LIVE and non-mutating until explicit human request boundaries are crossed.
 
-Key rules:
-- `_Data!A1` is the IMPORTDATA entrypoint; `_Data!T100` stores the read-only feed URL.
-- the Edge endpoint uses a high-entropy custom token because IMPORTDATA cannot send a Supabase Authorization header;
-- Supabase stores only the token SHA-256 hash in private `fwios.dashboard_refresh_access`;
-- current PASS payloads best-effort refresh `fwios.dashboard_refresh_cache` as last-good state;
-- a BLOCKED payload serves last-good cache with `STALE_BLOCKED` instead of inventing new values;
-- no refresh path can place orders or mutate portfolio/decision policy state.
+The old synthetic NVDA→PINS parity remains regression history only. Because PINS is no longer Immediate, it is not a current eligible ADD candidate.
 
-Production cutover verification:
-- owner external-data permission granted;
-- Edge static/network/database/payload probes PASS;
-- `_Data` switched from static snapshot to IMPORTDATA;
-- Dashboard parity preserved after cutover;
-- forced refresh advanced `_Data` metadata to 2026-09-06 09:30 Asia/Bangkok;
-- last-good cache advanced on the same refresh;
-- 14/14 refresh regressions PASS.
+## Dashboard
+Read Model v1: **17/17 PASS**. Auto Refresh v1: **14/14 PASS**.
 
-### Refresh boundary
-This is **automatic pull refresh**, not push/realtime streaming. Google Sheets controls IMPORTDATA recalculation cadence and background behavior. The Dashboard may be described as auto-refreshing, but not as a guaranteed real-time market feed or guaranteed 24/7 closed-file refresh.
+Current payload after hardening:
+- refresh gate PASS;
+- Current Action = `NO_ACTIONABLE_OPPORTUNITY`;
+- PINS = `WATCHLIST_MODEL_REVIEW`;
+- RDDT = `WATCHLIST_VALUE_WAIT`;
+- portfolio/account KPIs unchanged.
 
-See `docs/07_DASHBOARD_AUTO_REFRESH.md` for the security and fail-closed contract.
+The Dashboard remains downstream/read-only for investment logic.
 
 ## Immediate next action
-**Plan legacy-surface reduction while preserving audit/reconciliation access.**
-Do not delete legacy audit/reconciliation history automatically. The legacy `US_Stock_Sector_Business_Model_Screener` and Portfolio Tracker remain available until the reduction plan is explicitly accepted.
+**Collect Quality-Hardening Evidence + Revalidate Communication Services.**
+
+Priority evidence:
+- multi-year comparable revenue/user/monetization and margin/FCF durability;
+- SBC, dilution, buyback and owner-earnings reconciliation;
+- documented structural/value-trap counter-thesis for large modeled discounts;
+- conservative valuation sensitivity / robustness.
+
+After evidence is collected:
+1. create new immutable hardening snapshots;
+2. recompute Expected Return v3 and Core Score;
+3. create new Decision Snapshots;
+4. rerank;
+5. only then decide whether any candidate becomes Immediate.
+
+Financials remains queued and sector automation remains PAUSED until this revalidation is completed. Legacy reduction is temporarily secondary to scoring integrity.
 
 ## M4 — Autonomous Investment OS
-**FUTURE PRIORITY.** Event/delta refresh, thesis refresh, opportunity refresh, concentration alerts and blocker recovery remain future work. `system_events` remains foundation-only until explicitly activated and regression-tested.
+Future priority: event/delta research refresh, thesis monitoring, opportunity refresh, concentration alerts and blocker recovery. Autonomous monitoring must never bypass Quality Hardening or human execution.
 
-## Remaining side work
-Research/model coverage debt remains fail-closed for affected names. Financials remains queued. Completing valuation coverage for other holdings improves full-portfolio expected-upside analytics but does not invalidate the completed M3 changed-assets path.
-
-## Google Sheet rule
-The new monitoring Dashboard is the preferred monitoring surface. Google Sheets remains downstream and read-only from a production-logic perspective. Legacy reduction is permitted after dashboard refresh verification, but deletion/restructuring requires explicit retained-audit planning.
+## Legacy Google Sheets
+The new monitoring Dashboard remains primary. Legacy Sheets remain available for research/audit/reconciliation. Do not remove historical evidence while the Communication Services hardening revalidation is underway.
