@@ -79,6 +79,7 @@ quality_hardening_v1:
   base_regressions: "20/20 PASS"
   production_verification: "11/11 PASS"
   comm_services_quality_filter_acceptance: "8/8 PASS"
+  financials_quality_filter_acceptance: "8/8 PASS"
 
 expected_return_v3:
   continuous_upside_score: "clamp(50 + 100 * upside, 0, 100)"
@@ -157,6 +158,39 @@ nflx_quality_regression_anchor:
   evidence_gate: PASS
   valuation_gate: "BLOCKED - MODEL NOT IMPLEMENTED"
   invariant: "missing valuation-model coverage does not imply low business quality"
+
+financials_sector_run_v1:
+  run_id: SECTOR-FIN-FULL-20260906-01
+  run_status: COMPLETE
+  execution_scope: MANUAL_USER_REQUESTED
+  research_pipeline: RPV2.0
+  universe_count: 20
+  fast_discovery_selected: 8
+  shortlist_count: 5
+  shortlist: [JPM, V, CB, SPGI, BLK]
+  deep_research_count: 3
+  deep_research: [JPM, V, CB]
+  tier_a_verified_evidence_rows: 27
+  evidence_gate_pass_count: 3
+  valuation_ready_count: 0
+  immediate_buy_count: 0
+  acceptance_regressions: "8/8 PASS"
+  quality_results:
+    JPM: {business_quality: 96, evidence_rows: 9, valuation_gate: BLOCKED_MODEL_NOT_IMPLEMENTED}
+    V: {business_quality: 96, evidence_rows: 9, valuation_gate: BLOCKED_MODEL_NOT_IMPLEMENTED}
+    CB: {business_quality: 94, evidence_rows: 9, valuation_gate: BLOCKED_MODEL_NOT_IMPLEMENTED}
+  valuation_model_blockers:
+    PAYMENT_NETWORK: BLK-FIN-PAYNET-MDL-001
+    BANK: BLK-FIN-BANK-MDL-001
+    INSURANCE: BLK-FIN-INS-MDL-001
+    DATA_RATINGS_EXCHANGE: BLK-FIN-DATA-MDL-001
+    ASSET_MANAGER: BLK-FIN-ASSET-MDL-001
+  rough_multiple_role: RESEARCH_TRIAGE_ONLY
+  rough_multiple_can_populate_expected_return: false
+  production_fail_closed: true
+  portfolio_mutation: false
+  auto_trade: false
+  next_model_priority: PAYMENT_NETWORK_FCF_DCF_V1
 
 new_cash_allocation_v1:
   policy_version_id: POL-NEW-CASH-ALLOCATION-V1
@@ -270,9 +304,12 @@ fail_closed:
   validation_scope_can_be_approved: false
 
 sector_loop:
-  current_sector: Communication Services
+  current_sector: Financials
+  current_stage: DONE
+  last_completed_sector: Financials
   current_quality_filter_status: PASS_8_OF_8
-  next_sector_snapshot: Financials
+  next_sector_snapshot: Industrials
   automation_mode: PAUSED
-  pause_reason: USER_HOLD_AFTER_PART1_PART2
+  pause_reason: FINANCIALS_MODEL_DEBT_REVIEW
+  next_action: IMPLEMENT_FINANCIALS_VALUATION_MODELS_START_PAYMENT_NETWORK
   auto_resume_allowed: false

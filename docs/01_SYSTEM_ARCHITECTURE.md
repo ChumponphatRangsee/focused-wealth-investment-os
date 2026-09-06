@@ -2,7 +2,7 @@
 
 Contract version: **FWIOS-CONTRACT-0.87.11**  
 Foundation compatibility: **0.87**  
-Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVALIDATED / LEGACY SURFACE REDUCED / DASHBOARD AUTO REFRESH LIVE**
+Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVALIDATED / FINANCIALS RESEARCH COMPLETE / MODEL DEBT FAIL-CLOSED / DASHBOARD AUTO REFRESH LIVE**
 
 ## Authority model
 - **Supabase = System of Record / State**
@@ -43,7 +43,7 @@ Source / Evidence / Canonical Facts / Normalized Metrics
            Separate Human Broker Step
 ```
 
-Quality Hardening is a promotion boundary. Business quality, valuation attractiveness and model availability are separate dimensions.
+Business quality, valuation attractiveness, model readiness and portfolio fit are separate dimensions. Missing model infrastructure blocks production Expected Return; it does not lower business-quality classification.
 
 ## Production policy state
 | Policy | State |
@@ -65,8 +65,6 @@ Retired/superseded for production: `POL-DATA-SCORING-V2-NATIVE`, `POL-OPPORTUNIT
 ## Quality / Durability Hardening v1
 Database object: `fwios.candidate_quality_hardening_snapshots`.
 
-Current view: `fwios.v_candidate_quality_hardening_current` (`security_invoker=true`). Latest Decision Snapshot view exposes `hardening_snapshot_id` without mutating historical rows.
-
 Four gates:
 1. `business_durability_gate`
 2. `owner_earnings_gate`
@@ -80,99 +78,112 @@ Overall gate behavior:
 - otherwise REVIEW.
 
 Confidence factors: `PASS=1.0`, `REVIEW=0.7`, `BLOCKED=0.4`, `FAIL=0.0`.
-`valuation_confidence = mean(gate factors)`.
 
-### Business durability
-Point-in-time growth is not a five-year forecast. Default promotion anchor is >=3 years of comparable evidence. An explicitly verified alternative anchor is allowed when the business does not yet have a full three-year public history but durable operating performance is directly evidenced; the AI cannot invent such an alternative.
+Point-in-time growth cannot become a multi-year forecast without a verified durability anchor. Material SBC/dilution requires owner-economics reconciliation. Extreme modeled mispricing requires counter-thesis evidence. Conservative downside must be tested before promotion.
 
-### Owner earnings
-Material SBC/dilution requires owner-economics reconciliation. V1 thresholds remain <=10% clean narrow pass possible, >10% reconciliation required, >20% hard review, >30% fail.
+## Communication Services acceptance — 8/8 PASS
+Current production lineage remains:
+- PINS: Business 82 / Expected Return 77.5 / Core 80.85 / Hardening REVIEW / `WATCHLIST_MODEL_REVIEW`.
+- RDDT: Business 88 / Expected Return 41.6431 / Core 71.1429 / `WATCHLIST_VALUE_WAIT`.
+- NFLX: Business / Quality 94 / Evidence PASS / valuation model unavailable.
 
-### Value trap
-Base/PW modeled upside >=75% triggers explicit counter-thesis evidence. A depressed share chart may trigger review but never directly changes expected return.
+This proves business quality is not equivalent to buy eligibility or model availability.
 
-### Valuation robustness
-Bear downside worse than 30% is review territory; worse than 50% fails v1.
+## Financials research architecture — COMPLETE / FAIL-CLOSED
+Run: `SECTOR-FIN-FULL-20260906-01`.
 
-## Communication Services quality-filter acceptance — 8/8 PASS
-The acceptance target is not “make a candidate pass.” The target is to correctly separate:
-- a quality business from an attractive valuation;
-- a durable business with unresolved owner economics from an Immediate candidate;
-- missing valuation-model coverage from low business quality;
-- high model upside from verified buy eligibility.
+Research controller:
+```text
+20-name Financials universe
+        ↓ Fast Discovery
+8 names
+        ↓ Light Research
+5-name focused shortlist
+[JPM, V, CB, SPGI, BLK]
+        ↓ Top-3-first Deep Research
+[JPM, V, CB]
+        ↓ Tier-A Evidence Gate
+27 verified Tier-A rows / 3 candidates PASS
+        ↓
+Financials Valuation Router
+        ↓
+0 production-ready models for these archetypes
+        ↓
+BLOCKED — Expected Return remains NULL
+        ↓
+0 Immediate candidates
+```
 
-### PINS — durable business, unresolved economics/valuation confidence
-Current lineage:
-- `HARD-PINS-20260906-V2`
-- `SCORE-PINS-QH-20260906-V2`
-- `DEC-PINS-QH-20260906-V2`
+Deep Research quality state:
+- JPM — Business / Quality 96; 9 Tier-A rows.
+- V — Business / Quality 96; 9 Tier-A rows.
+- CB — Business / Quality 94; 9 Tier-A rows.
 
-State:
-- Business 82
-- Durability PASS
-- Owner Earnings REVIEW
-- Value Trap REVIEW
-- Robustness REVIEW
-- Confidence 0.775
-- Expected Return 77.5000
-- Core 80.8500
-- Bucket `WATCHLIST_MODEL_REVIEW`
+SPGI and BLK remain Light-Research shortlist names. Research budget did not force deep research across all five archetypes.
 
-The new evidence includes FY2022–FY2025 comparable revenue history, sustained user-growth evidence, H1 2026 SBC/FCF, share-count change and buyback economics. PINS is therefore no longer blocked for missing durability evidence, but extreme DCF upside is still not enough for Immediate promotion.
+### Model-debt boundary
+Canonical root blockers:
+- `BLK-FIN-PAYNET-MDL-001` — Payment Network / HIGH
+- `BLK-FIN-BANK-MDL-001` — Commercial / Universal Bank / HIGH
+- `BLK-FIN-INS-MDL-001` — Insurance / HIGH
+- `BLK-FIN-DATA-MDL-001` — Exchange / Index / Ratings / Data / MEDIUM
+- `BLK-FIN-ASSET-MDL-001` — Asset Manager / MEDIUM
 
-### RDDT — high-quality business, valuation not attractive
-Current lineage:
-- `HARD-RDDT-20260906-V2`
-- `SCORE-RDDT-QH-20260906-V2`
-- `DEC-RDDT-QH-20260906-V2`
+Payment Network already has criteria contract `PAYMENT_NETWORK_FCF_DCF_V1`, but no registered production implementation/version exists. The other four routes require archetype-correct model definition and implementation.
 
-State:
-- Business 88
-- Durability PASS via explicitly verified 8-quarter alternative anchor
-- Owner Earnings PASS
-- Value Trap PASS
-- Robustness REVIEW
-- Confidence 0.925
-- Expected Return 41.6431
-- Core 71.1429
-- Bucket `WATCHLIST_VALUE_WAIT`
-- Mispricing `FAIL - INSUFFICIENT MISPRICING`
+Architectural invariant: **rough P/E, P/B or P/FCF used in Fast/Light Research can never populate production fair value, Expected Return, Mispricing, Decision Snapshot or Opportunity Ranking.**
 
-The system now explicitly says “good company, wait for value” instead of confusing quality with buy eligibility.
+Therefore Financials is allowed to say:
+- JPM / V / CB are high-quality businesses;
+- valuation is unavailable;
+- production Expected Return is null;
+- no candidate is Immediate.
 
-### NFLX — quality/model-availability separation
-Current research state:
-- Business / Quality 94
-- Evidence PASS
-- Valuation `BLOCKED - MODEL NOT IMPLEMENTED`
+It is not allowed to infer a buy signal from quality score + rough multiple.
 
-This is an acceptance anchor: lack of a Streaming/Media valuation model blocks promotion/valuation but does not downgrade NFLX business quality.
+### Focused portfolio-fit behavior
+Current portfolio has no Financials exposure, but zero exposure is only a fit input. It cannot create a candidate by itself.
+
+MA was deferred despite elite quality because it materially overlaps Visa and lacked a clear marginal advantage at the rough-triage stage. FISV was rejected on weak current quality/growth rather than rescued by a cheaper-looking valuation. This confirms no diversification force-fill.
+
+### Financials regression proof
+`REG-FIN-QF-01` through `REG-FIN-QF-08`: **8/8 PASS**.
+
+Coverage:
+- run COMPLETE;
+- focused 20→5→3 funnel;
+- JPM/V/CB high-quality despite model block;
+- Expected Return stays null;
+- five canonical model blockers exist;
+- zero valuation-ready / zero Immediate.
+
+Reproducible SQL: `tests/decision/test_financials_quality_filter_acceptance_v1.sql`.
+Run manifest: `docs/runs/20260906_financials_sector_run.md`.
 
 ## Expected Return v3
 `continuous_upside_score(u) = clamp(50 + 100*u, 0, 100)`
 
 `Expected Return = (0.60 × base score + 0.40 × PW score) × valuation_confidence`.
 
-The core weighting remains exactly 30/30/25/15. Hardening changes confidence/eligibility, not strategic weights.
+The core weighting remains exactly 30/30/25/15. If a valid intrinsic valuation does not exist, Expected Return must remain blocked/null rather than using a rough multiple proxy.
 
 ## Opportunity Ranking v2
-Current run: `OPPRANK-QH-REVAL-20260906-02`.
+Current production run remains `OPPRANK-QH-REVAL-20260906-02`.
 
-Rules:
+Financials does not enter Ranking v2 yet because its valuation-ready count is zero.
+
+Rules remain:
 - Promotion PASS + Hardening PASS → Immediate;
-- mispricing insufficient with other gates passing → Value-Wait;
+- mispricing insufficient with required gates passing → Value-Wait;
 - mispricing PASS but Hardening not PASS → Model-Review;
 - no force-fill.
 
-Current Immediate count = **0**.
+Current production Immediate count = **0**.
 
 ## Downstream capital boundary
 `POL-NEW-CASH-ALLOCATION-V1` accepts only `IMMEDIATE_BUY_CANDIDATE`.
 
-Verified THB 50,000 behavior:
-`CASH_THB / HOLD / 50,000 / PASS - HOLD CASH / NO ALLOCATABLE IMMEDIATE CANDIDATE`.
-
-No auto-trade, broker order, portfolio mutation, recommendation or approval event is created by this path.
+Financials research created no allocation run, scenario run, rebalancing recommendation, approval event, broker order or portfolio mutation.
 
 ## M3 state
 M3.1–M3.5 remain COMPLETE / CUTOVER PASS:
@@ -188,7 +199,7 @@ The historical synthetic NVDA↔PINS scenario remains regression-only and is not
 Monitoring Sheet: **Focused Wealth Dashboard - Chumponphat**  
 Sheet ID: `17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`
 
-Architecture:
+Architecture remains:
 ```text
 Supabase System of Record
         ↓
@@ -205,14 +216,14 @@ hidden _Data
 Dashboard
 ```
 
-Current Action remains `NO_ACTIONABLE_OPPORTUNITY`. Dashboard read-model regressions remain 17/17 PASS; auto-refresh regressions remain 14/14 PASS.
+Current Action remains `NO_ACTIONABLE_OPPORTUNITY`. Financials research/model debt belongs to controller/system-health surfaces, not the capital-opportunity table until valuation-ready.
+
+Dashboard read-model regressions remain 17/17 PASS; auto-refresh regressions remain 14/14 PASS.
 
 ## Legacy Google Sheets reduction
-Legacy screener: `US_Stock_Sector_Business_Model_Screener`.
+Legacy screener remains compatibility/reconciliation/audit/research, not production authority.
 
-It is retained as a compatibility/reconciliation/audit/research surface, not production authority. No data was deleted.
-
-Visible tabs are now reduced from 15 to **6**:
+Visible operational tabs remain six:
 - `Sector_Scan`
 - `Sector_Run_Control`
 - `Thesis Monitor`
@@ -220,32 +231,51 @@ Visible tabs are now reduced from 15 to **6**:
 - `Evidence_Ledger`
 - `Data_Quality_Gates`
 
-Duplicate production/config surfaces are hidden. Existing formulas and historical evidence remain available behind the reduced surface. The separate Focused Wealth Dashboard remains the primary monitoring surface.
+Financials current shortlist, model debt and controller state are synchronized into these legacy surfaces. No historical data was deleted.
+
+The `Autonomous Sector Documentation Gate` was corrected to treat any `System_Foundation` status beginning with `PHASE 0.87 OPERATIONAL` as operational while still requiring documentation-handshake PASS and run-lock IDLE. This fixes exact-string drift without weakening the gate.
 
 ## Regression proof
 - Base Quality-Hardening suite: **20/20 PASS**
 - Production downstream verification: **11/11 PASS**
 - Communication Services quality-filter acceptance: **8/8 PASS**
-
-Acceptance coverage includes PINS durability/owner nuance, RDDT durability/owner quality, RDDT Value-Wait separation, PINS Model-Review separation, NFLX quality/model separation and zero-Immediate no-force-fill behavior.
+- Financials quality-filter acceptance: **8/8 PASS**
 
 ## Security
-`fwios` remains private. Hardening tables retain RLS and private service-role access pattern. No client-side production authority is introduced by legacy reduction.
+`fwios` remains private. No client-side production authority is introduced by Financials research or legacy-sheet synchronization.
 
 ## Architectural invariants
 - live reconciled state outranks stale docs;
-- missing/stale/unverified critical hardening inputs fail closed;
-- apparent DCF upside cannot bypass durability/owner-economics review;
 - business quality does not equal valuation attractiveness;
-- missing valuation model does not imply low business quality;
+- missing model infrastructure does not imply low business quality;
+- missing production valuation keeps Expected Return null/blocked;
+- rough multiples are triage only;
 - historical return cannot substitute expected return;
-- no AI-invented numeric gate evidence;
-- no force-fill;
-- new cash precedes trim;
+- no AI-invented valuation assumptions merely to make a candidate pass;
+- no diversification force-fill;
+- no ranking/allocation force-fill;
 - recommendation/approval snapshots remain immutable;
 - approval never places orders or mutates holdings;
 - Dashboard contains no production policy logic;
 - human execution only.
 
+## Controller state
+- Current / last completed sector: Financials
+- Current stage: DONE
+- Run lock: IDLE
+- Next queued sector: Industrials
+- Automation: PAUSED
+- Pause reason: `FINANCIALS_MODEL_DEBT_REVIEW`
+- Auto-resume: false
+
 ## Next architecture action
-**HOLD. Part 1 Quality Revalidation and Part 2 Legacy Reduction are complete. Financials remains queued and PAUSED until an explicit user instruction resumes Part 3.**
+**Implement Financials valuation models before advancing autonomous sector execution.**
+
+Priority:
+1. `PAYMENT_NETWORK_FCF_DCF_V1`
+2. `BANK_ROTCE_TBV_V1`
+3. `INSURANCE_BOOK_VALUE_ROE_V1`
+4. `FIN_DATA_PLATFORM_FCF_DCF_V1`
+5. `ASSET_MANAGER_FRE_AUM_V1`
+
+Each must use archetype-correct normalized economics, separate facts from assumptions, pass deterministic regressions and fail closed until production activation. Industrials remains queued but must not auto-start while this model-debt review is active.

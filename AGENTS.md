@@ -56,7 +56,7 @@ Expected Return v3 is continuous and confidence-adjusted:
 
 `continuous_upside_score(u) = clamp(50 + 100*u, 0, 100)`.
 
-Historical stock return, cost basis, narrative targets or unverified consensus can never substitute for expected return.
+Historical stock return, cost basis, narrative targets, rough multiples or unverified consensus can never substitute for expected return.
 
 ## 6. Quality / Durability Hardening — ACTIVE
 Policy: `POL-QUALITY-HARDENING-V1`.
@@ -69,7 +69,7 @@ Immediate promotion requires **all four** gates to PASS:
 
 Gate confidence factors: PASS 1.0 / REVIEW 0.7 / BLOCKED 0.4 / FAIL 0.0. Missing critical hardening evidence => BLOCKED.
 
-AI must never invent durability, owner-earnings, value-trap or robustness evidence merely to make a candidate pass.
+AI must never invent durability, owner-earnings, value-trap, robustness or valuation evidence merely to make a candidate pass.
 
 ## 7. Production path
 `Source → Evidence → Canonical Facts → Normalized Metrics → Valuation → Market Price/Mispricing + Portfolio State/Fit → Quality/Durability Hardening → Core Scoring → Revision/Chase → Decision Snapshot → Opportunity Ranking → New-Cash Allocation → Portfolio Scenario → Rebalancing Recommendation → Human Approval`.
@@ -100,16 +100,11 @@ PINS current immutable lineage:
 - Expected Return: **77.5000**
 - Core: **80.8500**
 - Valuation confidence: **0.7750**
-- Durability: **PASS**
-- Owner Earnings: **REVIEW**
-- Value Trap: **REVIEW**
-- Valuation Robustness: **REVIEW**
-- Overall Hardening: **REVIEW**
-- Bucket: **WATCHLIST_MODEL_REVIEW**
+- Durability: PASS
+- Owner Earnings / Value Trap / Valuation Robustness: REVIEW
+- Bucket: `WATCHLIST_MODEL_REVIEW`
 
-Interpretation: verified FY2022–FY2025 revenue durability and sustained user growth prove the business is not rejected merely because the share chart is weak. However, material SBC, owner-economics/buyback sustainability, extreme-mispricing counter-thesis and valuation robustness remain unresolved enough to prevent Immediate promotion.
-
-RDDT current immutable lineage:
+RDDT current lineage:
 - Hardening: `HARD-RDDT-20260906-V2`
 - Score: `SCORE-RDDT-QH-20260906-V2`
 - Decision: `DEC-RDDT-QH-20260906-V2`
@@ -117,25 +112,60 @@ RDDT current immutable lineage:
 - Expected Return: **41.6431**
 - Core: **71.1429**
 - Valuation confidence: **0.9250**
-- Durability: **PASS** via explicitly verified 8-quarter alternative anchor
-- Owner Earnings: **PASS**
-- Value Trap: **PASS**
-- Valuation Robustness: **REVIEW**
-- Bucket: **WATCHLIST_VALUE_WAIT**
-- Mispricing: **FAIL - INSUFFICIENT MISPRICING**
+- Durability / Owner Earnings / Value Trap: PASS
+- Valuation Robustness: REVIEW
+- Bucket: `WATCHLIST_VALUE_WAIT`
+- Mispricing: `FAIL - INSUFFICIENT MISPRICING`
 
-Interpretation: RDDT is explicitly recognized as a high-quality operating business while remaining unattractive at the current valuation. Business quality and buy eligibility are separate dimensions.
+NFLX remains the quality/model-availability regression anchor: Business / Quality 94, Evidence PASS, Valuation `BLOCKED - MODEL NOT IMPLEMENTED`.
 
-NFLX regression anchor:
-- Business / quality score: **94**
-- Evidence: PASS
-- Valuation: **BLOCKED - MODEL NOT IMPLEMENTED**
+Current production Immediate count remains **0**. New-cash preview continues to HOLD CASH rather than force-fill.
 
-Interpretation: missing valuation-model coverage must not downgrade a high-quality business into a low-quality classification.
+## 10. Financials Sector Loop — RESEARCH COMPLETE / PRODUCTION FAIL-CLOSED
+Manual user-requested run: `SECTOR-FIN-FULL-20260906-01`.
 
-Current Immediate count = **0**. New-cash preview with THB 50,000 continues to HOLD CASH rather than force-fill.
+Acceptance suite: **8/8 PASS**.
 
-## 10. Opportunity Ranking v2 — PASS / LIVE
+Research funnel:
+`20 universe → 8 Fast Discovery → 5 shortlist → 3 Deep Research`.
+
+Current Financials shortlist:
+1. JPM
+2. V
+3. CB
+4. SPGI
+5. BLK
+
+Deep Research names and quality state:
+- **JPM** — Business / Quality 96, 9 Tier-A verified evidence rows, valuation `BLOCKED - MODEL NOT IMPLEMENTED`.
+- **V** — Business / Quality 96, 9 Tier-A verified evidence rows, valuation `BLOCKED - MODEL NOT IMPLEMENTED`.
+- **CB** — Business / Quality 94, 9 Tier-A verified evidence rows, valuation `BLOCKED - MODEL NOT IMPLEMENTED`.
+
+Total Tier-A verified Financials evidence: **27 rows**.
+
+The research loop correctly separates quality from valuation readiness. Rough P/E/PB/PFCF references are triage-only and must never populate Expected Return, Mispricing or Immediate eligibility.
+
+Five canonical Financials model blockers are open:
+- `BLK-FIN-PAYNET-MDL-001` — Payment Network / HIGH; `PAYMENT_NETWORK_FCF_DCF_V1` contract exists but production implementation/version is missing.
+- `BLK-FIN-BANK-MDL-001` — Commercial / Universal Bank / HIGH.
+- `BLK-FIN-INS-MDL-001` — Insurance / HIGH.
+- `BLK-FIN-DATA-MDL-001` — Exchange / Index / Ratings / Data / MEDIUM.
+- `BLK-FIN-ASSET-MDL-001` — Asset Manager / MEDIUM.
+
+Current Financials production state:
+- Evidence Gate PASS: 3
+- Valuation-ready: **0**
+- Expected Return for JPM/V/CB: **NULL / fail-closed**
+- Immediate Buy Candidates: **0**
+- No force-fill
+- No portfolio mutation
+- No auto trade
+
+MA was deferred despite elite quality because it substantially overlaps Visa and did not offer a clear marginal fit/valuation advantage at the rough-triage stage. FISV was rejected on current business/growth deterioration rather than promoted because of a cheaper-looking multiple. This behavior is intentional.
+
+See `docs/runs/20260906_financials_sector_run.md` and `tests/decision/test_financials_quality_filter_acceptance_v1.sql`.
+
+## 11. Opportunity Ranking v2 — PASS / LIVE
 Policy `POL-OPPORTUNITY-RANKING-V2`.
 - Promotion PASS + Hardening PASS → `IMMEDIATE_BUY_CANDIDATE`
 - Mispricing insufficient + other required gates pass → `WATCHLIST_VALUE_WAIT`
@@ -143,17 +173,17 @@ Policy `POL-OPPORTUNITY-RANKING-V2`.
 - Otherwise → EXCLUDED
 - Priority remains Core Score; max Immediate 3 / Watchlist 5; no force-fill.
 
-Current run: `OPPRANK-QH-REVAL-20260906-02`.
+Current production ranking remains `OPPRANK-QH-REVAL-20260906-02`; Financials has not created a ranking candidate because valuation readiness is zero.
 
-## 11. M3.2 New-Cash Allocation — PASS / LIVE
+## 12. M3.2 New-Cash Allocation — PASS / LIVE
 `POL-NEW-CASH-ALLOCATION-V1`; 20/20 regressions. New cash first, Immediate Stock candidates only, max one deployed asset/run, starter cap 5% post-money, residual cash held, non-mutating.
 
 With the current zero-Immediate ranking, allocation preview holds all new cash rather than forcing a candidate.
 
-## 12. M3.3 Portfolio Scenario — PASS / LIVE
+## 13. M3.3 Portfolio Scenario — PASS / LIVE
 `POL-PORTFOLIO-SCENARIO-V1`; 28/28 regressions. NO_SELL / SOFT_REBALANCE / ACTIVE_REBALANCE. ADD requires active ranking + Decision Snapshot. Appreciation-only trim rationale is forbidden. Full-portfolio expected upside fails closed when valuation coverage is incomplete.
 
-## 13. Holding valuation / M3.4 Rebalancing
+## 14. Holding valuation / M3.4 Rebalancing
 Semiconductor Designer model `SEMIS_MIDCYCLE_DCF_V1::1.0` remains production-live for NVDA lineage.
 
 `POL-REBALANCE-V1`; 12/12 PASS:
@@ -167,7 +197,7 @@ Semiconductor Designer model `SEMIS_MIDCYCLE_DCF_V1::1.0` remains production-liv
 
 Because the current ranking has no Immediate candidate, the prior synthetic NVDA→PINS path is not a current actionable path.
 
-## 14. M3.5 Human Approval / Cutover — PASS / LIVE
+## 15. M3.5 Human Approval / Cutover — PASS / LIVE
 `POL-HUMAN-APPROVAL-V1`; 30/30 PASS.
 
 `Immutable Recommendation Snapshot → Immutable Approval Packet → Append-only Approval Event`.
@@ -175,25 +205,18 @@ Only `PRODUCTION_USER_REQUESTED` is approvable. Validation/test scopes are never
 
 Cutover proof remains 29/29 transactions, 16/16 positions and 9/9 traceability layers PASS.
 
-## 15. M3 boundary
+## 16. M3 boundary
 M3.1–M3.5 remain **COMPLETE / CUTOVER PASS**. Quality hardening changes candidate eligibility, not the human-execution boundary.
 
-## 16. Dashboard + Auto Refresh — PASS / LIVE
+## 17. Dashboard + Auto Refresh — PASS / LIVE
 Monitoring Sheet: **Focused Wealth Dashboard - Chumponphat** (`17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`).
 
-Supabase private dashboard read models remain the source; Google Sheet is downstream/display-only. Account View may change Value/P&L/Holdings display only; risk/fit/rebalancing remain consolidated.
+Supabase private dashboard read models remain the source; Google Sheet is downstream/display-only. Dashboard read-model regressions remain 17/17 PASS and auto-refresh regressions 14/14 PASS. Current Action remains `NO_ACTIONABLE_OPPORTUNITY`.
 
-Auto-refresh:
-`dashboard read models → dashboard_refresh_payload_v1() → dashboard-refresh-csv-v1 → IMPORTDATA → _Data → Dashboard`.
-
-Dashboard read-model regressions 17/17 PASS; auto-refresh 14/14 PASS. Current Action remains `NO_ACTIONABLE_OPPORTUNITY`.
-
-Do not describe auto-pull as guaranteed realtime or 24/7 closed-file streaming.
-
-## 17. Legacy Google Sheets surface — REDUCED
+## 18. Legacy Google Sheets surface — REDUCED
 `US_Stock_Sector_Business_Model_Screener` is retained for compatibility/audit/research but is no longer a parallel production authority.
 
-Visible operational tabs are reduced to **6**:
+Visible operational tabs remain:
 - `Sector_Scan`
 - `Sector_Run_Control`
 - `Thesis Monitor`
@@ -201,32 +224,43 @@ Visible operational tabs are reduced to **6**:
 - `Evidence_Ledger`
 - `Data_Quality_Gates`
 
-Duplicate production/config surfaces are hidden, not deleted. Historical evidence, formulas and reconciliation lineage remain available.
+Financials current research view and five canonical model blockers are synchronized into the legacy surface. Historical evidence, formulas and reconciliation lineage remain available.
 
-## 18. Fail-closed rule
-Missing, stale, conflicting, schema-invalid, unverified, provenance-free, policy-incomplete **or quality-hardening-incomplete** critical data => BLOCKED.
+## 19. Fail-closed rule
+Missing, stale, conflicting, schema-invalid, unverified, provenance-free, policy-incomplete, model-unimplemented **or quality-hardening-incomplete** critical data => BLOCKED.
 
-Never force-fill. Historical return cannot substitute expected return. Rejected/expired/stale/non-actionable approval packets cannot execute.
+Never force-fill. Rough valuation multiples and historical return cannot substitute expected return. Rejected/expired/stale/non-actionable approval packets cannot execute.
 
-## 19. Research/controller
-Communication Services research is complete and its quality filter has passed the 8/8 acceptance suite. Financials remains queued but sector automation stays **PAUSED** by explicit user instruction. Do not start Part 3 automatically.
+## 20. Research/controller
+Financials research is complete. Sector automation remains **PAUSED** due `FINANCIALS_MODEL_DEBT_REVIEW`.
 
-## 20. Immediate next action
-**HOLD — Part 1 and Part 2 are complete. Financials remains PAUSED pending explicit user resume.**
+- Current / last completed sector: Financials
+- Next queued sector: Industrials
+- Auto-resume: false
+- Financials valuation-ready: 0
+- Financials Immediate: 0
 
-Quality-filter proof must be preserved:
-- RDDT = quality passes on durability/owner/value-trap dimensions but remains Value-Wait because valuation is insufficient;
-- PINS = durability passes but unresolved owner/value-trap/robustness concerns keep it Model-Review;
-- NFLX = high-quality classification survives missing valuation-model coverage;
-- zero Immediate candidates means hold cash, not force-fill.
+Do not auto-start Industrials while the Financials model-debt review is the explicit next action.
 
-## 21. Documentation handshake
+## 21. Immediate next action
+**Implement Financials valuation models, starting with `PAYMENT_NETWORK_FCF_DCF_V1`.**
+
+Priority:
+1. Payment Network
+2. Bank
+3. Insurance
+4. Data / Ratings / Exchange
+5. Asset Manager
+
+Each model must use archetype-correct normalized inputs, preserve facts vs assumptions, pass deterministic regressions and remain fail-closed until production readiness is proven. Then rerun affected Financials names through valuation → hardening → scoring → ranking before deciding whether any candidate deserves Watchlist or Immediate status.
+
+## 22. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
 
-## 22. Regression discipline
-Changes to normalization, valuation, hardening, scoring, Decision Snapshots, ranking, allocation, scenario, rebalancing, approval or dashboard semantics require deterministic regressions. Reference names include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS and NVDA.
+## 23. Regression discipline
+Changes to normalization, valuation, hardening, scoring, Decision Snapshots, ranking, allocation, scenario, rebalancing, approval or dashboard semantics require deterministic regressions. Reference names include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS, JPM, V, CB and NVDA.
 
-## 23. Source precedence
+## 24. Source precedence
 1. Latest reconciled portfolio data
 2. Focused Wealth-Building rules
 3. Production policy/hardening state
