@@ -3,7 +3,7 @@
 Status: **ACTIVE**  
 Live foundation: **0.87**  
 Execution contract: **FWIOS-CONTRACT-0.87.10**  
-Last updated: **2026-09-05 Asia/Bangkok**  
+Last updated: **2026-09-06 Asia/Bangkok**  
 Execution mode: **HUMAN EXECUTION ONLY**
 
 ## Authority model
@@ -24,10 +24,11 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 | M3.5 Human Approval / Cutover | PASS / LIVE |
 | M3 overall | **COMPLETE / CUTOVER PASS** |
 | Dashboard Read Model v1 | **PASS / LIVE — 17/17** |
-| Monitoring Google Sheet | **CREATED / HANDOFF PASS** |
-| Sector automation | PAUSED — dashboard refresh/handoff priority |
+| Dashboard Auto Refresh v1 | **PASS / LIVE — 14/14** |
+| Monitoring Google Sheet | **PRIMARY MONITORING SURFACE / AUTO REFRESH LIVE** |
+| Sector automation | PAUSED — legacy reduction / post-dashboard follow-through |
 | Next queued sector | Financials |
-| Immediate next action | **Verify controlled dashboard refresh workflow + plan legacy reduction** |
+| Immediate next action | **Plan legacy-surface reduction, then decide when to resume sector loop** |
 
 ## M1 — Research Pipeline v2
 **CORE HARDENING PASS / PERFORMANCE VALIDATION OPEN.** Performance optimization remains side work and does not invalidate M2/M3 production capabilities.
@@ -81,7 +82,7 @@ Human Approval is still not trade execution. A later approved packet requires a 
 ## Post-M3 — Dashboard Read Model + Monitoring Google Sheet
 **PASS / LIVE — HANDOFF COMPLETE.**
 
-Supabase now exposes six stable private `security_invoker` read models:
+Supabase exposes six stable private `security_invoker` read models:
 - `fwios.v_dashboard_holdings`
 - `fwios.v_dashboard_account_summary`
 - `fwios.v_dashboard_opportunities`
@@ -89,13 +90,13 @@ Supabase now exposes six stable private `security_invoker` read models:
 - `fwios.v_dashboard_alerts`
 - `fwios.v_dashboard_system_health`
 
-Dashboard regressions: **17/17 PASS**. Security Advisor shows no new WARN/ERROR; only existing INFO `rls_enabled_no_policy` notices for the private service-role design.
+Dashboard regressions: **17/17 PASS**. Security Advisor shows no new WARN/ERROR; expected private-schema `rls_enabled_no_policy` INFO notices remain.
 
 Monitoring surface:
 - Google Sheet: **Focused Wealth Dashboard - Chumponphat**
 - Sheet ID: `17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`
 - visible tab: `Dashboard`
-- hidden data snapshot tab: `_Data`
+- hidden data tab: `_Data`
 - Account View: All Accounts / Best / Loan Money / Mom
 
 Account View affects only Portfolio Value, Total P&L, Unrealized P&L, Realized P&L and Holdings display. Portfolio risk, Portfolio Fit, concentration, crypto and rebalancing always use consolidated exposure.
@@ -112,18 +113,43 @@ Current consolidated dashboard parity:
 
 The Sheet contains display/filter formulas only. Production scoring, allocation, scenario, rebalance and approval logic remain in Supabase/GitHub.
 
+## Dashboard Auto Refresh v1
+**PASS / LIVE — 14/14 regressions.**
+
+Architecture:
+`Supabase read models → fwios.dashboard_refresh_payload_v1() → dashboard-refresh-csv-v1 Edge Function → Google Sheets IMPORTDATA → hidden _Data → Dashboard`.
+
+Key rules:
+- `_Data!A1` is the IMPORTDATA entrypoint; `_Data!T100` stores the read-only feed URL.
+- the Edge endpoint uses a high-entropy custom token because IMPORTDATA cannot send a Supabase Authorization header;
+- Supabase stores only the token SHA-256 hash in private `fwios.dashboard_refresh_access`;
+- current PASS payloads best-effort refresh `fwios.dashboard_refresh_cache` as last-good state;
+- a BLOCKED payload serves last-good cache with `STALE_BLOCKED` instead of inventing new values;
+- no refresh path can place orders or mutate portfolio/decision policy state.
+
+Production cutover verification:
+- owner external-data permission granted;
+- Edge static/network/database/payload probes PASS;
+- `_Data` switched from static snapshot to IMPORTDATA;
+- Dashboard parity preserved after cutover;
+- forced refresh advanced `_Data` metadata to 2026-09-06 09:30 Asia/Bangkok;
+- last-good cache advanced on the same refresh;
+- 14/14 refresh regressions PASS.
+
 ### Refresh boundary
-The Google Sheet currently uses a **controlled snapshot export**, not a direct live database connection. It displays source observed-at/batch status and must not be described as real-time until a refresh workflow is implemented and verified.
+This is **automatic pull refresh**, not push/realtime streaming. Google Sheets controls IMPORTDATA recalculation cadence and background behavior. The Dashboard may be described as auto-refreshing, but not as a guaranteed real-time market feed or guaranteed 24/7 closed-file refresh.
+
+See `docs/07_DASHBOARD_AUTO_REFRESH.md` for the security and fail-closed contract.
 
 ## Immediate next action
-**Verify controlled Supabase → Sheet refresh workflow, then plan legacy-surface reduction.**
-Do not delete legacy audit/reconciliation history automatically. The legacy `US_Stock_Sector_Business_Model_Screener` and Portfolio Tracker remain available until the refresh and reduction plan are explicitly accepted.
+**Plan legacy-surface reduction while preserving audit/reconciliation access.**
+Do not delete legacy audit/reconciliation history automatically. The legacy `US_Stock_Sector_Business_Model_Screener` and Portfolio Tracker remain available until the reduction plan is explicitly accepted.
 
 ## M4 — Autonomous Investment OS
-**PENDING REFRESH/HANDOFF FOLLOW-THROUGH / FUTURE PRIORITY.** Event/delta refresh, thesis refresh, opportunity refresh, concentration alerts and blocker recovery remain future work. `system_events` remains foundation-only until explicitly activated and regression-tested.
+**FUTURE PRIORITY.** Event/delta refresh, thesis refresh, opportunity refresh, concentration alerts and blocker recovery remain future work. `system_events` remains foundation-only until explicitly activated and regression-tested.
 
 ## Remaining side work
 Research/model coverage debt remains fail-closed for affected names. Financials remains queued. Completing valuation coverage for other holdings improves full-portfolio expected-upside analytics but does not invalidate the completed M3 changed-assets path.
 
 ## Google Sheet rule
-The new monitoring Dashboard is now the preferred monitoring surface. Google Sheets remains downstream and read-only from a production-logic perspective. Legacy reduction is permitted after handoff, but deletion/restructuring requires explicit verification of the controlled refresh workflow and retained audit access.
+The new monitoring Dashboard is the preferred monitoring surface. Google Sheets remains downstream and read-only from a production-logic perspective. Legacy reduction is permitted after dashboard refresh verification, but deletion/restructuring requires explicit retained-audit planning.
