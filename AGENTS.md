@@ -39,7 +39,7 @@ Live portfolio/system/controller state overrides stale documentation.
 - Never trim merely because a position appreciated.
 - Max 5 active watchlist candidates; max 3 immediate buy candidates.
 - Actual new purchase per decision cycle is normally 0–1.
-- M3 cutover is PASS. Legacy Sheets may be reduced only after the new monitoring dashboard/read-model handoff preserves required audit access.
+- M3 cutover is PASS. Legacy Sheets may be reduced only after the monitoring dashboard preserves required audit access.
 
 ## 5. Production scoring
 Core weights are exactly 30/30/25/15: Business/Thesis 30%, Expected Return/Valuation 30%, Portfolio Fit 25%, Downside/Thesis Risk 15%.
@@ -125,7 +125,7 @@ Cutover validation:
 
 M3 is complete. A later real approval still does not execute a trade; broker execution remains an explicit human step outside the approval ledger.
 
-## 16. Dashboard Read Model v1 — PASS / LIVE
+## 16. Dashboard Read Model + Auto Refresh — PASS / LIVE
 Supabase exposes six private `security_invoker` monitoring views:
 - `fwios.v_dashboard_holdings`
 - `fwios.v_dashboard_account_summary`
@@ -134,30 +134,44 @@ Supabase exposes six private `security_invoker` monitoring views:
 - `fwios.v_dashboard_alerts`
 - `fwios.v_dashboard_system_health`
 
-Regression parity is **17/17 PASS**. The monitoring Sheet is **Focused Wealth Dashboard - Chumponphat** (`17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`). It has one visible `Dashboard` tab and one hidden `_Data` snapshot tab.
+Dashboard read-model regression parity is **17/17 PASS**. Dashboard Auto Refresh v1 regression parity is **14/14 PASS**.
+
+The monitoring Sheet is **Focused Wealth Dashboard - Chumponphat** (`17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`). It has one visible `Dashboard` tab and one hidden `_Data` tab.
 
 Account View may change only Portfolio Value, P&L and Holdings display. Risk, Portfolio Fit, concentration, crypto and rebalancing decisions always use the consolidated portfolio. Total P&L means latest-batch realized P&L + current open-position unrealized P&L. Google Sheets must not recalculate production scoring, allocation, rebalancing or approval rules.
 
-The current Sheet refresh mode is controlled snapshot export; do not claim a direct live database connection until a refresh workflow is explicitly implemented and verified.
+Auto-refresh architecture:
+`Dashboard read models → fwios.dashboard_refresh_payload_v1() → dashboard-refresh-csv-v1 Edge Function → Google Sheets IMPORTDATA → _Data → Dashboard`.
+
+Refresh rules:
+- `_Data!A1` is the IMPORTDATA entrypoint and `_Data!T100` contains the feed URL;
+- the Edge feed uses a high-entropy custom token because IMPORTDATA cannot send a Supabase Authorization header;
+- Supabase stores only the token SHA-256 hash in private `fwios.dashboard_refresh_access`;
+- current PASS payloads best-effort refresh private `fwios.dashboard_refresh_cache` as last-good state;
+- BLOCKED current payloads serve last-good cache with `STALE_BLOCKED`; if no cache exists, fail instead of fabricating data;
+- the transport cannot mutate portfolio, allocation, scenario, recommendation, approval or broker state;
+- raw feed tokens must never be committed to GitHub and should be rotated if the Sheet is shared beyond trusted editors.
+
+The current Sheet refresh mode is **automatic pull refresh through Google Sheets IMPORTDATA**. This is not push/realtime streaming and Google controls recalculation cadence/background behavior. Do not describe it as guaranteed real-time or guaranteed 24/7 closed-file refresh.
 
 ## 17. Fail-closed rule
 Missing, stale, conflicting, schema-invalid, unverified, provenance-free or policy-incomplete critical data => BLOCKED. Never substitute historical return, cost basis, narrative target or unverified consensus for missing expected-return valuation. Never force-fill or bypass hard gates. Rejected, expired, stale or non-actionable approval packets cannot execute.
 
 ## 18. Research/controller
-Communication Services complete; Financials queued. Sector automation remains manually PAUSED while dashboard refresh/handoff work is the explicit priority. `fwios.system_events` remains M4 foundation only.
+Communication Services complete; Financials queued. Sector automation remains manually PAUSED while post-dashboard legacy reduction planning is the explicit priority. `fwios.system_events` remains M4 foundation only.
 
 ## 19. Post-M3 next action
-**Verify Dashboard Refresh Workflow + Plan Legacy Reduction.**
+**Plan Legacy Reduction, then decide when to resume the Financials sector loop.**
 - Keep Supabase as source of truth.
-- Keep the new monitoring Sheet read-only/display-only.
-- Define and verify controlled Supabase → Sheet refresh behavior before calling the Sheet real-time/live-connected.
-- Preserve legacy audit/reconciliation access until a reduction plan is explicitly verified; do not delete history automatically.
+- Keep the monitoring Sheet read-only/display-only for production logic.
+- Preserve legacy audit/reconciliation access while reducing duplicated operational surfaces.
+- Do not delete historical evidence, reconciliation or audit records automatically.
 
 ## 20. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
 
 ## 21. Regression discipline
-Changes to normalization, valuation, policies, Decision Snapshots, ranking, allocation, scenario, rebalancing, approval or dashboard read-model semantics require deterministic regressions. Reference tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS and NVDA.
+Changes to normalization, valuation, policies, Decision Snapshots, ranking, allocation, scenario, rebalancing, approval, dashboard read-model semantics or dashboard refresh transport require deterministic regressions. Reference tickers include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS and NVDA.
 
 ## 22. Source precedence
 1. Latest reconciled portfolio data
