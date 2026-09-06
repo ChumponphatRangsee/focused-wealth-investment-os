@@ -1,7 +1,7 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.10
+  id: FWIOS-CONTRACT-0.87.11
   foundation_compatibility: "0.87"
-  snapshot_date: "2026-09-05"
+  snapshot_date: "2026-09-06"
   timezone: Asia/Bangkok
   execution_mode: human_execution_only
 
@@ -30,7 +30,6 @@ portfolio_guardrails:
   auto_trade: false
 
 portfolio_state:
-  source_migration_origin: "Investment Portfolio Tracker - Chumponphat"
   current_authority: Supabase
   current_batch_id: PORTFOLIO-M2-20260905-01
   current_total_value_thb_approx: 340906.10
@@ -39,10 +38,10 @@ portfolio_state:
   current_crypto_weight_pct_approx: 38.09
   m3_cutover_status: PASS
   dashboard_handoff_status: PASS
-  legacy_sheet_retirement_guard: "Dashboard read-model handoff passed; retain legacy/audit surface until refresh workflow and reduction plan are explicitly verified."
   scenario_mutates_live_portfolio: false
 
-production_path: [Source, Evidence, Canonical_Facts, Normalized_Metrics, Intrinsic_Valuation, Market_Price_Mispricing, Portfolio_State_Fit, Core_Scoring, Revision_Chase_Gates, Decision_Snapshot, Opportunity_Ranking, New_Cash_Allocation, Portfolio_Scenario_Simulation, Rebalancing_Recommendation, Human_Approval]
+production_path:
+  [Source, Evidence, Canonical_Facts, Normalized_Metrics, Intrinsic_Valuation, Market_Price_Mispricing, Portfolio_State_Fit, Quality_Durability_Hardening, Core_Scoring, Revision_Chase_Gates, Decision_Snapshot, Opportunity_Ranking, New_Cash_Allocation, Portfolio_Scenario_Simulation, Rebalancing_Recommendation, Human_Approval]
 
 scoring:
   business_thesis: 0.30
@@ -50,33 +49,108 @@ scoring:
   portfolio_fit: 0.25
   downside_risk: 0.15
   core_weight_sum: 1.00
+  active_policy_version: POL-DATA-SCORING-V3-DURABILITY
+  backing_policy_id: FWB-DATA-SCORING-V3-DURABILITY
+  expected_return_curve: continuous_confidence_adjusted
+  expected_return_base_weight: 0.60
+  expected_return_probability_weighted_weight: 0.40
+  historical_return_can_substitute_expected_return: false
+
+quality_hardening_v1:
+  policy_version_id: POL-QUALITY-HARDENING-V1
+  status: ACTIVE
+  promotion_requires_all_gates_pass: true
+  gates:
+    - BUSINESS_DURABILITY
+    - OWNER_EARNINGS
+    - VALUE_TRAP
+    - VALUATION_ROBUSTNESS
+  confidence_map:
+    PASS: 1.00
+    REVIEW: 0.70
+    BLOCKED: 0.40
+    FAIL: 0.00
+  valuation_confidence_method: mean_four_gate_factors
+  durability_anchor_min_years: 3
+  owner_earnings:
+    sbc_clean_pass_max: 0.10
+    sbc_reconciliation_required_above: 0.10
+    sbc_hard_review_above: 0.20
+    sbc_fail_above: 0.30
+  extreme_mispricing_trigger: 0.75
+  counter_thesis_evidence_min: 2
+  bear_case_review_below: -0.30
+  bear_case_fail_below: -0.50
+  long_horizon_price_weakness_role: review_trigger_only
+  missing_critical_evidence: BLOCKED
+  regressions: "20/20 PASS"
+
+expected_return_v3:
+  continuous_upside_score: "clamp(50 + 100 * upside, 0, 100)"
+  formula: "(0.60 * base_upside_score + 0.40 * probability_weighted_upside_score) * valuation_confidence"
+  no_step_function_at_30pct: true
+  confidence_required: true
 
 policy_governance:
   registry_table: fwios.policy_registry
   version_table: fwios.policy_versions
   regression_table: fwios.decision_policy_regression_runs
-  production_version_status: ACTIVE
   deterministic_scoring_required_when_numeric_score_is_used: true
   ai_may_invent_raw_to_score_mapping: false
-  seeded_families:
-    DATA_SCORING: ACTIVE
-    MISPRICING: ACTIVE
-    PORTFOLIO_FIT: ACTIVE
-    REVISION_SCORE: ACTIVE
-    CHASE_SCORE: ACTIVE
-    OPPORTUNITY_RANKING: ACTIVE
-    NEW_CASH_ALLOCATION: ACTIVE
-    PORTFOLIO_SCENARIO: ACTIVE
-    REBALANCE: ACTIVE
-    HUMAN_APPROVAL: ACTIVE
+  active_versions:
+    DATA_SCORING: POL-DATA-SCORING-V3-DURABILITY
+    QUALITY_HARDENING: POL-QUALITY-HARDENING-V1
+    REVISION_SCORE: POL-REVISION-SCORE-V1
+    CHASE_SCORE: POL-CHASE-SCORE-V1
+    OPPORTUNITY_RANKING: POL-OPPORTUNITY-RANKING-V2
+    NEW_CASH_ALLOCATION: POL-NEW-CASH-ALLOCATION-V1
+    PORTFOLIO_SCENARIO: POL-PORTFOLIO-SCENARIO-V1
+    REBALANCE: POL-REBALANCE-V1
+    HUMAN_APPROVAL: POL-HUMAN-APPROVAL-V1
 
-opportunity_ranking_v1:
-  policy_version_id: POL-OPPORTUNITY-RANKING-V1
+opportunity_ranking_v2:
+  policy_version_id: POL-OPPORTUNITY-RANKING-V2
   priority_score: core_score_only
   max_immediate: 3
   max_watchlist: 5
   force_fill: false
-  regressions: "8/8 PASS"
+  immediate_rule: "promotion PASS + quality hardening PASS"
+  watchlist_value_wait_rule: "mispricing insufficient while other required gates pass"
+  watchlist_model_review_rule: "mispricing PASS but quality hardening not PASS"
+  capital_eligible_buckets: [IMMEDIATE_BUY_CANDIDATE]
+  current_run_id: OPPRANK-QH-20260906-01
+  current_immediate_count: 0
+  current_candidates:
+    PINS: WATCHLIST_MODEL_REVIEW
+    RDDT: WATCHLIST_VALUE_WAIT
+
+pins_hardening_snapshot:
+  hardening_snapshot_id: HARD-PINS-20260906-V1
+  decision_snapshot_id: DEC-PINS-QH-20260906-V1
+  score_snapshot_id: SCORE-PINS-QH-20260906-V1
+  business_durability_gate: BLOCKED
+  owner_earnings_gate: BLOCKED
+  value_trap_gate: BLOCKED
+  valuation_robustness_gate: BLOCKED
+  valuation_confidence: 0.40
+  sbc_to_revenue_approx: 0.2243
+  expected_return_score_previous: 100
+  expected_return_score_current: 40
+  core_score_previous: 87.6
+  core_score_current: 69.6
+  opportunity_bucket: WATCHLIST_MODEL_REVIEW
+  reason: "Large modeled mispricing is not sufficient for Immediate promotion without verified multi-year durability, owner-earnings/dilution reconciliation, counter-thesis evidence and robust valuation anchors."
+
+rddt_hardening_snapshot:
+  hardening_snapshot_id: HARD-RDDT-20260906-V1
+  decision_snapshot_id: DEC-RDDT-QH-20260906-V1
+  score_snapshot_id: SCORE-RDDT-QH-20260906-V1
+  hardening_gate: BLOCKED
+  valuation_confidence: 0.55
+  expected_return_score_current: 24.7607
+  core_score_current: 66.0782
+  opportunity_bucket: WATCHLIST_VALUE_WAIT
+  mispricing_gate: "FAIL - INSUFFICIENT MISPRICING"
 
 new_cash_allocation_v1:
   policy_version_id: POL-NEW-CASH-ALLOCATION-V1
@@ -92,58 +166,31 @@ new_cash_allocation_v1:
   new_cash_first: true
   regressions: "20/20 PASS"
   preview_mutates_live_portfolio: false
+  current_no_immediate_behavior: HOLD_ALL_NEW_CASH
 
 portfolio_scenario_v1:
   policy_version_id: POL-PORTFOLIO-SCENARIO-V1
   modes: [NO_SELL, SOFT_REBALANCE, ACTIVE_REBALANCE]
-  no_sell_uses_new_cash_allocation_v1: true
-  soft_rebalance_trim_allowed_v1: false
-  active_rebalance_trim_is_input_not_recommendation: true
-  trim_requires_current_holding: true
-  trim_requires_explicit_rationale: true
-  appreciation_only_trim_forbidden: true
   add_requires_active_ranking_and_decision_snapshot: true
   full_portfolio_expected_upside_requires_complete_valuation_coverage: true
   changed_asset_expected_value_requires_changed_asset_valuation: true
-  partial_covered_metrics_allowed: true
-  current_holding_expected_upside_coverage_pct_approx: 41.25
-  current_full_portfolio_upside_gate: "BLOCKED - INCOMPLETE PORTFOLIO VALUATION COVERAGE"
   regressions: "28/28 PASS"
   preview_mutates_live_portfolio: false
-
-semiconductor_designer_valuation_v1:
-  model_version_id: "SEMIS_MIDCYCLE_DCF_V1::1.0"
-  kernel_family: FCF_COMPOUNDER
-  status: PRODUCTION
-  normalization_version: NORM_V1-SEMIS
-  required_metrics: [revenue_ltm, gross_margin, inventory_days, customer_concentration, fcf_ltm, net_cash, shares_outstanding]
-  pending_material_transaction_adjustment_required: true
-  nvda_price_snapshot: PX-NVDA-20260904
-  nvda_bear_fv: 87.03032203
-  nvda_base_fv: 166.16708908
-  nvda_bull_fv: 273.20947981
-  nvda_probability_weighted_fv: 173.14349500
-  nvda_model_regression: PASS
 
 rebalance_v1:
   policy_version_id: POL-REBALANCE-V1
   status: ACTIVE
   new_cash_first: true
-  source_holding_requires_traceable_valuation: true
   candidate_requires_immediate_bucket: true
   candidate_requires_traceable_decision_valuation: true
   min_probability_weighted_opportunity_edge: 0.25
   trim_requires_concentration_review: true
   trim_floor_weight: 0.30
-  trim_only_to_fund_remaining_candidate_capacity: true
   max_new_positions_per_cycle: 1
   appreciation_only_trim_forbidden: true
-  full_portfolio_valuation_not_required_for_changed_asset_comparison: true
-  uncovered_source_holdings: EXCLUDED_NOT_PROXIED
   regressions: "12/12 PASS"
   human_approval_required: true
   broker_price_verification_before_trade: true
-  preview_mutates_live_portfolio: false
   auto_trade: false
 
 human_approval_v1:
@@ -156,17 +203,9 @@ human_approval_v1:
   nonactionable_scopes: [CUTOVER_VALIDATION, SYNTHETIC_TEST]
   terminal_states: [APPROVED, REJECTED, EXPIRED, STALE]
   approval_requires_freshness_revalidation: true
-  approval_requires_same_portfolio_batch: true
-  approval_requires_same_active_ranking: true
-  approval_requires_fingerprint_match: true
-  stale_or_expired_requires_new_packet: true
   approval_places_broker_order: false
   approval_mutates_portfolio: false
-  cutover_validation_id: CUTOVER-M3-20260905-01
-  cutover_traceability_layers: "9/9 PASS"
   regressions: "30/30 PASS"
-  production_user_recommendations_at_cutover: 0
-  human_approval_events_at_cutover: 0
 
 m3_status:
   m3_1_opportunity_ranking: PASS_LIVE
@@ -179,27 +218,25 @@ m3_status:
 dashboard_read_model_v1:
   status: PASS_LIVE
   source_of_truth: Supabase
-  views:
-    - fwios.v_dashboard_holdings
-    - fwios.v_dashboard_account_summary
-    - fwios.v_dashboard_opportunities
-    - fwios.v_dashboard_current_action
-    - fwios.v_dashboard_alerts
-    - fwios.v_dashboard_system_health
   google_sheet_id: 17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8
   google_sheet_title: "Focused Wealth Dashboard - Chumponphat"
   visible_tabs: [Dashboard]
   hidden_tabs: [_Data]
   account_views: [All Accounts, Best, Loan Money, Mom]
-  account_filter_scope: [Portfolio_Value, Total_PnL, Unrealized_PnL, Realized_PnL, Holdings]
   decision_risk_scope: CONSOLIDATED_PORTFOLIO_ALWAYS
-  total_pnl_definition: "latest-batch realized P&L + current open-position unrealized P&L"
   sheet_contains_production_policy_logic: false
   auto_trade: false
   human_execution_only: true
   regressions: "17/17 PASS"
-  security_advisor_new_warn_error: 0
-  current_surface_refresh_mode: CONTROLLED_SNAPSHOT_EXPORT
+  current_surface_refresh_mode: SUPABASE_EDGE_IMPORTDATA_AUTO_PULL
+
+dashboard_auto_refresh_v1:
+  status: PASS_LIVE
+  edge_function: dashboard-refresh-csv-v1
+  semantics: AUTO_PULL_NOT_GUARANTEED_REALTIME
+  regressions: "14/14 PASS"
+  latest_payload_gate_after_hardening: PASS
+  latest_current_action: NO_ACTIONABLE_OPPORTUNITY
 
 fail_closed:
   missing_critical_data: BLOCKED
@@ -208,21 +245,20 @@ fail_closed:
   schema_invalid: BLOCKED
   unverified_or_provenance_free: BLOCKED
   policy_incomplete: BLOCKED
+  missing_quality_hardening_evidence: BLOCKED
   force_fill_shortlist: false
   force_fill_allocation: false
   historical_return_can_substitute_expected_return: false
-  cost_basis_can_substitute_expected_return: false
   narrative_target_can_substitute_expected_return: false
   uncovered_holding_can_be_trim_source: false
   stale_approval_can_execute: false
-  rejected_approval_can_execute: false
-  expired_approval_can_execute: false
   validation_scope_can_be_approved: false
-  unimplemented_model_status: "BLOCKED - MODEL NOT IMPLEMENTED"
 
 sector_loop:
+  current_sector: Communication Services
   next_sector_snapshot: Financials
-  automation_paused_while_dashboard_priority: true
+  automation_mode: PAUSED
+  pause_reason: QUALITY_HARDENING_EVIDENCE_REVALIDATION_PRIORITY
 
 freshness:
   stock_market_data: latest_market_session_for_screening
@@ -238,21 +274,10 @@ security:
   rls_defense_in_depth: true
   service_role_internal_execution: true
   security_invoker_views_required: true
-  security_definer_forbidden_for_allocation_scenario_rebalance_approval: true
-
-google_sheets:
-  legacy_role: view_compatibility_reconciliation_audit_export
-  m3_cutover_passed: true
-  monitoring_dashboard: "Focused Wealth Dashboard - Chumponphat"
-  monitoring_dashboard_id: 17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8
-  dashboard_handoff: PASS
-  dashboard_rule: "Consume Supabase read models; do not duplicate production scoring/allocation/rebalancing logic in Sheets."
-  legacy_surface_reduction_allowed_after_dashboard_handoff: true
-  legacy_surface_reduced: false
 
 post_m3_next_action:
-  id: VERIFY_DASHBOARD_REFRESH_WORKFLOW_AND_PLAN_LEGACY_REDUCTION
-  scope: "Keep the new dashboard as the primary monitoring surface, define the controlled refresh workflow, then plan legacy Sheet reduction without deleting audit history."
+  id: COLLECT_QUALITY_HARDENING_EVIDENCE_AND_REVALIDATE_COMMUNICATION_SERVICES
+  scope: "Collect verified multi-year durability, owner-earnings/dilution, counter-thesis and valuation-robustness evidence for PINS/RDDT; rerun hardened scoring before resuming Financials or legacy reduction."
 
 documentation_handshake:
   repository: ChumponphatRangsee/focused-wealth-investment-os
@@ -262,11 +287,11 @@ documentation_handshake:
 
 regressions:
   reference_tickers: [ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS, NVDA]
-  m2_promotion_policy_pass: "16/16"
-  m3_opportunity_ranking_pass: "8/8"
+  quality_hardening_stored: "20/20 PASS"
+  quality_hardening_production_verification: "11/11 PASS"
   m3_new_cash_allocation_pass: "20/20"
   m3_portfolio_scenario_pass: "28/28"
   m3_rebalance_pass: "12/12"
   m3_human_approval_cutover_pass: "30/30"
   dashboard_read_model_pass: "17/17"
-  semis_nvda_model_parity: PASS
+  dashboard_auto_refresh_pass: "14/14"
