@@ -19,126 +19,50 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 | M3.1–M3.5 | **COMPLETE / CUTOVER PASS** |
 | Quality / Durability Hardening v1 | **PASS / LIVE** |
 | Communication Services quality-filter acceptance | **8/8 PASS** |
+| Financials quality-filter acceptance | **8/8 PASS** |
 | Data Scoring | **V3 DURABILITY ACTIVE** |
 | Opportunity Ranking | **V2 ACTIVE** |
-| Current ranking run | `OPPRANK-QH-REVAL-20260906-02` |
-| Current Immediate candidates | **0** |
+| Current production Immediate candidates | **0** |
 | PINS | **WATCHLIST_MODEL_REVIEW — core 80.85 / confidence 0.775** |
 | RDDT | **WATCHLIST_VALUE_WAIT — core 71.1429 / confidence 0.925** |
-| NFLX | **Quality 94 / valuation model BLOCKED** |
-| Dashboard Read Model | PASS / LIVE — 17/17 |
-| Dashboard Auto Refresh | PASS / LIVE — 14/14 |
-| Legacy Screener surface | **REDUCED — 6 visible tabs / no data deleted** |
-| Sector automation | **PAUSED — explicit user hold** |
-| Next queued sector | Financials |
-| Immediate next action | **HOLD — do not start Financials until explicit user resume** |
+| Financials research | **COMPLETE — 20→8→5→3 / 27 Tier-A verified** |
+| Financials valuation-ready | **0** |
+| Financials Immediate | **0** |
+| Financials top quality | **JPM 96 / V 96 / CB 94** |
+| Financials model blockers | **5 canonical archetype blockers** |
+| Legacy Screener surface | **6 visible tabs / no data deleted** |
+| Sector automation | **PAUSED — FINANCIALS_MODEL_DEBT_REVIEW** |
+| Next queued sector | Industrials |
+| Immediate next action | **Implement Financials valuation models starting Payment Network** |
 
 ## M1 — Research Pipeline v2
 **CORE HARDENING PASS / PERFORMANCE VALIDATION OPEN.** Research/model coverage debt remains fail-closed for affected names.
 
+Research budgets remain focused:
+- max universe per sector: 20;
+- max sector shortlist: 5;
+- deep research top-3-first when enough high-quality candidates exist;
+- no category quota / no diversification force-fill.
+
 ## M2/M3 historical boundary
-M2 and M3 cutover remain valid historical system milestones. M3.1–M3.5 are still LIVE, with human execution only.
+M2 and M3 cutover remain valid historical system milestones. M3.1–M3.5 remain LIVE with human execution only.
 
-Historical snapshots remain immutable audit history. New evidence creates new hardening/score/Decision Snapshots instead of overwriting prior conclusions.
+Historical snapshots remain immutable audit history. New evidence creates new hardening/score/Decision Snapshots rather than overwriting prior conclusions.
 
-## Part 1 — Communication Services Quality-Hardening Revalidation — COMPLETE
-Goal: prove the system can identify business quality separately from valuation attractiveness, rather than merely blocking everything or rewarding cheapness.
+## Part 1 — Communication Services Quality Revalidation — COMPLETE
+Acceptance: **8/8 PASS**.
 
-Acceptance suite: **8/8 PASS**.
+Current state:
+- PINS: Durability PASS; Owner Earnings / Value Trap / Robustness REVIEW; confidence .775; Expected Return 77.5; Core 80.85; `WATCHLIST_MODEL_REVIEW`.
+- RDDT: Durability / Owner Earnings / Value Trap PASS; Robustness REVIEW; confidence .925; Expected Return 41.6431; Core 71.1429; `WATCHLIST_VALUE_WAIT`.
+- NFLX: Business / Quality 94, Evidence PASS, valuation model unavailable — proves quality classification is separate from model availability.
 
-### PINS
-Current immutable lineage:
-- Hardening: `HARD-PINS-20260906-V2`
-- Score: `SCORE-PINS-QH-20260906-V2`
-- Decision: `DEC-PINS-QH-20260906-V2`
-
-Result:
-- Business / Thesis: 82
-- Business Durability: **PASS**
-- Owner Earnings: **REVIEW**
-- Value Trap: **REVIEW**
-- Valuation Robustness: **REVIEW**
-- Valuation confidence: **0.775**
-- Expected Return: **77.5000**
-- Core Score: **80.8500**
-- Bucket: **WATCHLIST_MODEL_REVIEW**
-
-Why this is a useful filter result: verified multi-year revenue and user-growth evidence prevents a weak share chart from being treated as proof that the business has no future. At the same time, material SBC, buyback/owner-economics sustainability, extreme-mispricing counter-thesis and valuation sensitivity still prevent Immediate promotion.
-
-### RDDT
-Current lineage:
-- Hardening: `HARD-RDDT-20260906-V2`
-- Score: `SCORE-RDDT-QH-20260906-V2`
-- Decision: `DEC-RDDT-QH-20260906-V2`
-
-Result:
-- Business / Thesis: 88
-- Business Durability: **PASS**
-- Owner Earnings: **PASS**
-- Value Trap: **PASS**
-- Valuation Robustness: **REVIEW**
-- Valuation confidence: **0.925**
-- Expected Return: **41.6431**
-- Core: **71.1429**
-- Mispricing: **FAIL - INSUFFICIENT MISPRICING**
-- Bucket: **WATCHLIST_VALUE_WAIT**
-
-Why this is a useful filter result: RDDT is explicitly recognized as a strong business but still not buyable at the current valuation.
-
-### NFLX regression anchor
-- Quality / Business score: **94**
-- Evidence gate: PASS
-- Valuation: **BLOCKED - MODEL NOT IMPLEMENTED**
-
-Why this matters: missing valuation-model coverage does not downgrade business quality. Quality classification and valuation eligibility remain separate dimensions.
-
-### Capital effect
-Current Immediate count remains **0**. A THB 50,000 new-cash preview returns **HOLD CASH / NO ALLOCATABLE IMMEDIATE CANDIDATE**. No force-fill and no portfolio mutation.
-
-## Quality / Durability Hardening v1
-**PASS / PRODUCTION LIVE.**
-
-Production path:
-`Evidence → Normalization → Valuation/Mispricing → Portfolio Fit → Quality/Durability Hardening → Core Scoring → Revision/Chase → Decision Snapshot → Opportunity Ranking → Allocation/Scenario/Rebalance/Approval`.
-
-Promotion requires four independent gates:
-1. Business Durability
-2. Owner Earnings
-3. Value Trap
-4. Valuation Robustness
-
-Default durability anchor is >=3 years of comparable evidence, while an explicitly verified alternative may be used when it proves durable operating behavior without inventing data. Missing critical evidence fails closed.
-
-Expected Return v3 uses continuous upside scoring multiplied by valuation confidence. Core weights remain 30/30/25/15. Historical share-price weakness is a review trigger only, never a substitute for expected return.
-
-## Opportunity Ranking v2
-Current run: `OPPRANK-QH-REVAL-20260906-02`.
-
-Current board:
-- Immediate: **none**
-- RDDT: `WATCHLIST_VALUE_WAIT`
-- PINS: `WATCHLIST_MODEL_REVIEW`
-
-No force-fill. Max 3 Immediate / 5 Watchlist remains unchanged.
-
-## Capital Allocation effect
-`POL-NEW-CASH-ALLOCATION-V1` remains unchanged and consumes only Immediate candidates.
-
-Current THB 50,000 preview:
-**HOLD CASH THB 50,000 — NO ALLOCATABLE IMMEDIATE CANDIDATE.**
-
-## M3.3 Scenario / M3.4 Rebalance / M3.5 Approval
-All remain LIVE and non-mutating until explicit human request boundaries are crossed. The historical synthetic NVDA→PINS path remains regression history only and is not a current recommendation.
-
-## Dashboard
-Read Model v1: **17/17 PASS**. Auto Refresh v1: **14/14 PASS**.
-
-Current Action remains `NO_ACTIONABLE_OPPORTUNITY`. The monitoring Dashboard remains downstream/read-only for investment logic.
+Current production Immediate count remains 0. New cash remains HOLD when nothing clears all gates.
 
 ## Part 2 — Legacy Reduction — COMPLETE
-The legacy `US_Stock_Sector_Business_Model_Screener` remains available for research/audit/reconciliation, but duplicate production/config surfaces are hidden rather than left as competing operational surfaces.
+`US_Stock_Sector_Business_Model_Screener` remains a research/audit/compatibility surface rather than production authority.
 
-Visible operational tabs reduced from 15 to **6**:
+Visible operational tabs remain six:
 1. `Sector_Scan`
 2. `Sector_Run_Control`
 3. `Thesis Monitor`
@@ -146,12 +70,116 @@ Visible operational tabs reduced from 15 to **6**:
 5. `Evidence_Ledger`
 6. `Data_Quality_Gates`
 
-Hidden compatibility/audit surfaces are **not deleted**. Existing formulas, historical evidence and reconciliation lineage remain available. The separate **Focused Wealth Dashboard - Chumponphat** remains the primary monitoring surface.
+No data was deleted. The separate **Focused Wealth Dashboard - Chumponphat** remains primary monitoring.
 
-## Part 3 — Financials Sector Loop — PAUSED
-Financials remains queued but must **not** auto-start in this closeout. The user explicitly requested Part 1 and Part 2 first and Part 3 later.
+## Part 3 — Financials Sector Loop — RESEARCH COMPLETE / PRODUCTION FAIL-CLOSED
+Run: `SECTOR-FIN-FULL-20260906-01`.
 
-Communication Services has now passed the requested quality-filter acceptance proof, so the technical precondition is satisfied; resuming Financials still requires an explicit next instruction.
+### Funnel
+`20 universe → 8 Fast Discovery → 5 Light shortlist → 3 Deep Research`.
+
+Shortlist:
+1. JPM
+2. V
+3. CB
+4. SPGI
+5. BLK
+
+Deep Research:
+- JPM — Business / Quality 96; 9 Tier-A verified evidence rows.
+- V — Business / Quality 96; 9 Tier-A verified evidence rows.
+- CB — Business / Quality 94; 9 Tier-A verified evidence rows.
+
+Total: **27 Tier-A verified evidence rows**.
+
+### Quality-filter behavior
+The filter passed its Financials acceptance suite **8/8**:
+- high business quality survives missing valuation infrastructure;
+- rough multiples do not populate Expected Return;
+- research narrows by merit rather than one-name-per-archetype quotas;
+- missing production models fail closed;
+- no Immediate candidate is force-filled.
+
+MA was deferred despite elite quality because it overlaps Visa and offered no clear marginal portfolio/valuation advantage at the rough-triage stage. FISV was rejected on deteriorating current business/growth evidence rather than promoted because of a cheaper-looking multiple.
+
+### Model debt
+All five Financials archetypes currently fail production valuation readiness:
+1. Payment Network — `BLK-FIN-PAYNET-MDL-001` / HIGH
+2. Commercial / Universal Bank — `BLK-FIN-BANK-MDL-001` / HIGH
+3. Insurance — `BLK-FIN-INS-MDL-001` / HIGH
+4. Exchange / Index / Ratings / Data — `BLK-FIN-DATA-MDL-001` / MEDIUM
+5. Asset Manager — `BLK-FIN-ASSET-MDL-001` / MEDIUM
+
+`PAYMENT_NETWORK_FCF_DCF_V1` already exists as a criteria contract but lacks a registered production implementation/version. The other routes require archetype-specific definitions/implementation.
+
+Current Financials production result:
+- Evidence Gate PASS: 3
+- Valuation-ready: **0**
+- Expected Return for JPM/V/CB: **NULL**
+- Immediate: **0**
+- No force-fill
+- No allocation / scenario / portfolio mutation created by this sector research run
+
+Rough P/E, P/B and P/FCF references are research triage only, never production fair value.
+
+See `docs/runs/20260906_financials_sector_run.md` and `tests/decision/test_financials_quality_filter_acceptance_v1.sql`.
+
+## Quality / Durability Hardening v1
+Production promotion still requires all four gates:
+1. Business Durability
+2. Owner Earnings
+3. Value Trap
+4. Valuation Robustness
+
+Expected Return v3 remains continuous and confidence-adjusted. Core weights remain exactly 30/30/25/15. Historical returns, narrative targets and rough multiples cannot replace expected return.
+
+## Opportunity Ranking / Capital Allocation
+Current production ranking remains `OPPRANK-QH-REVAL-20260906-02` because Financials is not valuation-ready.
+
+Current board:
+- Immediate: none
+- RDDT: `WATCHLIST_VALUE_WAIT`
+- PINS: `WATCHLIST_MODEL_REVIEW`
+
+`POL-NEW-CASH-ALLOCATION-V1` still consumes only Immediate candidates. No force-fill.
+
+## M3.3 Scenario / M3.4 Rebalance / M3.5 Approval
+All remain LIVE and non-mutating until explicit human request boundaries are crossed.
+
+The historical synthetic NVDA→PINS scenario remains regression history only and is not a current recommendation.
+
+## Dashboard
+Read Model v1: **17/17 PASS**. Auto Refresh v1: **14/14 PASS**.
+
+Current Action remains `NO_ACTIONABLE_OPPORTUNITY`. Dashboard is downstream/read-only for investment logic.
+
+## Controller after Financials
+- Last completed sector: **Financials**
+- Current stage: DONE
+- Run lock: IDLE
+- Next queued sector: **Industrials**
+- Automation: **PAUSED**
+- Pause reason: `FINANCIALS_MODEL_DEBT_REVIEW`
+- Auto-resume: false
+
+Industrials must not auto-start while Financials model debt is the explicit priority.
+
+## Next implementation phase — Financials Valuation Model Sprint
+Priority:
+1. **Payment Network** — implement `PAYMENT_NETWORK_FCF_DCF_V1` first because its contract is already defined.
+2. **Bank** — define/implement `BANK_ROTCE_TBV_V1` with ROTCE/TBV/CET1/NII/credit-cycle normalization.
+3. **Insurance** — define/implement `INSURANCE_BOOK_VALUE_ROE_V1` with underwriting/book-value/ROE normalization.
+4. **Data / Ratings / Exchange** — define/implement `FIN_DATA_PLATFORM_FCF_DCF_V1`.
+5. **Asset Manager** — define/implement `ASSET_MANAGER_FRE_AUM_V1` if shortlist value justifies further work.
+
+Every model must:
+- preserve reported facts vs assumptions;
+- use archetype-correct normalized economics;
+- pass deterministic regressions;
+- fail closed before activation;
+- rerun affected candidates through valuation → hardening → scoring → ranking after activation.
+
+Only after that should the system determine whether JPM, V, CB, SPGI or BLK deserve Value-Wait, Model-Review or Immediate status.
 
 ## M4 — Autonomous Investment OS
-Future priority: event/delta research refresh, thesis monitoring, opportunity refresh, concentration alerts and blocker recovery. Autonomous monitoring must never bypass Quality Hardening or human execution.
+Future priority remains event/delta research refresh, thesis monitoring, opportunity refresh, concentration alerts and blocker recovery. Autonomous monitoring must never bypass Quality Hardening, model readiness or human execution.
