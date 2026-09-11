@@ -279,3 +279,46 @@ Priority:
 5. `ASSET_MANAGER_FRE_AUM_V1`
 
 Each must use archetype-correct normalized economics, separate facts from assumptions, pass deterministic regressions and fail closed until production activation. Industrials remains queued but must not auto-start while this model-debt review is active.
+
+## 2026-09-11 architecture delta — Auto Decision Refresh v1 Shadow
+
+Routine Decision Refresh initiation now has a Supabase-native shadow control plane:
+
+```text
+pg_cron
+   ↓
+start_decision_refresh_shadow()
+   ↓
+PGMQ
+   ↓
+decision-refresh-worker-v1
+   ├─ SEC submissions + compact XBRL Company Facts — READY
+   ├─ Twelve Data price — DORMANT / NOT APPROVED
+   └─ Alpha Vantage price + consensus — DORMANT / NOT APPROVED
+   ↓
+decision_refresh_shadow_evidence
+   ↓
+validation only; no production decision writes
+```
+
+New private runtime objects:
+- `fwios.decision_refresh_provider_registry`
+- `fwios.decision_refresh_runs`
+- `fwios.decision_refresh_jobs`
+- `fwios.decision_refresh_shadow_evidence`
+- `fwios.decision_refresh_automation_access`
+
+Core invariants:
+- SHADOW runs are database-constrained to `authoritative_write=false`;
+- provider use requires secret + `active=true` + `readiness_status='READY'` + Tier A;
+- external provider secrets can be resolved from Edge Function env or Supabase Vault and are never stored in GitHub;
+- market-price crosscheck requires a common completed session and <=0.5% divergence;
+- deterministic missing-provider states are BLOCKED rather than retried;
+- transient failures can RETRY and then DEAD_LETTER through PGMQ;
+- sector automation remains logically separate and is not auto-resumed by Decision Refresh infrastructure;
+- no production Decision Snapshot, Opportunity Ranking, allocation, rebalancing, approval or portfolio mutation occurs in Shadow mode;
+- human execution only remains unchanged.
+
+Live acceptance evidence: 27 candidates / 81 jobs → SEC 27 PASS, provider-gated 54 BLOCKED, 0 retry, 0 dead-letter after queue-ack correction. Worker v3+ ADBE SEC/XBRL smoke collected 30 recent relevant filing records plus 11 compact Company Facts tags. Automation infrastructure regression is 11/11 PASS.
+
+See `docs/08_AUTO_DECISION_REFRESH_SHADOW.md`. Live Supabase state remains authoritative over older point-in-time sector/ranking snapshots in this document.
