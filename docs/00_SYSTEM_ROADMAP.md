@@ -183,3 +183,26 @@ Only after that should the system determine whether JPM, V, CB, SPGI or BLK dese
 
 ## M4 — Autonomous Investment OS
 Future priority remains event/delta research refresh, thesis monitoring, opportunity refresh, concentration alerts and blocker recovery. Autonomous monitoring must never bypass Quality Hardening, model readiness or human execution.
+
+## 2026-09-11 automation delta — Auto Decision Refresh v1
+
+The infrastructure slice of M4 is now **SHADOW ACTIVE / FAIL-CLOSED**. This is an additive monitoring capability and does not auto-resume sector research or alter human-execution boundaries.
+
+Implemented:
+- Supabase `pg_cron` scheduler;
+- `pgmq` queue/retry layer;
+- `pg_net` internal worker invocation;
+- `decision-refresh-worker-v1` Edge Function;
+- isolated shadow run/job/evidence tables;
+- SEC filings + compact XBRL Company Facts collector;
+- dormant dual-provider market-price adapter;
+- dormant analyst-consensus adapter;
+- provider registry requiring secret + active + READY + Tier A before use;
+- Vault-backed internal worker authentication and provider-secret lookup;
+- 11/11 automation infrastructure regression.
+
+First full shadow acceptance: 27 candidates / 81 jobs → 27 SEC PASS, 54 provider-gated BLOCKED, 0 retry, 0 dead-letter after queue acknowledgement fix. Worker v3+ SEC/XBRL smoke also passed. `authoritative_write=false` is enforced in the database for SHADOW runs.
+
+Production Decision Refresh cutover remains blocked until market/consensus provider keys are configured, providers are independently Tier-A validated, and multiple completed market sessions pass shadow comparison. See `docs/08_AUTO_DECISION_REFRESH_SHADOW.md`.
+
+Live Supabase state remains authoritative where older roadmap sector/ranking snapshots above have since moved forward.
