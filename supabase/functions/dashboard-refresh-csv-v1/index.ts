@@ -11,6 +11,7 @@ const ALERT_HEADERS = ["alert_order","alert_type","label","subject","current_val
 const HEALTH_HEADERS = ["foundation_version","contract_id","foundation_status","github_merge_sha","m3_status","approval_policy","approval_regressions","cutover_traceability","sector_automation_mode","next_queued_sector","next_action","portfolio_batch_id","portfolio_batch_status","source_transaction_count","transaction_pass_count","source_position_count","position_pass_count","open_model_blockers","auto_trade","human_execution_only"];
 const VALUATION_HEADERS = ["sector","ticker","company_name","current_price","price_session_date","price_gate","bear_fv","base_fv","high_fv","fair_value","bear_upside","base_upside","high_upside","fair_value_upside","price_zone","system_signal","mispricing_gate","valuation_as_of","model_id","valuation_run_id"];
 const THESIS_HEADERS = ["tracking_priority","ownership_status","ticker","company_name","sector","baseline_status","health_status","recent_event_score","health_score","thesis_score","revision_gate","hardening_gate","entry_status","price_zone","fair_value_upside","last_event_date","last_event_summary","next_action","health_as_of","baseline_completeness"];
+const OPPORTUNITY_QUALITY_HEADERS = ["opportunity_rank","ticker","company_name","sector","opportunity_score","business_thesis_score","expected_return_signal_score","resilience_score","probability_weighted_upside","price_gate","mispricing_gate","opportunity_state","score_gate","full_thesis_gate","prebuy_research_gate","portfolio_scenario_gate","final_buy_review_gate","scenario_fit_score","as_of_date","research_readiness_rank"];
 
 async function sha256Hex(input: string) {
   const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
@@ -54,9 +55,9 @@ function cell(v: unknown) {
 }
 
 function toCsv(payload: any) {
-  const matrix: any[][] = Array.from({ length: 170 }, () => Array(20).fill(""));
+  const matrix: any[][] = Array.from({ length: 220 }, () => Array(20).fill(""));
   const put = (row: number, rows: any[][]) => rows.forEach((x, i) => x.forEach((v, j) => {
-    if (row - 1 + i < 170 && j < 20) matrix[row - 1 + i][j] = v;
+    if (row - 1 + i < 220 && j < 20) matrix[row - 1 + i][j] = v;
   }));
   const d = payload?.data ?? {};
   put(1, [ACCOUNT_HEADERS, ...(d.account_summary ?? []).map((r: any) => norm(r, ACCOUNT_HEADERS))]);
@@ -71,6 +72,7 @@ function toCsv(payload: any) {
   ]);
   put(65, [VALUATION_HEADERS, ...(d.valuation_map ?? []).map((r: any) => norm(r, VALUATION_HEADERS))]);
   put(105, [THESIS_HEADERS, ...(d.thesis_tracking ?? []).map((r: any) => norm(r, THESIS_HEADERS))]);
+  put(175, [OPPORTUNITY_QUALITY_HEADERS, ...(d.opportunity_quality ?? []).map((r: any) => norm(r, OPPORTUNITY_QUALITY_HEADERS))]);
   return matrix.map(r => r.map(cell).join(",")).join("\n");
 }
 
