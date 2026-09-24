@@ -10,6 +10,7 @@ const ACTION_HEADERS = ["action_state","candidate_ticker","source_ticker","new_c
 const ALERT_HEADERS = ["alert_order","alert_type","label","subject","current_value","lower_threshold","upper_threshold","status","note"];
 const HEALTH_HEADERS = ["foundation_version","contract_id","foundation_status","github_merge_sha","m3_status","approval_policy","approval_regressions","cutover_traceability","sector_automation_mode","next_queued_sector","next_action","portfolio_batch_id","portfolio_batch_status","source_transaction_count","transaction_pass_count","source_position_count","position_pass_count","open_model_blockers","auto_trade","human_execution_only"];
 const VALUATION_HEADERS = ["sector","ticker","company_name","current_price","price_session_date","price_gate","bear_fv","base_fv","high_fv","fair_value","bear_upside","base_upside","high_upside","fair_value_upside","price_zone","system_signal","mispricing_gate","valuation_as_of","model_id","valuation_run_id"];
+const THESIS_HEADERS = ["tracking_priority","ownership_status","ticker","company_name","sector","baseline_status","baseline_completeness","health_status","health_score","thesis_score","revision_score","revision_gate","chase_risk","chase_gate","hardening_gate","entry_status","price_zone","fair_value_upside","next_action","health_as_of"];
 
 async function sha256Hex(input: string) {
   const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
@@ -53,9 +54,9 @@ function cell(v: unknown) {
 }
 
 function toCsv(payload: any) {
-  const matrix: any[][] = Array.from({ length: 100 }, () => Array(20).fill(""));
+  const matrix: any[][] = Array.from({ length: 170 }, () => Array(20).fill(""));
   const put = (row: number, rows: any[][]) => rows.forEach((x, i) => x.forEach((v, j) => {
-    if (row - 1 + i < 100 && j < 20) matrix[row - 1 + i][j] = v;
+    if (row - 1 + i < 170 && j < 20) matrix[row - 1 + i][j] = v;
   }));
   const d = payload?.data ?? {};
   put(1, [ACCOUNT_HEADERS, ...(d.account_summary ?? []).map((r: any) => norm(r, ACCOUNT_HEADERS))]);
@@ -69,6 +70,7 @@ function toCsv(payload: any) {
     ["SUPABASE_EDGE_IMPORTDATA","dashboard-refresh-csv-v1",bangkokTime(payload?.served_at ?? payload?.generated_at),payload?.served_status ?? "PASS",payload?.source_fingerprint ?? "",payload?.refresh_gate ?? ""]
   ]);
   put(65, [VALUATION_HEADERS, ...(d.valuation_map ?? []).map((r: any) => norm(r, VALUATION_HEADERS))]);
+  put(105, [THESIS_HEADERS, ...(d.thesis_tracking ?? []).map((r: any) => norm(r, THESIS_HEADERS))]);
   return matrix.map(r => r.map(cell).join(",")).join("\n");
 }
 
