@@ -9,6 +9,7 @@ const OPPORTUNITY_HEADERS = ["opportunity_bucket","bucket_rank","ticker","core_s
 const ACTION_HEADERS = ["action_state","candidate_ticker","source_ticker","new_cash_thb","add_amount_thb","trim_amount_thb","approval_state","traceability_gate","freshness_gate","candidate_core_score","candidate_portfolio_fit_score","action_note","auto_trade","human_execution_only"];
 const ALERT_HEADERS = ["alert_order","alert_type","label","subject","current_value","lower_threshold","upper_threshold","status","note"];
 const HEALTH_HEADERS = ["foundation_version","contract_id","foundation_status","github_merge_sha","m3_status","approval_policy","approval_regressions","cutover_traceability","sector_automation_mode","next_queued_sector","next_action","portfolio_batch_id","portfolio_batch_status","source_transaction_count","transaction_pass_count","source_position_count","position_pass_count","open_model_blockers","auto_trade","human_execution_only"];
+const VALUATION_HEADERS = ["sector","ticker","company_name","current_price","price_session_date","price_gate","bear_fv","base_fv","high_fv","fair_value","bear_upside","base_upside","high_upside","fair_value_upside","price_zone","system_signal","mispricing_gate","valuation_as_of","model_id","valuation_run_id"];
 
 async function sha256Hex(input: string) {
   const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
@@ -52,9 +53,9 @@ function cell(v: unknown) {
 }
 
 function toCsv(payload: any) {
-  const matrix: any[][] = Array.from({ length: 65 }, () => Array(20).fill(""));
+  const matrix: any[][] = Array.from({ length: 100 }, () => Array(20).fill(""));
   const put = (row: number, rows: any[][]) => rows.forEach((x, i) => x.forEach((v, j) => {
-    if (row - 1 + i < 65 && j < 20) matrix[row - 1 + i][j] = v;
+    if (row - 1 + i < 100 && j < 20) matrix[row - 1 + i][j] = v;
   }));
   const d = payload?.data ?? {};
   put(1, [ACCOUNT_HEADERS, ...(d.account_summary ?? []).map((r: any) => norm(r, ACCOUNT_HEADERS))]);
@@ -67,6 +68,7 @@ function toCsv(payload: any) {
     ["worker","worker_id","last_checked_at","status","source_fingerprint","refresh_gate"],
     ["SUPABASE_EDGE_IMPORTDATA","dashboard-refresh-csv-v1",bangkokTime(payload?.served_at ?? payload?.generated_at),payload?.served_status ?? "PASS",payload?.source_fingerprint ?? "",payload?.refresh_gate ?? ""]
   ]);
+  put(65, [VALUATION_HEADERS, ...(d.valuation_map ?? []).map((r: any) => norm(r, VALUATION_HEADERS))]);
   return matrix.map(r => r.map(cell).join(",")).join("\n");
 }
 
@@ -102,7 +104,7 @@ Deno.serve(async (req: Request) => {
         await sql`insert into fwios.dashboard_refresh_cache(cache_key,payload,source_fingerprint,contract_id,portfolio_batch_id,last_good_at,updated_at)
           values('PRIMARY',${payload},${payload.source_fingerprint},${payload.contract_id},${payload.portfolio_batch_id},now(),now())
           on conflict(cache_key) do update set payload=excluded.payload,source_fingerprint=excluded.source_fingerprint,contract_id=excluded.contract_id,portfolio_batch_id=excluded.portfolio_batch_id,last_good_at=excluded.last_good_at,updated_at=excluded.updated_at`;
-      } catch { /* cache is fail-safe only; a cache write must not break a valid read */ }
+      } catch { }
       payload = { ...payload, served_status: "PASS", served_at: new Date().toISOString(), served_from: "CURRENT_PAYLOAD" };
     }
 
