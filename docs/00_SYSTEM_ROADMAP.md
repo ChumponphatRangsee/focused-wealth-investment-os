@@ -2,7 +2,7 @@
 
 Status: **ACTIVE**  
 Live foundation: **0.87**  
-Execution contract: **FWIOS-CONTRACT-0.87.12**  
+Execution contract: **FWIOS-CONTRACT-0.87.13**  
 Last updated: **2026-09-30 Asia/Bangkok**  
 Execution mode: **HUMAN EXECUTION ONLY**
 
@@ -14,7 +14,8 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 |---|---|
 | Foundation | 0.87 |
 | Research Lifecycle v1 | **ACTIVE CONTRACT / NO READ CUTOVER / 17/17 PASS** |
-| Contract | FWIOS-CONTRACT-0.87.12 |
+| Canonical Instrument Identity v1 | **ACTIVE FOUNDATION / 70 INSTRUMENTS / 20/20 PASS / LEGACY READS PRESERVED** |
+| Contract | FWIOS-CONTRACT-0.87.13 |
 | Portfolio batch | PORTFOLIO-M2-20260905-01 |
 | Portfolio review flags | 10 assets / NVDA ~41.25% / crypto ~38.09% |
 | M3.1–M3.5 | **COMPLETE / CUTOVER PASS** |
@@ -34,9 +35,9 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 | Legacy Screener surface | **6 visible tabs / no data deleted** |
 | Sector automation | **PAUSED — FINANCIALS_MODEL_DEBT_REVIEW** |
 | Next queued sector | Industrials |
-| Immediate next action | **Issue #33 — Canonical Instrument Identity v1** |
+| Immediate next action | **Issue #34 — Decision-Relevant Metric Observation Model v2** |
 
-## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #32 COMPLETE
+## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #33 COMPLETE
 
 Epic: **#31 — Migrate FWIOS to Attention → Research → Thesis → Decision → Portfolio architecture**.
 
@@ -71,8 +72,8 @@ Portfolio Engine
 
 ### Migration sequence
 1. **#32 COMPLETE** Research Lifecycle + Architecture Contract — `POL-RESEARCH-LIFECYCLE-V1`, 17/17 PASS, no production read cutover
-2. **#33** Canonical Instrument Identity v1
-3. **#34** Decision-Relevant Metric Observation Model v2
+2. **#33 COMPLETE** Canonical Instrument Identity v1 — `POL-INSTRUMENT-IDENTITY-V1`, 70 instruments, 20/20 PASS, legacy symbol reads preserved
+3. **#34 NEXT** Decision-Relevant Metric Observation Model v2
 4. **#35** Evidence → Metric → Decision Lineage
 5. **#36** Unified Market Observation Layer
 6. **#37** Thesis Memory + Reactivation Rules
@@ -228,7 +229,7 @@ Under Core Architecture Redesign v1.0:
 - the system must not require complete model coverage across every sector before progressing;
 - unsupported archetypes fail closed for deep decision use rather than forcing generic valuation confidence.
 
-Research Lifecycle #32 is complete at the contract/kernel layer. The immediate architecture priority is **Issue #33 — Canonical Instrument Identity v1**.
+Research Lifecycle #32 and Canonical Instrument Identity #33 are complete at their migration-foundation layers. The immediate architecture priority is **Issue #34 — Decision-Relevant Metric Observation Model v2**.
 
 ## M4 — Autonomous Investment OS
 Future priority remains event/delta research refresh, thesis monitoring, opportunity refresh, concentration alerts and blocker recovery. Autonomous monitoring must never bypass Quality Hardening, model readiness or human execution.
