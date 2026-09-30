@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.12
+  id: FWIOS-CONTRACT-0.87.13
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -22,7 +22,7 @@ authority_model:
 architecture_redesign_v1:
   epic_issue: 31
   migration_status: ACTIVE
-  current_phase: RESEARCH_LIFECYCLE_CONTRACT_COMPLETE
+  current_phase: CANONICAL_INSTRUMENT_IDENTITY_COMPLETE
   production_read_cutover: false
   target_operating_loop: [Universe, Opportunity_Attention, Selective_Research, Thesis_Memory, Decision, Portfolio]
   broad_universe_is_shallow: true
@@ -60,6 +60,31 @@ research_lifecycle_v1:
   auto_trade: false
   human_execution_only: true
 
+
+
+instrument_identity_v1:
+  policy_version_id: POL-INSTRUMENT-IDENTITY-V1
+  status: ACTIVE_FOUNDATION_LEGACY_READS_PRESERVED
+  production_read_cutover: false
+  canonical_instrument_count: 70
+  stock_instrument_count: 64
+  crypto_instrument_count: 6
+  entity_separate_from_instrument: true
+  instrument_id_immutable: true
+  symbol_history_enabled: true
+  identifier_registry_enabled: true
+  active_symbol_identity_key: [symbol, venue, symbol_namespace]
+  ambiguous_resolution: NULL_FAIL_CLOSED
+  ticker_change_retains_id_if_same_legal_instrument: true
+  share_classes_use_distinct_instrument_ids: true
+  multi_exchange_listings_use_distinct_instrument_ids: true
+  crypto_symbol_alone_is_identity: false
+  selected_anchor_tables_backfilled:
+    [companies, research_candidates, thesis_registry, portfolio_assets, portfolio_transactions, market_daily_closes, market_price_quotes, market_price_snapshots]
+  legacy_symbol_columns_removed: false
+  regression_status: "20/20 PASS"
+  auto_trade: false
+  human_execution_only: true
 
 portfolio_guardrails:
   meaningful_positions: {min: 5, max: 8}
@@ -137,6 +162,7 @@ policy_governance:
   deterministic_scoring_required_when_numeric_score_is_used: true
   ai_may_invent_raw_to_score_mapping: false
   active_versions:
+    INSTRUMENT_IDENTITY: POL-INSTRUMENT-IDENTITY-V1
     RESEARCH_LIFECYCLE: POL-RESEARCH-LIFECYCLE-V1
     DATA_SCORING: POL-DATA-SCORING-V3-DURABILITY
     QUALITY_HARDENING: POL-QUALITY-HARDENING-V1

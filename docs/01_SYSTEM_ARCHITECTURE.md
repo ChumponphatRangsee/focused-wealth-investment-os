@@ -1,6 +1,6 @@
 # 01 — System Architecture
 
-Contract version: **FWIOS-CONTRACT-0.87.12**  
+Contract version: **FWIOS-CONTRACT-0.87.13**  
 Foundation compatibility: **0.87**  
 Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVALIDATED / FINANCIALS RESEARCH COMPLETE / MODEL DEBT FAIL-CLOSED / DASHBOARD AUTO REFRESH LIVE**
 
@@ -11,7 +11,7 @@ Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVAL
 
 AI may research, interpret, explain and orchestrate within policy. Accounting, hardening, scoring, ranking, allocation, scenario, rebalancing and approval gates are deterministic/system-controlled. Human execution only.
 
-## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #32 CONTRACT LIVE
+## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #33 IDENTITY LIVE
 
 Epic **#31** is now in migration. Research Lifecycle v1 is active as a deterministic contract/kernel, while the current production architecture below remains authoritative for research/decision reads until later phases are implemented, regression-tested and explicitly cut over.
 
@@ -58,6 +58,43 @@ FWIOS may rent external financial/market data, but must own:
 `#32 → #33 → #34 → #35/#36 → #37 → #38 → #39`.
 
 Phase #32 does not cut production reads over to lifecycle storage. Later phases must explicitly prove parity before becoming authoritative.
+
+## Canonical Instrument Identity v1
+
+Policy: `POL-INSTRUMENT-IDENTITY-V1`.
+
+Canonical identity is now additive and live beneath existing symbol-based interfaces:
+
+```text
+Asset Entity
+    ↓ 1:N
+Instrument (immutable instrument_id)
+    ↓ 1:N historical labels
+Instrument Symbol / Venue / Namespace
+    ↓
+Legacy ticker / asset_symbol compatibility
+```
+
+Current live seed:
+- 70 instruments total;
+- 64 Stock;
+- 6 Crypto;
+- 70 current primary symbol rows;
+- 70 migration provenance identifiers.
+
+Selected anchor tables now carry nullable/backfilled `instrument_id`:
+`companies`, `research_candidates`, `thesis_registry`, `portfolio_assets`, `portfolio_transactions`, `market_daily_closes`, `market_price_quotes`, `market_price_snapshots`.
+
+Rules:
+- ticker change retains the same instrument only when the legal/tradable instrument is unchanged;
+- share classes and separately tradable exchange listings use distinct instrument IDs and may share one entity;
+- delisting retains history rather than rewriting identity;
+- crypto symbols are not globally unique and require namespace/durable identifier semantics;
+- ambiguous resolution returns NULL rather than guessing;
+- legacy ticker/asset-symbol columns are not removed in #33;
+- production decision and dashboard read paths remain unchanged.
+
+Identity regressions: **20/20 PASS**.
 
 ## Decision-and-capital architecture
 ```text
@@ -108,6 +145,7 @@ Business quality, valuation attractiveness, model readiness and portfolio fit ar
 | Rebalance v1 | ACTIVE |
 | Human Approval v1 | ACTIVE |
 | Research Lifecycle v1 | ACTIVE CONTRACT / NO READ CUTOVER |
+| Instrument Identity v1 | ACTIVE FOUNDATION / LEGACY READS PRESERVED |
 
 Retired/superseded for production: `POL-DATA-SCORING-V2-NATIVE`, `POL-OPPORTUNITY-RANKING-V1`. Historical snapshots remain immutable audit lineage.
 
@@ -318,20 +356,19 @@ The `Autonomous Sector Documentation Gate` was corrected to treat any `System_Fo
 - Auto-resume: false
 
 ## Next architecture action
-**Issue #33 — Canonical Instrument Identity v1.**
+**Issue #34 — Decision-Relevant Metric Observation Model v2.**
 
-Research Lifecycle v1 is complete at the contract/kernel layer:
-- 8 lifecycle states are defined;
-- legal transitions are deterministic;
-- research attention tiers 0–4 are defined;
-- archetype coverage states are `GENERIC`, `ARCHETYPE_SUPPORTED`, `CUSTOM`, `UNSUPPORTED`;
-- unsupported coverage blocks deep promotion without forcing REJECTED;
-- REJECTED requires decision memory and explicit reactivation;
-- PORTFOLIO state requires reconciled holdings;
-- 17/17 lifecycle regressions PASS;
-- existing ADBE/PINS and portfolio outputs remained unchanged in live parity verification.
+Canonical Instrument Identity v1 is complete at the migration-foundation layer:
+- 70 canonical instruments (64 Stock / 6 Crypto);
+- entity/instrument/symbol/identifier separation is live;
+- 8 selected legacy anchor tables are fully backfilled;
+- ADBE/PINS/BTC resolve deterministically;
+- symbol+venue+namespace active identities are collision-protected;
+- private RLS/service-role boundary verified;
+- 20/20 identity regressions PASS;
+- ADBE/PINS and portfolio parity remained unchanged.
 
-Issue #33 now introduces immutable instrument identity. Existing ticker/asset-symbol surfaces must remain backward-compatible until later cutover.
+Issue #34 should build period-aware, typed, decision-relevant metric observations keyed by `instrument_id`. It must not replicate full financial statements by default.
 
 ## 2026-09-11 architecture delta — Auto Decision Refresh v1 Shadow
 
