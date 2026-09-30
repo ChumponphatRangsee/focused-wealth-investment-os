@@ -2,7 +2,7 @@
 
 Status: **ACTIVE**  
 Live foundation: **0.87**  
-Execution contract: **FWIOS-CONTRACT-0.87.16**  
+Execution contract: **FWIOS-CONTRACT-0.87.17**  
 Last updated: **2026-09-30 Asia/Bangkok**  
 Execution mode: **HUMAN EXECUTION ONLY**
 
@@ -18,7 +18,8 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 | Metric Observation Model v2 | **ACTIVE FOUNDATION / 130 DEFINITIONS / 449 OBSERVATIONS / 15/15 PASS / NO READ CUTOVER** |
 | Evidence → Metric → Decision Lineage v1 | **ACTIVE FOUNDATION / 1,156 ARTIFACTS / 1,423 EDGES / 16/16 PASS / APPEND-ONLY / NO READ CUTOVER** |
 | Unified Market Observation v1 | **ACTIVE FOUNDATION / 4,489 OBSERVATIONS / 340 VERIFICATION SETS / 14/14 PASS / DUAL-WRITE / NO READ CUTOVER** |
-| Contract | FWIOS-CONTRACT-0.87.16 |
+| Thesis Memory + Reactivation v1 | **ACTIVE FOUNDATION / 6 COMPLETE BASELINES / 73 CONDITIONS / 37 KPI BINDINGS / 8 METRIC LINKS / 15/15 PASS / NO READ CUTOVER** |
+| Contract | FWIOS-CONTRACT-0.87.17 |
 | Portfolio batch | PORTFOLIO-M2-20260905-01 |
 | Portfolio review flags | 10 assets / NVDA ~41.25% / crypto ~38.09% |
 | M3.1–M3.5 | **COMPLETE / CUTOVER PASS** |
@@ -38,9 +39,9 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 | Legacy Screener surface | **6 visible tabs / no data deleted** |
 | Sector automation | **PAUSED — FINANCIALS_MODEL_DEBT_REVIEW** |
 | Next queued sector | Industrials |
-| Immediate next action | **Issue #37 — Thesis Memory + Reactivation Rules** |
+| Immediate next action | **Issue #38 — Research Attention + Promotion/Demotion Engine** |
 
-## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #36 COMPLETE
+## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #37 COMPLETE
 
 Epic: **#31 — Migrate FWIOS to Attention → Research → Thesis → Decision → Portfolio architecture**.
 
@@ -79,8 +80,8 @@ Portfolio Engine
 3. **#34 COMPLETE** Decision-Relevant Metric Observation Model v2 — typed period-aware observations, 15/15 PASS, no production read cutover
 4. **#35 COMPLETE** Evidence → Metric → Decision Lineage — append-only graph, 1,156 artifacts / 1,423 edges, 16/16 PASS, no read cutover
 5. **#36 COMPLETE** Unified Market Observation Layer — canonical provider/session-aware observations, dual-write compatibility, 14/14 PASS, no read cutover
-6. **#37 NEXT** Thesis Memory + Reactivation Rules
-7. **#38** Research Attention + Promotion/Demotion Engine
+6. **#37 COMPLETE** Thesis Memory + Reactivation Rules — 6 complete baselines normalized, 73 conditions / 37 KPI bindings / 8 metric links, 15/15 PASS, no read cutover
+7. **#38 NEXT** Research Attention + Promotion/Demotion Engine
 8. **#39** Compatibility Cutover / Index / Retention / Legacy Cleanup
 
 #35 and #36 may proceed in parallel after their foundations are stable.
@@ -232,7 +233,7 @@ Under Core Architecture Redesign v1.0:
 - the system must not require complete model coverage across every sector before progressing;
 - unsupported archetypes fail closed for deep decision use rather than forcing generic valuation confidence.
 
-Research Lifecycle #32, Canonical Instrument Identity #33, Metric Observation Model #34, Evidence → Metric → Decision Lineage #35 and Unified Market Observation #36 are complete at their migration-foundation layers. The immediate architecture priority is **Issue #37 — Thesis Memory + Reactivation Rules**. Existing production market-price/mispricing consumers remain authoritative until explicit later cutover.
+Research Lifecycle #32, Canonical Instrument Identity #33, Metric Observation Model #34, Evidence → Metric → Decision Lineage #35, Unified Market Observation #36 and Thesis Memory + Reactivation #37 are complete at their migration-foundation layers. The immediate architecture priority is **Issue #38 — Research Attention + Promotion/Demotion Engine**. Existing production research/decision consumers remain authoritative until explicit later cutover.
 
 ## M4 — Autonomous Investment OS
 Future priority remains event/delta research refresh, thesis monitoring, opportunity refresh, concentration alerts and blocker recovery. Autonomous monitoring must never bypass Quality Hardening, model readiness or human execution.

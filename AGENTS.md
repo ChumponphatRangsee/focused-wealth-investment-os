@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.16**  
+Contract version: **FWIOS-CONTRACT-0.87.17**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -21,7 +21,7 @@ Human execution only. Never auto-buy or auto-sell.
 Live portfolio/system/controller state overrides stale documentation.
 
 
-### Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #36 MARKET OBSERVATION LIVE
+### Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #37 THESIS MEMORY LIVE
 
 GitHub Epic **#31** defines the planned migration from broad sector/thesis coverage toward a portfolio-native operating loop:
 
@@ -115,6 +115,7 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-METRIC-OBSERVATION-V2` — typed period-aware metric foundation active; no production read cutover
 - `POL-LINEAGE-GRAPH-V1` — append-only evidence→metric→decision lineage active; no production read cutover
 - `POL-MARKET-OBSERVATION-V1` — canonical provider/session-aware market observations + dual-write compatibility; no production read cutover
+- `POL-THESIS-MEMORY-V1` — normalized thesis conditions/KPI bindings + append-only decision/reactivation memory; no production read cutover
 
 AI must never retune deterministic gates ad hoc to make a name pass.
 
@@ -298,10 +299,24 @@ Market Observation v1 state:
 - legacy market-price/mispricing readers remain authoritative;
 - production_read_cutover=false.
 
-## 21. Immediate next action
-**Implement Issue #37 — Normalize Thesis Memory + Reactivation Rules.**
+Thesis Memory v1 state:
+- all 6 COMPLETE thesis baselines are normalized while legacy JSON remains authoritative;
+- 73 explicit conditions: 27 Must-Remain-True / 22 Catalysts / 24 Invalidations;
+- 37 KPI bindings and 8 explicit condition→metric links at acceptance;
+- unresolved KPI semantics remain UNMAPPED or PARTIAL rather than fabricated;
+- ADBE/PINS thesis text and baseline JSON hashes remain byte-stable;
+- current ADBE/PINS production decisions and thesis-health outputs remain unchanged;
+- append-only decision memory is live with 2 real current anchors and no fabricated REJECTED rows;
+- future REJECT memory requires an explicit reactivation rule;
+- REJECTED/ARCHIVED reactivation requires trigger + memory and may return only to UNIVERSE/SCREENED/WATCH review;
+- no direct FULL_THESIS, PORTFOLIO or buy promotion;
+- 15/15 thesis-memory regressions PASS;
+- production_read_cutover=false.
 
-Issue #36 is complete at the additive market-observation foundation layer. #37 should structure thesis conditions, KPI bindings, decision memory and explicit reactivation triggers while preserving existing ADBE/PINS thesis baselines and preventing automatic promotion to a buy action.
+## 21. Immediate next action
+**Implement Issue #38 — Research Attention + Promotion/Demotion Engine.**
+
+Issue #37 is complete at the additive thesis-memory foundation layer. #38 should allocate research effort by lifecycle/resource tier and expected decision value, preserve explicit no-force-fill behavior, keep unsupported archetypes fail-closed, and never create a trade automatically.
 
 ## 22. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
