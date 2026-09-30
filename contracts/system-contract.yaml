@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.15
+  id: FWIOS-CONTRACT-0.87.16
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -22,7 +22,7 @@ authority_model:
 architecture_redesign_v1:
   epic_issue: 31
   migration_status: ACTIVE
-  current_phase: LINEAGE_GRAPH_V1_COMPLETE
+  current_phase: MARKET_OBSERVATION_V1_COMPLETE
   production_read_cutover: false
   target_operating_loop: [Universe, Opportunity_Attention, Selective_Research, Thesis_Memory, Decision, Portfolio]
   broad_universe_is_shallow: true
@@ -134,6 +134,30 @@ lineage_graph_v1:
   auto_trade: false
   human_execution_only: true
 
+
+market_observation_v1:
+  policy_version_id: POL-MARKET-OBSERVATION-V1
+  status: ACTIVE_FOUNDATION_NO_READ_CUTOVER
+  production_read_cutover: false
+  observation_types: [REGULAR_CLOSE, LIVE_QUOTE, PRE_MARKET, AFTER_HOURS, FX]
+  canonical_instrument_required: true
+  provider_provenance_required: true
+  session_semantics_required: true
+  manual_web_price_bypass: false
+  dual_write_compatibility: true
+  compatibility_views:
+    [v_market_price_quotes_observation_compat, v_market_daily_closes_observation_compat, v_market_price_snapshots_observation_compat, v_portfolio_market_quotes_observation_compat]
+  observation_count_at_acceptance: 4489
+  verification_set_count_at_acceptance: 340
+  legacy_link_count_at_acceptance: 4489
+  pins_sep04_gate: PASS
+  pins_sep10_gate: BLOCKED_PRICE_CONFLICT
+  target_session_parity: PASS
+  regression_status: "14/14 PASS"
+  legacy_price_consumers_authoritative: true
+  auto_trade: false
+  human_execution_only: true
+
 portfolio_guardrails:
   meaningful_positions: {min: 5, max: 8}
   exceptional_single_stock_max_pct: 30
@@ -212,6 +236,7 @@ policy_governance:
   active_versions:
     METRIC_OBSERVATION_MODEL: POL-METRIC-OBSERVATION-V2
     LINEAGE_GRAPH: POL-LINEAGE-GRAPH-V1
+    MARKET_OBSERVATION: POL-MARKET-OBSERVATION-V1
     INSTRUMENT_IDENTITY: POL-INSTRUMENT-IDENTITY-V1
     RESEARCH_LIFECYCLE: POL-RESEARCH-LIFECYCLE-V1
     DATA_SCORING: POL-DATA-SCORING-V3-DURABILITY
