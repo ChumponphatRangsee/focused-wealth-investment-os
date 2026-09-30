@@ -11,6 +11,54 @@ Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVAL
 
 AI may research, interpret, explain and orchestrate within policy. Accounting, hardening, scoring, ranking, allocation, scenario, rebalancing and approval gates are deterministic/system-controlled. Human execution only.
 
+## Planned Core Architecture Redesign v1.0 — NOT LIVE
+
+Epic **#31** introduces a planned portfolio-native architecture. The current production architecture below remains authoritative until each migration phase is implemented, regression-tested and explicitly cut over.
+
+### Target operating loop
+
+```text
+External Data / Providers
+          ↓
+Universal Discovery Layer
+          ↓
+Opportunity + Attention Layer
+          ↓
+Selective Research Layer
+          ↓
+Persistent Thesis / Decision Memory
+          ↓
+Deterministic Decision Engine
+          ↓
+Portfolio Context / Capital Allocation
+```
+
+### Research-depth principle
+Compute, storage and monitoring depth follow capital relevance:
+
+`UNIVERSE → SCREENED → WATCH → RESEARCH_CANDIDATE → FULL_THESIS → PORTFOLIO`
+
+with side states `REJECTED` and `ARCHIVED`.
+
+Full Thesis is not the default state for broad-market coverage. S&P 500 and larger universes are discovery universes; only qualified names receive deep evidence, valuation, Thesis Memory, Revision/Chase and continuous monitoring.
+
+### Model-coverage principle
+Sector is classification, not a requirement to build a full model for every sector. Valuation/research models are reusable **archetype packs** built when qualified candidate or portfolio demand justifies them. Unsupported archetypes remain fail-closed for deep decision use.
+
+### Ownership boundary
+FWIOS may rent external financial/market data, but must own:
+- canonical instrument identity;
+- decision-relevant metric observations;
+- evidence → metric → decision lineage;
+- thesis conditions and decision memory;
+- portfolio context;
+- immutable decision snapshots and approvals.
+
+### Planned migration
+`#32 → #33 → #34 → #35/#36 → #37 → #38 → #39`.
+
+No planned component becomes production authority merely because it is documented here.
+
 ## Decision-and-capital architecture
 ```text
 Source / Evidence / Canonical Facts / Normalized Metrics
@@ -269,16 +317,20 @@ The `Autonomous Sector Documentation Gate` was corrected to treat any `System_Fo
 - Auto-resume: false
 
 ## Next architecture action
-**Implement Financials valuation models before advancing autonomous sector execution.**
+**Issue #32 — Define Research Lifecycle + Architecture Contract.**
 
-Priority:
-1. `PAYMENT_NETWORK_FCF_DCF_V1`
-2. `BANK_ROTCE_TBV_V1`
-3. `INSURANCE_BOOK_VALUE_ROE_V1`
-4. `FIN_DATA_PLATFORM_FCF_DCF_V1`
-5. `ASSET_MANAGER_FRE_AUM_V1`
+Before any core-schema cutover, define and regression-test:
+- research lifecycle states and legal transitions;
+- attention/resource tiers;
+- archetype coverage states;
+- lifecycle-specific data depth and refresh expectations;
+- explicit REJECTED/ARCHIVED decision-memory behavior;
+- fail-closed unsupported-model behavior;
+- backward-compatibility and parity requirements.
 
-Each must use archetype-correct normalized economics, separate facts from assumptions, pass deterministic regressions and fail closed until production activation. Industrials remains queued but must not auto-start while this model-debt review is active.
+The prior sector-completeness approach is superseded as the global architecture direction. Existing sector/archetype models remain valid reusable assets, but new model work is demand-driven rather than required for exhaustive market coverage.
+
+Current production Decision, Quality Hardening, Revision/Chase, portfolio and human-approval boundaries remain unchanged until migration cutover.
 
 ## 2026-09-11 architecture delta — Auto Decision Refresh v1 Shadow
 
