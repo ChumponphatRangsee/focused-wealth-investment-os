@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.13**  
+Contract version: **FWIOS-CONTRACT-0.87.14**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -21,7 +21,7 @@ Human execution only. Never auto-buy or auto-sell.
 Live portfolio/system/controller state overrides stale documentation.
 
 
-### Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #33 IDENTITY LIVE
+### Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #34 METRICS LIVE
 
 GitHub Epic **#31** defines the planned migration from broad sector/thesis coverage toward a portfolio-native operating loop:
 
@@ -112,6 +112,7 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-HUMAN-APPROVAL-V1`
 - `POL-RESEARCH-LIFECYCLE-V1` — contract/gating kernel active; no production read cutover
 - `POL-INSTRUMENT-IDENTITY-V1` — canonical identity active; legacy symbol read paths preserved
+- `POL-METRIC-OBSERVATION-V2` — typed period-aware metric foundation active; no production read cutover
 
 AI must never retune deterministic gates ad hoc to make a name pass.
 
@@ -258,23 +259,26 @@ Missing, stale, conflicting, schema-invalid, unverified, provenance-free, policy
 Never force-fill. Rough valuation multiples and historical return cannot substitute expected return. Rejected/expired/stale/non-actionable approval packets cannot execute.
 
 ## 20. Research/controller
-Research Lifecycle v1 and Canonical Instrument Identity v1 are now live migration foundations.
+Research Lifecycle v1, Canonical Instrument Identity v1 and Metric Observation Model v2 are live migration foundations.
 
-Identity state:
-- 70 canonical instruments: 64 Stock + 6 Crypto;
-- 70 entity rows;
-- active symbol history and identifier registries are populated;
-- ADBE, PINS and portfolio assets resolve deterministically to immutable `instrument_id`;
-- selected anchor tables are backfilled while legacy `ticker` / `asset_symbol` remain intact;
-- `v_instrument_identity_current` is compatibility-only and service-role/internal;
-- production research/decision reads have not been cut over to instrument IDs.
+Metric v2 state:
+- 130 semantic metric definitions;
+- 449 typed metric observations at acceptance;
+- 233/233 company_metrics compatibility rows;
+- 210/210 normalized_metrics compatibility rows;
+- all ticker-bearing company_metrics / normalized_metrics / evidence_records mapped to `instrument_id`;
+- ADBE recurring growth Q2/Q3 coexist under one metric code;
+- PINS MAU/revenue growth Q1/Q2 and quarterly FCF history coexist by period;
+- PINS ARPU and SBC baselines use explicit period semantics;
+- normalized observations retain source-observation/evidence lineage handles;
+- legacy metric/valuation/Revision read paths remain authoritative.
 
-Research depth remains demand-driven. The historical sector controller stays paused.
+Broad-universe ingestion remains selective and decision-relevant. Do not mirror full financial statements by default.
 
 ## 21. Immediate next action
-**Implement Issue #34 — Decision-Relevant Metric Observation Model v2.**
+**Implement Issue #35 — Evidence → Metric → Decision Lineage Graph.**
 
-Issue #34 must use canonical `instrument_id` and introduce period-aware metric observations without building a full financial warehouse. Existing ADBE/PINS decision outputs and portfolio accounting must remain unchanged until explicit cutover.
+Issue #36 — Unified Market Observation Layer may proceed in parallel after #34. #35 should normalize transitional evidence/source-observation handles into explicit auditable lineage without changing existing valuation, Revision, portfolio or human-execution semantics.
 
 ## 22. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.

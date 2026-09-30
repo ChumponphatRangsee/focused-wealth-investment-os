@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.13
+  id: FWIOS-CONTRACT-0.87.14
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -22,7 +22,7 @@ authority_model:
 architecture_redesign_v1:
   epic_issue: 31
   migration_status: ACTIVE
-  current_phase: CANONICAL_INSTRUMENT_IDENTITY_COMPLETE
+  current_phase: METRIC_OBSERVATION_MODEL_V2_COMPLETE
   production_read_cutover: false
   target_operating_loop: [Universe, Opportunity_Attention, Selective_Research, Thesis_Memory, Decision, Portfolio]
   broad_universe_is_shallow: true
@@ -83,6 +83,32 @@ instrument_identity_v1:
     [companies, research_candidates, thesis_registry, portfolio_assets, portfolio_transactions, market_daily_closes, market_price_quotes, market_price_snapshots]
   legacy_symbol_columns_removed: false
   regression_status: "20/20 PASS"
+  auto_trade: false
+  human_execution_only: true
+
+
+metric_observation_v2:
+  policy_version_id: POL-METRIC-OBSERVATION-V2
+  status: ACTIVE_FOUNDATION_NO_READ_CUTOVER
+  production_read_cutover: false
+  metric_definition_count_at_acceptance: 130
+  metric_observation_count_at_acceptance: 449
+  company_metrics_compatibility: "233/233"
+  normalized_metrics_compatibility: "210/210"
+  canonical_identity_required: true
+  typed_values_required: true
+  period_identity_separate_from_metric_identity: true
+  full_statement_replication: false
+  decision_relevant_scope: [SCREENING, THESIS, VALUATION, REVISION, RISK, PORTFOLIO]
+  canonical_unit_examples:
+    percent: ratio
+    usd_millions: USD_B
+    billion_shares: M_shares
+  source_lineage_handles: true
+  full_lineage_graph_deferred_to_issue: 35
+  legacy_company_metrics_authoritative: true
+  legacy_normalized_metrics_authoritative: true
+  regression_status: "15/15 PASS"
   auto_trade: false
   human_execution_only: true
 
@@ -162,6 +188,7 @@ policy_governance:
   deterministic_scoring_required_when_numeric_score_is_used: true
   ai_may_invent_raw_to_score_mapping: false
   active_versions:
+    METRIC_OBSERVATION_MODEL: POL-METRIC-OBSERVATION-V2
     INSTRUMENT_IDENTITY: POL-INSTRUMENT-IDENTITY-V1
     RESEARCH_LIFECYCLE: POL-RESEARCH-LIFECYCLE-V1
     DATA_SCORING: POL-DATA-SCORING-V3-DURABILITY
