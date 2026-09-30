@@ -46,6 +46,7 @@ Core edge types:
 - EVIDENCE_SUPPORTS_REVISION_COMPONENT
 - METRIC_SUPPORTS_REVISION_COMPONENT
 - REVISION_COMPONENT_CONTRIBUTES_TO_REVISION
+- EVIDENCE_SUPPORTS_REVISION_SNAPSHOT
 - METRIC_INPUT_TO_VALUATION
 - VALUATION_SUPPORTS_HARDENING
 - EVIDENCE_SUPPORTS_HARDENING
@@ -137,3 +138,11 @@ This phase does not:
 - delete legacy provenance fields.
 
 It adds an auditable explanation graph beneath current production outputs.
+
+## Live acceptance
+
+- 16/16 lineage checks PASS
+- 1,156 artifacts / 1,423 edges at acceptance
+- unresolved legacy references are explicit `REFERENCE_ONLY` nodes/edges
+- ADBE 47.5878 resolves through four Revision components
+- PINS owner-economics REVIEW resolves through evidence + typed metric paths
