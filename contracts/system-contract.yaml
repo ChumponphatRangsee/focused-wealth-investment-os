@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.14
+  id: FWIOS-CONTRACT-0.87.15
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -22,7 +22,7 @@ authority_model:
 architecture_redesign_v1:
   epic_issue: 31
   migration_status: ACTIVE
-  current_phase: METRIC_OBSERVATION_MODEL_V2_COMPLETE
+  current_phase: LINEAGE_GRAPH_V1_COMPLETE
   production_read_cutover: false
   target_operating_loop: [Universe, Opportunity_Attention, Selective_Research, Thesis_Memory, Decision, Portfolio]
   broad_universe_is_shallow: true
@@ -105,10 +105,32 @@ metric_observation_v2:
     usd_millions: USD_B
     billion_shares: M_shares
   source_lineage_handles: true
-  full_lineage_graph_deferred_to_issue: 35
+  full_lineage_graph_status: COMPLETE_ISSUE_35
+  legacy_lineage_arrays_preserved: true
   legacy_company_metrics_authoritative: true
   legacy_normalized_metrics_authoritative: true
   regression_status: "15/15 PASS"
+  auto_trade: false
+  human_execution_only: true
+
+
+lineage_graph_v1:
+  policy_version_id: POL-LINEAGE-GRAPH-V1
+  status: ACTIVE_FOUNDATION_NO_READ_CUTOVER
+  production_read_cutover: false
+  append_only: true
+  artifact_count_at_acceptance: 1156
+  edge_count_at_acceptance: 1423
+  reference_only_artifact_count_at_acceptance: 39
+  reference_only_edge_count_at_acceptance: 82
+  normalized_relations:
+    [metric_evidence, metric_derivation, revision_evidence, revision_components, valuation_inputs, hardening_inputs, decision_consumption]
+  audit_view: fwios.v_lineage_edges_resolved
+  trace_function: fwios.lineage_trace_v1
+  adbe_revision_acceptance: "47.5878 via 4 explicit components"
+  pins_hardening_acceptance: "REVIEW via explicit owner-economics evidence and metrics"
+  regression_status: "16/16 PASS"
+  legacy_provenance_fields_preserved: true
   auto_trade: false
   human_execution_only: true
 
@@ -189,6 +211,7 @@ policy_governance:
   ai_may_invent_raw_to_score_mapping: false
   active_versions:
     METRIC_OBSERVATION_MODEL: POL-METRIC-OBSERVATION-V2
+    LINEAGE_GRAPH: POL-LINEAGE-GRAPH-V1
     INSTRUMENT_IDENTITY: POL-INSTRUMENT-IDENTITY-V1
     RESEARCH_LIFECYCLE: POL-RESEARCH-LIFECYCLE-V1
     DATA_SCORING: POL-DATA-SCORING-V3-DURABILITY
