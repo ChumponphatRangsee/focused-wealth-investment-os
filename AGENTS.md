@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.11**  
+Contract version: **FWIOS-CONTRACT-0.87.12**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -21,13 +21,13 @@ Human execution only. Never auto-buy or auto-sell.
 Live portfolio/system/controller state overrides stale documentation.
 
 
-### Planned Core Architecture Redesign v1.0 — NOT LIVE
+### Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #32 CONTRACT LIVE
 
 GitHub Epic **#31** defines the planned migration from broad sector/thesis coverage toward a portfolio-native operating loop:
 
 `Universe → Opportunity/Attention → Selective Research → Thesis Memory → Decision → Portfolio`.
 
-This redesign is **planned, not current production authority** until the corresponding migration issues are implemented, regression-tested and explicitly cut over.
+The redesign migration is active. **Research Lifecycle v1 is contract-live**, but existing research/decision read paths remain authoritative until their later migration phases are regression-tested and explicitly cut over. `POL-RESEARCH-LIFECYCLE-V1` has `production_read_cutover=false`.
 
 Design constraints for all new work:
 - broad market coverage is shallow discovery/screening, not full-thesis coverage;
@@ -41,7 +41,7 @@ Design constraints for all new work:
 Migration sequence:
 `#32 → #33 → #34 → #35/#36 → #37 → #38 → #39`.
 
-Until a phase is explicitly cut over, the current production model and compatibility surfaces remain authoritative.
+Issue #32 is complete at the contract/kernel layer. Until a later phase is explicitly cut over, the current production model and compatibility surfaces remain authoritative.
 
 
 ## 3. Before any investment recommendation
@@ -110,6 +110,7 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-PORTFOLIO-SCENARIO-V1`
 - `POL-REBALANCE-V1`
 - `POL-HUMAN-APPROVAL-V1`
+- `POL-RESEARCH-LIFECYCLE-V1` — contract/gating kernel active; no production read cutover
 
 AI must never retune deterministic gates ad hoc to make a name pass.
 
@@ -256,26 +257,28 @@ Missing, stale, conflicting, schema-invalid, unverified, provenance-free, policy
 Never force-fill. Rough valuation multiples and historical return cannot substitute expected return. Rejected/expired/stale/non-actionable approval packets cannot execute.
 
 ## 20. Research/controller
-The historical sector controller remains **PAUSED** and must not auto-start new sector work merely to expand coverage.
+Research Lifecycle v1 is now contract-live under `POL-RESEARCH-LIFECYCLE-V1`.
 
-The new design direction is demand-driven:
-- S&P 500 / broader universes may be screened shallowly;
-- deep research is promoted selectively;
-- archetype model work is justified by active candidate/portfolio demand rather than sector completeness;
-- existing sector/archetype research and models remain reusable assets, not a mandate to complete every market archetype before progressing the system.
+States:
+`UNIVERSE → SCREENED → WATCH → RESEARCH_CANDIDATE → FULL_THESIS → PORTFOLIO`, with `REJECTED` and `ARCHIVED` side states.
+
+Key rules:
+- broad-universe research remains shallow;
+- Full Thesis is selective;
+- `UNSUPPORTED` archetype coverage does not imply rejection, but blocks deep promotion;
+- REJECTED requires persistent decision memory;
+- reactivation from REJECTED/ARCHIVED requires an explicit trigger;
+- PORTFOLIO state reflects reconciled holdings and never creates a trade;
+- lifecycle demotion never deletes historical investment lineage.
+
+The historical sector controller remains paused; model work is demand-driven rather than sector-completeness-driven.
 
 ## 21. Immediate next action
-**Implement Issue #32 — Define Research Lifecycle + Architecture Contract.**
+**Implement Issue #33 — Canonical Instrument Identity v1.**
 
-Issue #32 must establish:
-1. legal research states and transitions;
-2. attention/resource tiers;
-3. archetype coverage states;
-4. data-retention depth by lifecycle state;
-5. fail-closed handling for unsupported archetypes;
-6. backward-compatible migration invariants.
+Issue #33 must introduce immutable instrument identity while preserving ticker/asset-symbol compatibility. It must not change existing ADBE/PINS decisions, portfolio quantities/cost basis, or human-execution boundaries.
 
-Do **not** treat Epic #31 architecture as production-live until its relevant migration tasks have passed deterministic regressions and explicit cutover. Existing valuation, hardening, Revision/Chase, portfolio and human-approval semantics remain authoritative meanwhile.
+Research Lifecycle v1 remains a contract/gating layer only; existing production research read paths have not been cut over.
 
 ## 22. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
