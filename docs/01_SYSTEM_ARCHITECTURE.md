@@ -1,6 +1,6 @@
 # 01 — System Architecture
 
-Contract version: **FWIOS-CONTRACT-0.87.15**  
+Contract version: **FWIOS-CONTRACT-0.87.16**  
 Foundation compatibility: **0.87**  
 Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVALIDATED / FINANCIALS RESEARCH COMPLETE / MODEL DEBT FAIL-CLOSED / DASHBOARD AUTO REFRESH LIVE**
 
@@ -11,7 +11,7 @@ Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVAL
 
 AI may research, interpret, explain and orchestrate within policy. Accounting, hardening, scoring, ranking, allocation, scenario, rebalancing and approval gates are deterministic/system-controlled. Human execution only.
 
-## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #35 LINEAGE LIVE
+## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #36 MARKET OBSERVATION LIVE
 
 Epic **#31** is now in migration. Research Lifecycle v1 is active as a deterministic contract/kernel, while the current production architecture below remains authoritative for research/decision reads until later phases are implemented, regression-tested and explicitly cut over.
 
@@ -175,6 +175,50 @@ Unresolved legacy references are represented explicitly as `REFERENCE_ONLY` node
 
 This is an additive explanation foundation. Existing valuation, Revision, Hardening and Decision consumers remain authoritative and `production_read_cutover=false`.
 
+
+## Unified Market Observation Layer v1
+
+Policy: `POL-MARKET-OBSERVATION-V1`.
+
+Market Observation v1 separates source observations from verification decisions:
+
+```text
+Provider / API
+   ↓
+Market Observation
+   ├─ instrument_id
+   ├─ type: close / live / pre / after-hours / FX
+   ├─ provider + tier + source
+   ├─ session_date + observed_at
+   └─ provenance
+        ↓
+Market Verification Set
+   ├─ primary observation
+   ├─ optional secondary observation
+   ├─ divergence / conflict
+   └─ final price gate
+        ↓
+Legacy Decision Price / Daily Close / Portfolio MTM compatibility
+```
+
+Live acceptance:
+- 4,489 canonical observations at initial acceptance;
+- 4,489 legacy-source links;
+- 340 verification sets;
+- current Decision Price, Daily Close and Portfolio MTM rows are fully observation-linked;
+- USD portfolio MTM rows carry explicit FX observation IDs;
+- four database triggers dual-write future compatibility-table changes into canonical observations;
+- compatibility views expose existing semantics plus canonical IDs;
+- 14/14 market regressions PASS.
+
+PINS parity anchors:
+- Sep-4: $20.28 vs $20.30, divergence 0.0986193294%, PASS;
+- Sep-10: selected $18.655, divergence 1.2597158939%, `BLOCKED - PRICE CONFLICT`.
+
+`decision_refresh_price_plan_v1` target-session output remained identical before/after migration.
+
+The canonical layer introduces no manual web-price bypass and does not weaken provider/source-tier gates. Existing price/mispricing consumers remain authoritative with `production_read_cutover=false`.
+
 ## Decision-and-capital architecture
 ```text
 Source / Evidence / Canonical Facts / Normalized Metrics
@@ -227,6 +271,7 @@ Business quality, valuation attractiveness, model readiness and portfolio fit ar
 | Instrument Identity v1 | ACTIVE FOUNDATION / LEGACY READS PRESERVED |
 | Metric Observation Model v2 | ACTIVE FOUNDATION / TYPED PERIOD-AWARE / NO READ CUTOVER |
 | Evidence → Metric → Decision Lineage v1 | ACTIVE FOUNDATION / APPEND-ONLY / 16/16 PASS / NO READ CUTOVER |
+| Unified Market Observation v1 | ACTIVE FOUNDATION / PROVIDER+SESSION AWARE / 14/14 PASS / DUAL-WRITE / NO READ CUTOVER |
 
 Retired/superseded for production: `POL-DATA-SCORING-V2-NATIVE`, `POL-OPPORTUNITY-RANKING-V1`. Historical snapshots remain immutable audit lineage.
 
@@ -437,19 +482,20 @@ The `Autonomous Sector Documentation Gate` was corrected to treat any `System_Fo
 - Auto-resume: false
 
 ## Next architecture action
-**Issue #36 — Unified Market Observation Layer.**
+**Issue #37 — Normalize Thesis Memory + Reactivation Rules.**
 
-Issue #35 is complete at the additive lineage-foundation layer:
-- `POL-LINEAGE-GRAPH-V1` ACTIVE;
-- 1,156 artifacts / 1,423 typed edges at acceptance;
-- ADBE Revision 47.5878 traces through four components;
-- PINS owner-economics REVIEW traces through explicit evidence and metric paths;
-- recursive lineage trace is available for audit/AI explanation;
-- 16/16 lineage regressions PASS;
-- no valuation, Revision, Hardening, portfolio or human-execution semantics changed;
+Issue #36 is complete at the additive market-observation foundation layer:
+- `POL-MARKET-OBSERVATION-V1` ACTIVE;
+- canonical close/live/pre-market/after-hours/FX schema live;
+- 4,489 observations / 340 verification sets at initial acceptance;
+- PINS verified/conflict price parity preserved;
+- target-session decision-refresh parity preserved;
+- portfolio MTM can reference canonical price + FX observations;
+- 14/14 market regressions PASS;
+- no price/mispricing consumer cutover;
 - `production_read_cutover=false`.
 
-Issue #36 should unify market observations by canonical `instrument_id` and time/source identity while preserving current market-price and mispricing outputs until explicit parity and cutover.
+Issue #37 should normalize machine-actionable thesis conditions, KPI bindings, decision memory and explicit reactivation rules while preserving current thesis text/baselines and preventing automatic buy promotion.
 
 ## 2026-09-11 architecture delta — Auto Decision Refresh v1 Shadow
 

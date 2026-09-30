@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.15**  
+Contract version: **FWIOS-CONTRACT-0.87.16**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -21,7 +21,7 @@ Human execution only. Never auto-buy or auto-sell.
 Live portfolio/system/controller state overrides stale documentation.
 
 
-### Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #35 LINEAGE LIVE
+### Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #36 MARKET OBSERVATION LIVE
 
 GitHub Epic **#31** defines the planned migration from broad sector/thesis coverage toward a portfolio-native operating loop:
 
@@ -114,6 +114,7 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-INSTRUMENT-IDENTITY-V1` — canonical identity active; legacy symbol read paths preserved
 - `POL-METRIC-OBSERVATION-V2` — typed period-aware metric foundation active; no production read cutover
 - `POL-LINEAGE-GRAPH-V1` — append-only evidence→metric→decision lineage active; no production read cutover
+- `POL-MARKET-OBSERVATION-V1` — canonical provider/session-aware market observations + dual-write compatibility; no production read cutover
 
 AI must never retune deterministic gates ad hoc to make a name pass.
 
@@ -286,10 +287,21 @@ Lineage v1 state:
 
 Broad-universe ingestion remains selective and decision-relevant. Do not mirror full financial statements by default.
 
-## 21. Immediate next action
-**Implement Issue #36 — Unified Market Observation Layer.**
+Market Observation v1 state:
+- canonical `market_observations` supports REGULAR_CLOSE, LIVE_QUOTE, PRE_MARKET, AFTER_HOURS and FX;
+- 4,489 observations / 4,489 legacy links / 340 verification sets at acceptance;
+- current Decision Price, Daily Close and Portfolio MTM rows all reference canonical observation IDs;
+- four dual-write triggers keep future legacy writes synchronized;
+- PINS Sep-4 verified price remains PASS at $20.28;
+- PINS Sep-10 remains BLOCKED - PRICE CONFLICT at 1.2597% divergence;
+- target-session decision-refresh plan parity PASS;
+- legacy market-price/mispricing readers remain authoritative;
+- production_read_cutover=false.
 
-Issue #35 is complete at the additive lineage-foundation layer. #36 should unify market observations under canonical instrument identity while preserving current market-price/mispricing decision semantics until explicit parity and cutover.
+## 21. Immediate next action
+**Implement Issue #37 — Normalize Thesis Memory + Reactivation Rules.**
+
+Issue #36 is complete at the additive market-observation foundation layer. #37 should structure thesis conditions, KPI bindings, decision memory and explicit reactivation triggers while preserving existing ADBE/PINS thesis baselines and preventing automatic promotion to a buy action.
 
 ## 22. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
