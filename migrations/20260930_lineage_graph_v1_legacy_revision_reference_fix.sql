@@ -92,23 +92,3 @@ set
   notes='Legacy component_input_ids are normalized as component edges when a component exists, otherwise as explicit evidence/reference edges without fabricating components.'
 where policy_version_id='POL-LINEAGE-GRAPH-V1'
   and test_case='Revision snapshot components are explicit edges.';
-
-update fwios.decision_policy_regression_runs
-set
-  actual_payload=jsonb_build_object(
-    'passed',
-    not exists(
-      select 1 from fwios.decision_policy_regression_runs r2
-      where r2.policy_version_id='POL-LINEAGE-GRAPH-V1'
-        and r2.regression_id<>fwios.decision_policy_regression_runs.regression_id
-        and r2.status<>'PASS'
-    )
-  ),
-  status=case when not exists(
-    select 1 from fwios.decision_policy_regression_runs r2
-    where r2.policy_version_id='POL-LINEAGE-GRAPH-V1'
-      and r2.regression_id<>fwios.decision_policy_regression_runs.regression_id
-      and r2.status<>'PASS'
-  ) then 'PASS' else 'FAIL' end
-where policy_version_id='POL-LINEAGE-GRAPH-V1'
-  and test_case='Human execution only.';
