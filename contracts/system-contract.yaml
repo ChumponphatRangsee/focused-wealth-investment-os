@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.16
+  id: FWIOS-CONTRACT-0.87.17
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -22,7 +22,7 @@ authority_model:
 architecture_redesign_v1:
   epic_issue: 31
   migration_status: ACTIVE
-  current_phase: MARKET_OBSERVATION_V1_COMPLETE
+  current_phase: THESIS_MEMORY_V1_COMPLETE
   production_read_cutover: false
   target_operating_loop: [Universe, Opportunity_Attention, Selective_Research, Thesis_Memory, Decision, Portfolio]
   broad_universe_is_shallow: true
@@ -158,6 +158,33 @@ market_observation_v1:
   auto_trade: false
   human_execution_only: true
 
+
+thesis_memory_v1:
+  policy_version_id: POL-THESIS-MEMORY-V1
+  status: ACTIVE_FOUNDATION_NO_READ_CUTOVER
+  production_read_cutover: false
+  legacy_thesis_json_authoritative: true
+  complete_baselines_normalized: 6
+  condition_count_at_acceptance: 73
+  condition_type_counts: {MUST_REMAIN_TRUE: 27, CATALYST: 22, INVALIDATION: 24}
+  kpi_binding_count_at_acceptance: 37
+  condition_metric_link_count_at_acceptance: 8
+  decision_memory_count_at_acceptance: 2
+  reactivation_rule_count_at_acceptance: 0
+  reactivation_event_count_at_acceptance: 0
+  decision_classes: [REJECT, DEFER, WATCH, PROMOTE]
+  reactivation_source_states: [REJECTED, ARCHIVED]
+  reactivation_targets: [UNIVERSE, SCREENED, WATCH]
+  reactivation_trigger_required: true
+  reactivation_review_only: true
+  direct_buy_promotion: false
+  prior_research_history_preserved: true
+  adbe_baseline_parity: PASS
+  pins_baseline_parity: PASS
+  regression_status: "15/15 PASS"
+  auto_trade: false
+  human_execution_only: true
+
 portfolio_guardrails:
   meaningful_positions: {min: 5, max: 8}
   exceptional_single_stock_max_pct: 30
@@ -237,6 +264,7 @@ policy_governance:
     METRIC_OBSERVATION_MODEL: POL-METRIC-OBSERVATION-V2
     LINEAGE_GRAPH: POL-LINEAGE-GRAPH-V1
     MARKET_OBSERVATION: POL-MARKET-OBSERVATION-V1
+    THESIS_MEMORY: POL-THESIS-MEMORY-V1
     INSTRUMENT_IDENTITY: POL-INSTRUMENT-IDENTITY-V1
     RESEARCH_LIFECYCLE: POL-RESEARCH-LIFECYCLE-V1
     DATA_SCORING: POL-DATA-SCORING-V3-DURABILITY
