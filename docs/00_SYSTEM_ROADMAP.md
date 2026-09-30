@@ -3,7 +3,7 @@
 Status: **ACTIVE**  
 Live foundation: **0.87**  
 Execution contract: **FWIOS-CONTRACT-0.87.11**  
-Last updated: **2026-09-06 Asia/Bangkok**  
+Last updated: **2026-09-30 Asia/Bangkok**  
 Execution mode: **HUMAN EXECUTION ONLY**
 
 ## Authority model
@@ -33,7 +33,61 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 | Legacy Screener surface | **6 visible tabs / no data deleted** |
 | Sector automation | **PAUSED — FINANCIALS_MODEL_DEBT_REVIEW** |
 | Next queued sector | Industrials |
-| Immediate next action | **Implement Financials valuation models starting Payment Network** |
+| Immediate next action | **Issue #32 — Research Lifecycle + Architecture Contract** |
+
+## Core Architecture Redesign v1.0 — PLANNED / MIGRATION NOT LIVE
+
+Epic: **#31 — Migrate FWIOS to Attention → Research → Thesis → Decision → Portfolio architecture**.
+
+### Product boundary
+FWIOS is not intended to become a full-market financial-data warehouse or maintain a Full Thesis for every S&P 500 company.
+
+Target allocation of research depth:
+- **UNIVERSE** — broad, cheap, shallow discovery;
+- **SCREENED / WATCH** — selective signals and limited monitoring;
+- **RESEARCH_CANDIDATE** — deeper evidence/model work;
+- **FULL_THESIS** — scarce, high-conviction research state;
+- **PORTFOLIO** — deepest continuous monitoring;
+- **REJECTED / ARCHIVED** — retain decision memory and reactivation conditions without continuous deep research.
+
+Target loop:
+
+```text
+External Data
+    ↓
+Universe / Screening
+    ↓
+Opportunity + Attention Allocation
+    ↓
+Selective Research
+    ↓
+Thesis Memory
+    ↓
+Decision Engine
+    ↓
+Portfolio Engine
+```
+
+### Migration sequence
+1. **#32** Research Lifecycle + Architecture Contract
+2. **#33** Canonical Instrument Identity v1
+3. **#34** Decision-Relevant Metric Observation Model v2
+4. **#35** Evidence → Metric → Decision Lineage
+5. **#36** Unified Market Observation Layer
+6. **#37** Thesis Memory + Reactivation Rules
+7. **#38** Research Attention + Promotion/Demotion Engine
+8. **#39** Compatibility Cutover / Index / Retention / Legacy Cleanup
+
+#35 and #36 may proceed in parallel after their foundations are stable.
+
+### Migration invariants
+- no big-bang rewrite;
+- existing production path stays authoritative until explicit cutover;
+- ADBE/PINS, portfolio state and existing deterministic gates must not change solely because of schema migration;
+- broad universe coverage must not imply full-model/full-thesis coverage;
+- archetype models are created/reused on demand;
+- no force-fill and no auto-trading;
+- compatibility views remain until downstream consumers migrate.
 
 ## M1 — Research Pipeline v2
 **CORE HARDENING PASS / PERFORMANCE VALIDATION OPEN.** Research/model coverage debt remains fail-closed for affected names.
@@ -164,22 +218,16 @@ Current Action remains `NO_ACTIONABLE_OPPORTUNITY`. Dashboard is downstream/read
 
 Industrials must not auto-start while Financials model debt is the explicit priority.
 
-## Next implementation phase — Financials Valuation Model Sprint
-Priority:
-1. **Payment Network** — implement `PAYMENT_NETWORK_FCF_DCF_V1` first because its contract is already defined.
-2. **Bank** — define/implement `BANK_ROTCE_TBV_V1` with ROTCE/TBV/CET1/NII/credit-cycle normalization.
-3. **Insurance** — define/implement `INSURANCE_BOOK_VALUE_ROE_V1` with underwriting/book-value/ROE normalization.
-4. **Data / Ratings / Exchange** — define/implement `FIN_DATA_PLATFORM_FCF_DCF_V1`.
-5. **Asset Manager** — define/implement `ASSET_MANAGER_FRE_AUM_V1` if shortlist value justifies further work.
+## Superseded immediate priority — Financials Valuation Model Sprint
+The September 6 Financials model sprint is retained as historical roadmap context and reusable archetype work, but it is **no longer the global immediate next action**.
 
-Every model must:
-- preserve reported facts vs assumptions;
-- use archetype-correct normalized economics;
-- pass deterministic regressions;
-- fail closed before activation;
-- rerun affected candidates through valuation → hardening → scoring → ranking after activation.
+Under Core Architecture Redesign v1.0:
+- existing Financials valuation/model work remains reusable archetype infrastructure;
+- future Bank / Insurance / Data / Asset Manager / other archetype work is demand-driven by qualified candidates or portfolio relevance;
+- the system must not require complete model coverage across every sector before progressing;
+- unsupported archetypes fail closed for deep decision use rather than forcing generic valuation confidence.
 
-Only after that should the system determine whether JPM, V, CB, SPGI or BLK deserve Value-Wait, Model-Review or Immediate status.
+The immediate architecture priority is **Issue #32 — Research Lifecycle + Architecture Contract**, followed by the migration sequence in Epic #31.
 
 ## M4 — Autonomous Investment OS
 Future priority remains event/delta research refresh, thesis monitoring, opportunity refresh, concentration alerts and blocker recovery. Autonomous monitoring must never bypass Quality Hardening, model readiness or human execution.
