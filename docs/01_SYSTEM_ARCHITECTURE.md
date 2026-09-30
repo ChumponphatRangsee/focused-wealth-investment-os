@@ -1,6 +1,6 @@
 # 01 — System Architecture
 
-Contract version: **FWIOS-CONTRACT-0.87.13**  
+Contract version: **FWIOS-CONTRACT-0.87.14**  
 Foundation compatibility: **0.87**  
 Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVALIDATED / FINANCIALS RESEARCH COMPLETE / MODEL DEBT FAIL-CLOSED / DASHBOARD AUTO REFRESH LIVE**
 
@@ -11,7 +11,7 @@ Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVAL
 
 AI may research, interpret, explain and orchestrate within policy. Accounting, hardening, scoring, ranking, allocation, scenario, rebalancing and approval gates are deterministic/system-controlled. Human execution only.
 
-## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #33 IDENTITY LIVE
+## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #34 METRICS LIVE
 
 Epic **#31** is now in migration. Research Lifecycle v1 is active as a deterministic contract/kernel, while the current production architecture below remains authoritative for research/decision reads until later phases are implemented, regression-tested and explicitly cut over.
 
@@ -96,6 +96,48 @@ Rules:
 
 Identity regressions: **20/20 PASS**.
 
+## Metric Observation Model v2
+
+Policy: `POL-METRIC-OBSERVATION-V2`.
+
+Metric v2 separates semantic metric identity from period identity:
+
+```text
+Instrument
+   ↓
+Metric Definition
+   ↓
+Metric Observation
+   ├─ typed canonical value
+   ├─ observation layer
+   ├─ fiscal / period identity
+   ├─ as-of / reported / effective time
+   ├─ raw source value + unit
+   └─ evidence / source-observation handles
+```
+
+Current live acceptance state:
+- 130 metric definitions;
+- 449 observations;
+- all 233 current `company_metrics` rows represented;
+- all 210 current `normalized_metrics` rows represented;
+- ADBE recurring growth Q2/Q3 stored under `RECURRING_REVENUE_GROWTH_YOY`;
+- PINS Q1/Q2 MAU and revenue-growth series stored by period;
+- PINS Q2 2025 / Q2 2026 FCF stored under `FREE_CASH_FLOW`;
+- PINS ARPU/SBC baselines carry explicit period semantics;
+- canonical numeric observations no longer require runtime text casts.
+
+Canonical unit examples:
+- PCT/percent → ratio;
+- USD M → USD B;
+- B shares → M shares.
+
+The model intentionally does not mirror complete statements. Only decision-relevant metrics are promoted.
+
+`metric_legacy_mappings` preserves compatibility with current metric IDs. Existing valuation/Revision consumers still read legacy tables until later explicit cutover.
+
+Full evidence/derivation graph normalization belongs to Issue #35.
+
 ## Decision-and-capital architecture
 ```text
 Source / Evidence / Canonical Facts / Normalized Metrics
@@ -146,6 +188,7 @@ Business quality, valuation attractiveness, model readiness and portfolio fit ar
 | Human Approval v1 | ACTIVE |
 | Research Lifecycle v1 | ACTIVE CONTRACT / NO READ CUTOVER |
 | Instrument Identity v1 | ACTIVE FOUNDATION / LEGACY READS PRESERVED |
+| Metric Observation Model v2 | ACTIVE FOUNDATION / TYPED PERIOD-AWARE / NO READ CUTOVER |
 
 Retired/superseded for production: `POL-DATA-SCORING-V2-NATIVE`, `POL-OPPORTUNITY-RANKING-V1`. Historical snapshots remain immutable audit lineage.
 
@@ -356,19 +399,20 @@ The `Autonomous Sector Documentation Gate` was corrected to treat any `System_Fo
 - Auto-resume: false
 
 ## Next architecture action
-**Issue #34 — Decision-Relevant Metric Observation Model v2.**
+**Issue #35 — Evidence → Metric → Decision Lineage Graph.**
 
-Canonical Instrument Identity v1 is complete at the migration-foundation layer:
-- 70 canonical instruments (64 Stock / 6 Crypto);
-- entity/instrument/symbol/identifier separation is live;
-- 8 selected legacy anchor tables are fully backfilled;
-- ADBE/PINS/BTC resolve deterministically;
-- symbol+venue+namespace active identities are collision-protected;
-- private RLS/service-role boundary verified;
-- 20/20 identity regressions PASS;
-- ADBE/PINS and portfolio parity remained unchanged.
+Metric Observation Model v2 is complete at the migration-foundation layer:
+- 130 definitions / 449 observations at acceptance;
+- 233/233 company metric compatibility rows;
+- 210/210 normalized metric compatibility rows;
+- typed-value invariant PASS;
+- period-aware ADBE/PINS history PASS;
+- normalized observations retain evidence/source-observation handles;
+- 15/15 metric regressions PASS;
+- ADBE/PINS valuation and Revision outputs remained unchanged;
+- portfolio accounting remained unchanged.
 
-Issue #34 should build period-aware, typed, decision-relevant metric observations keyed by `instrument_id`. It must not replicate full financial statements by default.
+Issue #35 should convert transitional arrays/handles into explicit graph edges from source evidence through observations/derivations to decision snapshots. Issue #36 Market Observation may proceed in parallel.
 
 ## 2026-09-11 architecture delta — Auto Decision Refresh v1 Shadow
 
