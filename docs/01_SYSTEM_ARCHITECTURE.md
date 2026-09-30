@@ -1,6 +1,6 @@
 # 01 — System Architecture
 
-Contract version: **FWIOS-CONTRACT-0.87.16**  
+Contract version: **FWIOS-CONTRACT-0.87.17**  
 Foundation compatibility: **0.87**  
 Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVALIDATED / FINANCIALS RESEARCH COMPLETE / MODEL DEBT FAIL-CLOSED / DASHBOARD AUTO REFRESH LIVE**
 
@@ -11,7 +11,7 @@ Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVAL
 
 AI may research, interpret, explain and orchestrate within policy. Accounting, hardening, scoring, ranking, allocation, scenario, rebalancing and approval gates are deterministic/system-controlled. Human execution only.
 
-## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #36 MARKET OBSERVATION LIVE
+## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #37 THESIS MEMORY LIVE
 
 Epic **#31** is now in migration. Research Lifecycle v1 is active as a deterministic contract/kernel, while the current production architecture below remains authoritative for research/decision reads until later phases are implemented, regression-tested and explicitly cut over.
 
@@ -219,6 +219,61 @@ PINS parity anchors:
 
 The canonical layer introduces no manual web-price bypass and does not weaken provider/source-tier gates. Existing price/mispricing consumers remain authoritative with `production_read_cutover=false`.
 
+
+## Thesis Memory + Reactivation v1
+
+Policy: `POL-THESIS-MEMORY-V1`.
+
+Thesis Memory v1 turns machine-actionable portions of the persistent thesis from opaque JSON into explicit normalized state while retaining the existing JSON as the compatibility authority:
+
+```text
+Thesis Registry / Legacy Baseline JSON
+             ↓
+      Thesis Conditions
+   ┌─────────┼──────────┐
+   │         │          │
+Must-Remain Catalyst  Invalidation
+   │                    │
+   └──── KPI / Metric Bindings ───→ Canonical Metric Observations
+                             
+Decision Snapshot / Research State
+             ↓
+     Append-only Decision Memory
+             ↓
+      Explicit Reactivation Rule
+             ↓ trigger only
+Dormant REJECTED / ARCHIVED
+             ↓
+   UNIVERSE / SCREENED / WATCH review
+```
+
+Initial acceptance state:
+- six COMPLETE thesis baselines normalized: ADBE, MSFT, NVDA, PINS, TLN and TTWO;
+- 73 explicit thesis conditions: 27 Must-Remain-True / 22 Catalysts / 24 Invalidations;
+- 37 monitoring KPI bindings;
+- 8 condition → canonical metric links for machine-actionable ADBE/PINS clauses;
+- 2 real current decision-memory anchors: ADBE DEFER and PINS WATCH;
+- 0 artificial REJECTED rows, 0 artificial reactivation rules and 0 artificial reactivation events;
+- 15/15 deterministic regressions PASS.
+
+Mapping is fail-closed:
+- RESOLVED means a matching canonical metric observation exists;
+- PARTIAL means only part of the thesis KPI/period semantics is canonical;
+- METRIC_ONLY means a safe metric definition exists but the exact baseline observation does not;
+- UNMAPPED is retained when no safe canonical mapping exists.
+
+The compatibility view reconstructs all four legacy thesis arrays in original order. ADBE and PINS thesis/baseline hashes are unchanged.
+
+Reactivation invariants:
+- REJECT memory requires an explicit reactivation rule;
+- dormant REJECTED/ARCHIVED names require an explicit trigger plus complete decision memory;
+- reactivation targets are limited to UNIVERSE, SCREENED or WATCH;
+- lifecycle legality delegates to `research_lifecycle_transition_gate_v1`;
+- reactivation records audit history but does not automatically mutate the production lifecycle;
+- direct FULL_THESIS, PORTFOLIO, Immediate-Buy or broker promotion is forbidden.
+
+Legacy thesis JSON and existing research/decision consumers remain authoritative with `production_read_cutover=false`.
+
 ## Decision-and-capital architecture
 ```text
 Source / Evidence / Canonical Facts / Normalized Metrics
@@ -272,6 +327,7 @@ Business quality, valuation attractiveness, model readiness and portfolio fit ar
 | Metric Observation Model v2 | ACTIVE FOUNDATION / TYPED PERIOD-AWARE / NO READ CUTOVER |
 | Evidence → Metric → Decision Lineage v1 | ACTIVE FOUNDATION / APPEND-ONLY / 16/16 PASS / NO READ CUTOVER |
 | Unified Market Observation v1 | ACTIVE FOUNDATION / PROVIDER+SESSION AWARE / 14/14 PASS / DUAL-WRITE / NO READ CUTOVER |
+| Thesis Memory + Reactivation v1 | ACTIVE FOUNDATION / 73 CONDITIONS / 37 KPI BINDINGS / 15/15 PASS / NO READ CUTOVER |
 
 Retired/superseded for production: `POL-DATA-SCORING-V2-NATIVE`, `POL-OPPORTUNITY-RANKING-V1`. Historical snapshots remain immutable audit lineage.
 
@@ -482,20 +538,20 @@ The `Autonomous Sector Documentation Gate` was corrected to treat any `System_Fo
 - Auto-resume: false
 
 ## Next architecture action
-**Issue #37 — Normalize Thesis Memory + Reactivation Rules.**
+**Issue #38 — Build Research Attention + Promotion/Demotion Engine.**
 
-Issue #36 is complete at the additive market-observation foundation layer:
-- `POL-MARKET-OBSERVATION-V1` ACTIVE;
-- canonical close/live/pre-market/after-hours/FX schema live;
-- 4,489 observations / 340 verification sets at initial acceptance;
-- PINS verified/conflict price parity preserved;
-- target-session decision-refresh parity preserved;
-- portfolio MTM can reference canonical price + FX observations;
-- 14/14 market regressions PASS;
-- no price/mispricing consumer cutover;
+Issue #37 is complete at the additive thesis-memory foundation layer:
+- `POL-THESIS-MEMORY-V1` ACTIVE;
+- 6 COMPLETE baseline theses normalized;
+- 73 conditions / 37 KPI bindings / 8 condition-metric links;
+- ADBE/PINS baseline hashes and production outputs preserved;
+- append-only decision/reactivation memory live;
+- REJECTED/ARCHIVED reactivation is explicit-trigger review only;
+- no direct deep-state or capital promotion;
+- 15/15 regressions PASS;
 - `production_read_cutover=false`.
 
-Issue #37 should normalize machine-actionable thesis conditions, KPI bindings, decision memory and explicit reactivation rules while preserving current thesis text/baselines and preventing automatic buy promotion.
+Issue #38 should allocate research attention by lifecycle/resource tier and policy-versioned expected decision value versus research cost, preserve no-force-fill behavior, fail closed on unsupported archetypes, and answer what FWIOS should research next with traceable reasons without creating trades automatically.
 
 ## 2026-09-11 architecture delta — Auto Decision Refresh v1 Shadow
 
