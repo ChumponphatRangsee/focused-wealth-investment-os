@@ -20,6 +20,30 @@ Human execution only. Never auto-buy or auto-sell.
 
 Live portfolio/system/controller state overrides stale documentation.
 
+
+### Planned Core Architecture Redesign v1.0 — NOT LIVE
+
+GitHub Epic **#31** defines the planned migration from broad sector/thesis coverage toward a portfolio-native operating loop:
+
+`Universe → Opportunity/Attention → Selective Research → Thesis Memory → Decision → Portfolio`.
+
+This redesign is **planned, not current production authority** until the corresponding migration issues are implemented, regression-tested and explicitly cut over.
+
+Design constraints for all new work:
+- broad market coverage is shallow discovery/screening, not full-thesis coverage;
+- Full Thesis is a scarce research state earned through qualification;
+- research depth follows capital relevance and expected decision value;
+- archetype models are built/reused on demand; do not implement every sector/archetype merely for coverage;
+- external data may be rented, but FWIOS owns investment state, decision memory and auditable lineage;
+- rejected/deferred ideas retain decision memory and explicit reactivation conditions instead of continuous deep monitoring;
+- existing immutable snapshots, fail-closed gates, policy versioning and human-execution-only boundaries remain mandatory throughout migration.
+
+Migration sequence:
+`#32 → #33 → #34 → #35/#36 → #37 → #38 → #39`.
+
+Until a phase is explicitly cut over, the current production model and compatibility surfaces remain authoritative.
+
+
 ## 3. Before any investment recommendation
 1. Read latest reconciled portfolio state and relevant source transactions.
 2. Apply Focused Wealth-Building guardrails.
@@ -232,27 +256,26 @@ Missing, stale, conflicting, schema-invalid, unverified, provenance-free, policy
 Never force-fill. Rough valuation multiples and historical return cannot substitute expected return. Rejected/expired/stale/non-actionable approval packets cannot execute.
 
 ## 20. Research/controller
-Financials research is complete. Sector automation remains **PAUSED** due `FINANCIALS_MODEL_DEBT_REVIEW`.
+The historical sector controller remains **PAUSED** and must not auto-start new sector work merely to expand coverage.
 
-- Current / last completed sector: Financials
-- Next queued sector: Industrials
-- Auto-resume: false
-- Financials valuation-ready: 0
-- Financials Immediate: 0
-
-Do not auto-start Industrials while the Financials model-debt review is the explicit next action.
+The new design direction is demand-driven:
+- S&P 500 / broader universes may be screened shallowly;
+- deep research is promoted selectively;
+- archetype model work is justified by active candidate/portfolio demand rather than sector completeness;
+- existing sector/archetype research and models remain reusable assets, not a mandate to complete every market archetype before progressing the system.
 
 ## 21. Immediate next action
-**Implement Financials valuation models, starting with `PAYMENT_NETWORK_FCF_DCF_V1`.**
+**Implement Issue #32 — Define Research Lifecycle + Architecture Contract.**
 
-Priority:
-1. Payment Network
-2. Bank
-3. Insurance
-4. Data / Ratings / Exchange
-5. Asset Manager
+Issue #32 must establish:
+1. legal research states and transitions;
+2. attention/resource tiers;
+3. archetype coverage states;
+4. data-retention depth by lifecycle state;
+5. fail-closed handling for unsupported archetypes;
+6. backward-compatible migration invariants.
 
-Each model must use archetype-correct normalized inputs, preserve facts vs assumptions, pass deterministic regressions and remain fail-closed until production readiness is proven. Then rerun affected Financials names through valuation → hardening → scoring → ranking before deciding whether any candidate deserves Watchlist or Immediate status.
+Do **not** treat Epic #31 architecture as production-live until its relevant migration tasks have passed deterministic regressions and explicit cutover. Existing valuation, hardening, Revision/Chase, portfolio and human-approval semantics remain authoritative meanwhile.
 
 ## 22. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
