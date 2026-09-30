@@ -1,6 +1,6 @@
 # 01 — System Architecture
 
-Contract version: **FWIOS-CONTRACT-0.87.14**  
+Contract version: **FWIOS-CONTRACT-0.87.15**  
 Foundation compatibility: **0.87**  
 Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVALIDATED / FINANCIALS RESEARCH COMPLETE / MODEL DEBT FAIL-CLOSED / DASHBOARD AUTO REFRESH LIVE**
 
@@ -11,7 +11,7 @@ Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVAL
 
 AI may research, interpret, explain and orchestrate within policy. Accounting, hardening, scoring, ranking, allocation, scenario, rebalancing and approval gates are deterministic/system-controlled. Human execution only.
 
-## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #34 METRICS LIVE
+## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #35 LINEAGE LIVE
 
 Epic **#31** is now in migration. Research Lifecycle v1 is active as a deterministic contract/kernel, while the current production architecture below remains authoritative for research/decision reads until later phases are implemented, regression-tested and explicitly cut over.
 
@@ -136,7 +136,44 @@ The model intentionally does not mirror complete statements. Only decision-relev
 
 `metric_legacy_mappings` preserves compatibility with current metric IDs. Existing valuation/Revision consumers still read legacy tables until later explicit cutover.
 
-Full evidence/derivation graph normalization belongs to Issue #35.
+Full evidence/derivation graph normalization is active via `POL-LINEAGE-GRAPH-V1`; legacy provenance arrays remain preserved for compatibility.
+
+
+## Evidence → Metric → Decision Lineage Graph v1
+
+Policy: `POL-LINEAGE-GRAPH-V1`.
+
+Lineage v1 normalizes audit-critical provenance into explicit append-only artifacts and typed edges:
+
+```text
+Source
+  ↓
+Evidence
+  ↓
+Metric Observation
+  ↓
+Derived / Normalized Metric
+  ├─→ Revision Component → Revision Snapshot
+  ├─→ Valuation Run
+  └─→ Quality / Durability Hardening
+                         ↓
+                   Decision Snapshot
+```
+
+Live acceptance state:
+- 1,156 lineage artifacts;
+- 1,423 lineage edges;
+- 39 `REFERENCE_ONLY` artifacts / 82 `REFERENCE_ONLY` edges for unresolved legacy references;
+- ADBE Revision `47.5878` traces through exactly four Revision components to evidence/reference artifacts;
+- PINS `HARD-PINS-20260906-V2` owner-economics REVIEW traces through FCF, SBC, buybacks and Q2 share-count evidence plus typed metric paths;
+- `fwios.v_lineage_edges_resolved` is the flat audit surface;
+- `fwios.lineage_trace_v1` provides recursive upstream/downstream traversal;
+- UPDATE/DELETE on lineage artifacts and edges is rejected by append-only triggers;
+- 16/16 lineage regression checks PASS.
+
+Unresolved legacy references are represented explicitly as `REFERENCE_ONLY` nodes/edges. The graph does not fabricate missing canonical evidence.
+
+This is an additive explanation foundation. Existing valuation, Revision, Hardening and Decision consumers remain authoritative and `production_read_cutover=false`.
 
 ## Decision-and-capital architecture
 ```text
@@ -189,6 +226,7 @@ Business quality, valuation attractiveness, model readiness and portfolio fit ar
 | Research Lifecycle v1 | ACTIVE CONTRACT / NO READ CUTOVER |
 | Instrument Identity v1 | ACTIVE FOUNDATION / LEGACY READS PRESERVED |
 | Metric Observation Model v2 | ACTIVE FOUNDATION / TYPED PERIOD-AWARE / NO READ CUTOVER |
+| Evidence → Metric → Decision Lineage v1 | ACTIVE FOUNDATION / APPEND-ONLY / 16/16 PASS / NO READ CUTOVER |
 
 Retired/superseded for production: `POL-DATA-SCORING-V2-NATIVE`, `POL-OPPORTUNITY-RANKING-V1`. Historical snapshots remain immutable audit lineage.
 
@@ -399,20 +437,19 @@ The `Autonomous Sector Documentation Gate` was corrected to treat any `System_Fo
 - Auto-resume: false
 
 ## Next architecture action
-**Issue #35 — Evidence → Metric → Decision Lineage Graph.**
+**Issue #36 — Unified Market Observation Layer.**
 
-Metric Observation Model v2 is complete at the migration-foundation layer:
-- 130 definitions / 449 observations at acceptance;
-- 233/233 company metric compatibility rows;
-- 210/210 normalized metric compatibility rows;
-- typed-value invariant PASS;
-- period-aware ADBE/PINS history PASS;
-- normalized observations retain evidence/source-observation handles;
-- 15/15 metric regressions PASS;
-- ADBE/PINS valuation and Revision outputs remained unchanged;
-- portfolio accounting remained unchanged.
+Issue #35 is complete at the additive lineage-foundation layer:
+- `POL-LINEAGE-GRAPH-V1` ACTIVE;
+- 1,156 artifacts / 1,423 typed edges at acceptance;
+- ADBE Revision 47.5878 traces through four components;
+- PINS owner-economics REVIEW traces through explicit evidence and metric paths;
+- recursive lineage trace is available for audit/AI explanation;
+- 16/16 lineage regressions PASS;
+- no valuation, Revision, Hardening, portfolio or human-execution semantics changed;
+- `production_read_cutover=false`.
 
-Issue #35 should convert transitional arrays/handles into explicit graph edges from source evidence through observations/derivations to decision snapshots. Issue #36 Market Observation may proceed in parallel.
+Issue #36 should unify market observations by canonical `instrument_id` and time/source identity while preserving current market-price and mispricing outputs until explicit parity and cutover.
 
 ## 2026-09-11 architecture delta — Auto Decision Refresh v1 Shadow
 
