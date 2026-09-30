@@ -2,7 +2,7 @@
 
 Status: **ACTIVE**  
 Live foundation: **0.87**  
-Execution contract: **FWIOS-CONTRACT-0.87.14**  
+Execution contract: **FWIOS-CONTRACT-0.87.15**  
 Last updated: **2026-09-30 Asia/Bangkok**  
 Execution mode: **HUMAN EXECUTION ONLY**
 
@@ -16,7 +16,8 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 | Research Lifecycle v1 | **ACTIVE CONTRACT / NO READ CUTOVER / 17/17 PASS** |
 | Canonical Instrument Identity v1 | **ACTIVE FOUNDATION / 70 INSTRUMENTS / 20/20 PASS / LEGACY READS PRESERVED** |
 | Metric Observation Model v2 | **ACTIVE FOUNDATION / 130 DEFINITIONS / 449 OBSERVATIONS / 15/15 PASS / NO READ CUTOVER** |
-| Contract | FWIOS-CONTRACT-0.87.14 |
+| Evidence → Metric → Decision Lineage v1 | **ACTIVE FOUNDATION / 1,156 ARTIFACTS / 1,423 EDGES / 16/16 PASS / APPEND-ONLY / NO READ CUTOVER** |
+| Contract | FWIOS-CONTRACT-0.87.15 |
 | Portfolio batch | PORTFOLIO-M2-20260905-01 |
 | Portfolio review flags | 10 assets / NVDA ~41.25% / crypto ~38.09% |
 | M3.1–M3.5 | **COMPLETE / CUTOVER PASS** |
@@ -36,9 +37,9 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 | Legacy Screener surface | **6 visible tabs / no data deleted** |
 | Sector automation | **PAUSED — FINANCIALS_MODEL_DEBT_REVIEW** |
 | Next queued sector | Industrials |
-| Immediate next action | **Issue #35 — Evidence → Metric → Decision Lineage Graph** |
+| Immediate next action | **Issue #36 — Unified Market Observation Layer** |
 
-## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #34 COMPLETE
+## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #35 COMPLETE
 
 Epic: **#31 — Migrate FWIOS to Attention → Research → Thesis → Decision → Portfolio architecture**.
 
@@ -75,8 +76,8 @@ Portfolio Engine
 1. **#32 COMPLETE** Research Lifecycle + Architecture Contract — `POL-RESEARCH-LIFECYCLE-V1`, 17/17 PASS, no production read cutover
 2. **#33 COMPLETE** Canonical Instrument Identity v1 — `POL-INSTRUMENT-IDENTITY-V1`, 70 instruments, 20/20 PASS, legacy symbol reads preserved
 3. **#34 COMPLETE** Decision-Relevant Metric Observation Model v2 — typed period-aware observations, 15/15 PASS, no production read cutover
-4. **#35 NEXT** Evidence → Metric → Decision Lineage
-5. **#36** Unified Market Observation Layer
+4. **#35 COMPLETE** Evidence → Metric → Decision Lineage — append-only graph, 1,156 artifacts / 1,423 edges, 16/16 PASS, no read cutover
+5. **#36 NEXT** Unified Market Observation Layer
 6. **#37** Thesis Memory + Reactivation Rules
 7. **#38** Research Attention + Promotion/Demotion Engine
 8. **#39** Compatibility Cutover / Index / Retention / Legacy Cleanup
@@ -230,7 +231,7 @@ Under Core Architecture Redesign v1.0:
 - the system must not require complete model coverage across every sector before progressing;
 - unsupported archetypes fail closed for deep decision use rather than forcing generic valuation confidence.
 
-Research Lifecycle #32, Canonical Instrument Identity #33 and Metric Observation Model #34 are complete at their migration-foundation layers. The immediate architecture priority is **Issue #35 — Evidence → Metric → Decision Lineage Graph**; #36 Market Observation may proceed in parallel.
+Research Lifecycle #32, Canonical Instrument Identity #33, Metric Observation Model #34 and Evidence → Metric → Decision Lineage #35 are complete at their migration-foundation layers. The immediate architecture priority is **Issue #36 — Unified Market Observation Layer**. Existing production market-price/mispricing consumers remain authoritative until explicit parity and cutover.
 
 ## M4 — Autonomous Investment OS
 Future priority remains event/delta research refresh, thesis monitoring, opportunity refresh, concentration alerts and blocker recovery. Autonomous monitoring must never bypass Quality Hardening, model readiness or human execution.
