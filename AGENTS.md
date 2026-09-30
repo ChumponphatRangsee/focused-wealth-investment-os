@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.12**  
+Contract version: **FWIOS-CONTRACT-0.87.13**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -21,7 +21,7 @@ Human execution only. Never auto-buy or auto-sell.
 Live portfolio/system/controller state overrides stale documentation.
 
 
-### Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #32 CONTRACT LIVE
+### Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #33 IDENTITY LIVE
 
 GitHub Epic **#31** defines the planned migration from broad sector/thesis coverage toward a portfolio-native operating loop:
 
@@ -111,6 +111,7 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-REBALANCE-V1`
 - `POL-HUMAN-APPROVAL-V1`
 - `POL-RESEARCH-LIFECYCLE-V1` — contract/gating kernel active; no production read cutover
+- `POL-INSTRUMENT-IDENTITY-V1` — canonical identity active; legacy symbol read paths preserved
 
 AI must never retune deterministic gates ad hoc to make a name pass.
 
@@ -257,28 +258,23 @@ Missing, stale, conflicting, schema-invalid, unverified, provenance-free, policy
 Never force-fill. Rough valuation multiples and historical return cannot substitute expected return. Rejected/expired/stale/non-actionable approval packets cannot execute.
 
 ## 20. Research/controller
-Research Lifecycle v1 is now contract-live under `POL-RESEARCH-LIFECYCLE-V1`.
+Research Lifecycle v1 and Canonical Instrument Identity v1 are now live migration foundations.
 
-States:
-`UNIVERSE → SCREENED → WATCH → RESEARCH_CANDIDATE → FULL_THESIS → PORTFOLIO`, with `REJECTED` and `ARCHIVED` side states.
+Identity state:
+- 70 canonical instruments: 64 Stock + 6 Crypto;
+- 70 entity rows;
+- active symbol history and identifier registries are populated;
+- ADBE, PINS and portfolio assets resolve deterministically to immutable `instrument_id`;
+- selected anchor tables are backfilled while legacy `ticker` / `asset_symbol` remain intact;
+- `v_instrument_identity_current` is compatibility-only and service-role/internal;
+- production research/decision reads have not been cut over to instrument IDs.
 
-Key rules:
-- broad-universe research remains shallow;
-- Full Thesis is selective;
-- `UNSUPPORTED` archetype coverage does not imply rejection, but blocks deep promotion;
-- REJECTED requires persistent decision memory;
-- reactivation from REJECTED/ARCHIVED requires an explicit trigger;
-- PORTFOLIO state reflects reconciled holdings and never creates a trade;
-- lifecycle demotion never deletes historical investment lineage.
-
-The historical sector controller remains paused; model work is demand-driven rather than sector-completeness-driven.
+Research depth remains demand-driven. The historical sector controller stays paused.
 
 ## 21. Immediate next action
-**Implement Issue #33 — Canonical Instrument Identity v1.**
+**Implement Issue #34 — Decision-Relevant Metric Observation Model v2.**
 
-Issue #33 must introduce immutable instrument identity while preserving ticker/asset-symbol compatibility. It must not change existing ADBE/PINS decisions, portfolio quantities/cost basis, or human-execution boundaries.
-
-Research Lifecycle v1 remains a contract/gating layer only; existing production research read paths have not been cut over.
+Issue #34 must use canonical `instrument_id` and introduce period-aware metric observations without building a full financial warehouse. Existing ADBE/PINS decision outputs and portfolio accounting must remain unchanged until explicit cutover.
 
 ## 22. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
