@@ -381,7 +381,7 @@ begin
     return null;
   end if;
 
-  select count(*),min(i.instrument_id)
+  select count(*),(array_agg(i.instrument_id order by i.instrument_id))[1]
     into v_count,v_id
   from fwios.instrument_symbols s
   join fwios.instruments i on i.instrument_id=s.instrument_id
