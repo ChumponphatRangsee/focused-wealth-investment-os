@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.14**  
+Contract version: **FWIOS-CONTRACT-0.87.15**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -21,7 +21,7 @@ Human execution only. Never auto-buy or auto-sell.
 Live portfolio/system/controller state overrides stale documentation.
 
 
-### Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #34 METRICS LIVE
+### Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #35 LINEAGE LIVE
 
 GitHub Epic **#31** defines the planned migration from broad sector/thesis coverage toward a portfolio-native operating loop:
 
@@ -113,6 +113,7 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-RESEARCH-LIFECYCLE-V1` — contract/gating kernel active; no production read cutover
 - `POL-INSTRUMENT-IDENTITY-V1` — canonical identity active; legacy symbol read paths preserved
 - `POL-METRIC-OBSERVATION-V2` — typed period-aware metric foundation active; no production read cutover
+- `POL-LINEAGE-GRAPH-V1` — append-only evidence→metric→decision lineage active; no production read cutover
 
 AI must never retune deterministic gates ad hoc to make a name pass.
 
@@ -259,7 +260,7 @@ Missing, stale, conflicting, schema-invalid, unverified, provenance-free, policy
 Never force-fill. Rough valuation multiples and historical return cannot substitute expected return. Rejected/expired/stale/non-actionable approval packets cannot execute.
 
 ## 20. Research/controller
-Research Lifecycle v1, Canonical Instrument Identity v1 and Metric Observation Model v2 are live migration foundations.
+Research Lifecycle v1, Canonical Instrument Identity v1, Metric Observation Model v2 and Evidence → Metric → Decision Lineage Graph v1 are live migration foundations.
 
 Metric v2 state:
 - 130 semantic metric definitions;
@@ -270,15 +271,25 @@ Metric v2 state:
 - ADBE recurring growth Q2/Q3 coexist under one metric code;
 - PINS MAU/revenue growth Q1/Q2 and quarterly FCF history coexist by period;
 - PINS ARPU and SBC baselines use explicit period semantics;
-- normalized observations retain source-observation/evidence lineage handles;
+- normalized observations retain source-observation/evidence lineage handles for compatibility;
 - legacy metric/valuation/Revision read paths remain authoritative.
+
+Lineage v1 state:
+- 1,156 explicit lineage artifacts / 1,423 typed edges at acceptance;
+- 39 unresolved legacy references are explicit REFERENCE_ONLY artifacts and 82 edges are REFERENCE_ONLY rather than fabricated provenance;
+- ADBE Revision 47.5878 traces through exactly four explicit components to resolved evidence or explicit reference artifacts;
+- PINS Hardening REVIEW traces through FCF, SBC, buybacks and share-count evidence plus typed owner-economics metric paths;
+- `fwios.v_lineage_edges_resolved` and `fwios.lineage_trace_v1` provide audit/AI query surfaces;
+- append-only triggers reject UPDATE/DELETE;
+- 16/16 lineage regressions PASS;
+- production_read_cutover=false and legacy provenance fields remain compatibility-only inputs.
 
 Broad-universe ingestion remains selective and decision-relevant. Do not mirror full financial statements by default.
 
 ## 21. Immediate next action
-**Implement Issue #35 — Evidence → Metric → Decision Lineage Graph.**
+**Implement Issue #36 — Unified Market Observation Layer.**
 
-Issue #36 — Unified Market Observation Layer may proceed in parallel after #34. #35 should normalize transitional evidence/source-observation handles into explicit auditable lineage without changing existing valuation, Revision, portfolio or human-execution semantics.
+Issue #35 is complete at the additive lineage-foundation layer. #36 should unify market observations under canonical instrument identity while preserving current market-price/mispricing decision semantics until explicit parity and cutover.
 
 ## 22. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
