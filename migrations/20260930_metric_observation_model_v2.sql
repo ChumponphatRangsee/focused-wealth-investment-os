@@ -615,7 +615,7 @@ select
   end,
   n.normalization_version,
   n.normalization_method,
-  case when src.observation_id is not null then array[src.observation_id]::uuid[] else '{}'::uuid[] end,
+  coalesce(src.source_ids,'{}'::uuid[]),
   case when e.evidence_id is not null then e.evidence_id end,
   coalesce(n.evidence_ids,'{}'::text[]),
   'fwios.normalized_metrics',
@@ -633,8 +633,12 @@ select
 from fwios.normalized_metrics n
 left join fwios.company_metrics c
   on c.ticker=n.ticker and c.metric_id=n.metric_id
-left join fwios.metric_observations src
-  on src.observation_key='CM:'||n.ticker||':'||n.metric_id
+left join lateral (
+  select array_agg(distinct src_ob.observation_id order by src_ob.observation_id) source_ids
+  from unnest(coalesce(n.source_metric_ids,'{}'::text[])) smid
+  join fwios.metric_observations src_ob
+    on src_ob.observation_key='CM:'||n.ticker||':'||smid
+) src on true
 left join fwios.evidence_records e
   on e.evidence_id=case
     when cardinality(coalesce(n.evidence_ids,'{}'::text[]))>0 then n.evidence_ids[1]
@@ -940,13 +944,14 @@ with tests(test_case,passed,notes) as (
       ),
       'SBC amount and owner-economics ratio retain explicit period semantics.'),
 
-    ('normalized observations point to source observations when available',
+    ('normalized observations retain lineage handles',
       not exists(
         select 1 from fwios.metric_observations
         where source_table='fwios.normalized_metrics'
           and source_observation_ids='{}'::uuid[]
+          and evidence_ids='{}'::text[]
       ),
-      'Normalization has direct source-observation support before the full #35 lineage graph.'),
+      'Every normalized observation has source-observation IDs where resolvable and/or explicit evidence IDs before the full #35 lineage graph.'),
 
     ('private RLS enabled',
       not exists(
