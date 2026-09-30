@@ -74,11 +74,12 @@ with tests as (
         and metric_code='SBC_TO_REVENUE' and period_type='LTM'
     )
 
-  union all select 'MET12_NORMALIZED_HAS_SOURCE_OBSERVATION',
+  union all select 'MET12_NORMALIZED_HAS_LINEAGE_HANDLE',
     not exists(
       select 1 from fwios.metric_observations
       where source_table='fwios.normalized_metrics'
         and source_observation_ids='{}'::uuid[]
+        and evidence_ids='{}'::text[]
     )
 
   union all select 'MET13_NO_RUNTIME_TEXT_CAST_NEEDED',
