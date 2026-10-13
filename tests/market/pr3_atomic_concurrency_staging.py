@@ -72,8 +72,16 @@ def main() -> None:
       values ('{PROVIDER}','STAGING_TEST','PR3 Staging Stress','TEST',
               false,true,'READY','{safe_fixture}'::jsonb);
     """
+    occupied = int(sql(
+        "select count(*) from fwios.decision_refresh_provider_registry "
+        f"where provider_key='{PROVIDER}';"
+    ))
+    if occupied:
+        raise SystemExit("Refusing: staging test provider already exists; no cleanup performed.")
+    created = False
     try:
         sql(create)
+        created = True
         def reserve(i: int) -> dict:
             key = f"{run}-{i:03d}"
             result = sql(
@@ -96,13 +104,14 @@ def main() -> None:
         print(f"PASS: {WORKERS} simultaneous workers -> 1 allowed, 1 usage row.")
     finally:
         # Disposable fixture ONLY. The run must target STAGING.
-        sql(f"delete from fwios.decision_refresh_api_usage where provider_group='{PROVIDER}';")
-        sql(f"delete from fwios.decision_refresh_provider_registry where provider_key='{PROVIDER}';")
+        if created:
+            sql(f"delete from fwios.decision_refresh_api_usage where provider_group='{PROVIDER}';")
+            sql(f"delete from fwios.decision_refresh_provider_registry where provider_key='{PROVIDER}';")
 
 
 if __name__ == "__main__":
     try:
         main()
     except (AssertionError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-        print(f"FAIL PR3 staging concurrency: {exc}", file=sys.stderr)
+        print(f"FAIL PR3 staging concurrency: {type(exc).__name__}. Check staging psql logs.", file=sys.stderr)
         sys.exit(1)
