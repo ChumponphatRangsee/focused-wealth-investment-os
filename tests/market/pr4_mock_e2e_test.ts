@@ -17,7 +17,7 @@ class MockGateway implements MarketGateway {
   async cache(r:Identity){return this.cacheRows.get(r.flightKey)??{status:"MISS"};}
   async enqueue(r:Identity){
     const prev=this.flights.get(r.flightKey);
-    if(prev)return {status:prev.status==="RUNNING"?"JOIN":prev.status};
+    if(prev)return {status:["RUNNING","QUEUED"].includes(prev.status)?"JOIN":prev.status};
     this.flights.set(r.flightKey,{id:r,status:"QUEUED",attempt:0});
     return {status:"QUEUED"};
   }
