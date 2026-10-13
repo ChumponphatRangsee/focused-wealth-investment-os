@@ -5,6 +5,7 @@ on:
       - 'supabase/functions/_shared/pr4_core.ts'
       - 'supabase/functions/market-refresh-orchestrator-v1/**'
       - 'tests/market/pr4_mock_e2e_test.ts'
+      - 'tests/market/pr4_independent_20_session_qa.py'
       - '.github/workflows/pr4-mock-e2e.yml'
   workflow_dispatch:
 jobs:
@@ -19,3 +20,5 @@ jobs:
           node-version: '22'
       - name: Run same-core PR4 deterministic mock E2E (zero credentials/network)
         run: node --experimental-strip-types --test tests/market/pr4_mock_e2e_test.ts
+      - name: Syntax-check guarded independent-session QA harness (no DB run)
+        run: python3 -m py_compile tests/market/pr4_independent_20_session_qa.py
