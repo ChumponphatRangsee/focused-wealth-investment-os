@@ -95,7 +95,7 @@ begin
     raise exception 'One P4 credit should pass: %',b; end if;
   c:=fwios.mark_api_quota_dispatched_v1((b->>'usage_id')::uuid,15);
   c:=fwios.finalize_api_quota_usage_v1((b->>'usage_id')::uuid,'SUCCESS',1,200,null,null,true);
-  c:=fwios.pr4_publish_market_refresh_v1(k4,v_p4,(b->>'usage_id')::uuid,
+  c:=fwios.pr4_publish_market_refresh_v1(a->>'flight_key',v_p4,(b->>'usage_id')::uuid,
     200,clock_timestamp(),'24X7','B');
   if (c->>'ok')::boolean is distinct from true then raise exception 'P4 publish failed: %',c; end if;
   a:=fwios.pr4_claim_market_refresh_v1(gen_random_uuid());
