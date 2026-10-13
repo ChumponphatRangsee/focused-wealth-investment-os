@@ -50,7 +50,7 @@ begin
           'protected_daily_credits',0,
           'lease_seconds',120,
           'limits',jsonb_build_object(
-            'minute',2,'hour',2,'day',2,'concurrent',1),
+            'minute',10,'hour',10,'day',2,'concurrent',1),
           'routes',jsonb_build_object('SIMPLE_PRICE',jsonb_build_object(
             'capabilities',jsonb_build_array('MARKET_PRICE'),
             'credit_cost',1))
