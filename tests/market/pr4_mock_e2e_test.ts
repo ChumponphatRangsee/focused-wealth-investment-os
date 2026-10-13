@@ -17,7 +17,10 @@ class MockGateway implements MarketGateway {
   async cache(r:Identity){return this.cacheRows.get(r.flightKey)??{status:"MISS"};}
   async enqueue(r:Identity){
     const prev=this.flights.get(r.flightKey);
-    if(prev)return {status:["RUNNING","QUEUED"].includes(prev.status)?"JOIN":prev.status};
+    if(prev){
+      if(prev.status==="READY"){prev.status="QUEUED";return {status:"QUEUED"};}
+      return {status:["RUNNING","QUEUED"].includes(prev.status)?"JOIN":prev.status};
+    }
     this.flights.set(r.flightKey,{id:r,status:"QUEUED",attempt:0});
     return {status:"QUEUED"};
   }
@@ -166,4 +169,35 @@ test("last close remains explicitly LAST_CLOSE",async()=>{
  await requestRefresh(db,req);await driveOne(db,"close",mockOk);
  const r=await requestRefresh(db,req);
  assert.equal(r.status,"LAST_CLOSE");assert.equal(r.cache_hit,true);
+});
+
+test("stale observation is not served as fresh and triggers another PR3-gated attempt",async()=>{
+  const db=new MockGateway();
+  await requestRefresh(db,base);
+  await driveOne(db,"first",async(c,s)=>{db.calls++;return mockOk(c,s);});
+  const id=await canonicalize(base);
+  assert.equal((await requestRefresh(db,base)).status,"FRESH");
+  // Synthetic expiry in the test gateway; SQL checks observed_at + TTL itself.
+  db.cacheRows.set(id.flightKey,{status:"MISS"});
+  const missed=await requestRefresh(db,base);
+  assert.equal(missed.status,"QUEUED");assert.equal(missed.cache_hit,false);
+  assert.equal(db.reserved,1,"enqueue itself must not spend credits");
+  const updated=await driveOne(db,"new-attempt",async(c,s)=>{db.calls++;return mockOk(c,s);});
+  assert.equal(updated.status,"READY");assert.equal(db.reserved,2);
+  assert.equal(db.calls,2);assert.equal(db.dispatches,2);
+});
+test("scheduler claims all priorities P0 P1 P2 P3 P4 in order",async()=>{
+  const db=new MockGateway();
+  for(const p of ["P4","P2","P1","P3","P0"] as const){
+    await requestRefresh(db,{...base,priority:p,parameters:{priority:p}});
+  }
+  const seen:string[]=[];
+  for(let i=0;i<5;i++){
+    const r=await driveOne(db,"scheduler-"+i,async(c,s)=>{
+      seen.push(c.priority);db.calls++;return mockOk(c,s);
+    });
+    assert.equal(r.status,"READY");
+  }
+  assert.deepEqual(seen,["P0","P1","P2","P3","P4"]);
+  assert.equal(db.reserved,5);
 });
