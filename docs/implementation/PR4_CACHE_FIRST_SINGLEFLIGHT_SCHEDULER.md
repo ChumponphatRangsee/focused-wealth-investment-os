@@ -56,3 +56,17 @@ One **small internal-only coordination table** `fwios.market_refresh_flights_v1`
 
 ## Rollback
 Leave old cron/worker untouched. Turn off new route (existing descriptor remains SHADOW_ONLY) and stop calling PR4 RPCs. Preserve append-only observations and unified usage history; no historical truncation or quota refunds. Remove test fixtures ONLY if positively identified by QA prefix/identity and approved, never delete real portfolio/market data. Database object removal would be a separately reviewed migration, not a blind rollback.
+
+## Production-as-test and CI receipt — 2026-10-13 (Asia/Bangkok)
+
+**Database:** `fwios_pr4_cache_singleflight_scheduler_v1` migration **APPLIED** on the existing owner-authorized shared Supabase project `ysjbmeukwbfnxnwqchuq` (migration version `20261013043447`); no existing worker, cron, Sheets data or provider credentials were changed. This is a production DB DDL change; it is not merely a proposal.
+
+**SQL QA transactional regression:** **PASS** after correcting the test's assumption that two queued P4 rows have deterministic same-transaction FIFO ordering. The test now publishes the flight key actually returned by Claim. Entire test runs in BEGIN...ROLLBACK. It exercises QA-only canonical instrument/provider, queue + join, P0 claim ordering, PR3 Reserve → Dispatch → Finalize, immutable observation publication, cache reuse with **zero additional reservations**, P4 blocked by P0 protected reserve and public role EXECUTE denial.
+
+**Verified cleanup after rollback:** QA providers=0, QA flights=0, QA instruments=0, QA market observations=0, QA unified usage=0 (read-back SQL query after test).
+
+**Privileges:** `service_role` can claim; `anon` cannot claim; `authenticated` cannot publish; coordinator RLS enabled. Internal FWIOS schema has historical informational RLS-without-policy advisor notices; new coordinator likewise uses deliberate closed RLS with service-only grants and no frontend policy. Review broader advisor findings before cutover.
+
+**GitHub Actions same-core Mock E2E:** [run 38347309691](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/actions/runs/38347309691) **SUCCESS: 8/8 tests, 0 failures**, after fixing offline MockGateway to return JOIN for an already QUEUED flight (matching database behavior). Earlier runs 38347099558 and 38347173903 were FAIL, not counted as green. Latest test models 20 simultaneous JS callers, exact semantic separation, P0/P4 protected capacity, 429 Retry-After, timeout/5xx conservative finalize, quota denial/no network, provider fallback, LAST_CLOSE.
+
+**Do not overstate acceptance:** the 20 JS callers are not independent DB connections; the same TS logic is imported by an Edge adapter, but this adapter is not deployed/exercised over HTTP. The real 20 independent PostgreSQL sessions, actual Edge Mock E2E and vendor/legacy path gates remain pending. PR #51 stays draft and cutover OFF.
