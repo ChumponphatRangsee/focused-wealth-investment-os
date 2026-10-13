@@ -93,3 +93,45 @@ To stop, disable/delete only `market-price-canary-v1` Edge deployment.
 Do NOT delete canonical market observations or adjust Sheets, transaction ledger,
 holdings, the eight active cron jobs, or existing production Edge workers.
 PR #49/#50/#51 remain draft and unmerged.
+
+
+## Existing Google Sheets consumer — Canary snapshot
+
+**Connector write completed 2026-10-13 14:19:43 ICT.** The operational display for
+this FWIOS project is a Google Sheet, NOT the independent `Research-Ledger`
+Next.js frontend (that app has a separate source-of-truth and auth contract).
+The same FWIOS Supabase project has **zero `auth.users`** at inspection;
+therefore there is no pre-existing user JWT to reuse for authenticated Edge E2E.
+Do not insert a service-role key into Sheets or mint a fake user JWT.
+
+Updated the *existing* **Focused Wealth Dashboard - Chumponphat**:
+
+- Spreadsheet ID `17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`.
+- Added new visible tab `PR4 Canary Snapshot`, sheetId `1579369903`.
+- Captured four prices from `fwios.pr4_market_canary_quote_v2` at
+  `2026-10-13T07:19:43.873001Z` (read-only query), and wrote a provenance-
+  labeled fixed snapshot to `A1:L14`:
+  - BTC/THB 2,807,143 (`FRESH` at capture, observed 07:14:47Z)
+  - NVDA/USD 226.32001 (`LAST_CLOSE`, session 2026-10-12)
+  - TTWO/USD 208.82001 (`LAST_CLOSE`, session 2026-10-12)
+  - USDTHB 33.62546 (`STALE` and `FX_ATTACHED_REFERENCE`)
+- Each row contains provider, session, observed time, captured time, TTL,
+  accounting eligibility `NO`, and observation UUID. Price is a numeric
+  cell; **price status is an at-capture label, never implied to auto-refresh**.
+- The tab explicitly says *STATIC SNAPSHOT / NOT AUTO-REFRESH* and prohibits
+  trading, portfolio valuation and accounting usage.
+- Did NOT edit Dashboard, `_Data`, any scanner tab, Tracker, holdings,
+  transactions, trading history, cost basis, provider registry or worker cron.
+- Verified Google Sheets readback of header, values, notes, layout, and number
+  formatting after writing. No direct database or provider credential appears
+  in the new Sheet; only the authenticated Edge URL is referenced as text.
+
+**Integration status**: first real Supabase-to-operational-Google-Sheet *snapshot*
+completed. This is not continuous integration or a dynamic GET through Google
+Sheets. Automatic synchronization still requires a **separately authorized**
+server-side refresh mechanism with least privilege (not `IMPORTDATA` with a
+secret URL), or an actual Supabase Auth user in the same FWIOS project for an
+interactive dashboard. No such mechanism was silently enabled.
+
+This snapshot can be removed by deleting only `PR4 Canary Snapshot` after
+confirming no new references were added (none were added by this rollout).
