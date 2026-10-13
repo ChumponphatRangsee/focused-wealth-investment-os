@@ -135,3 +135,52 @@ interactive dashboard. No such mechanism was silently enabled.
 
 This snapshot can be removed by deleting only `PR4 Canary Snapshot` after
 confirming no new references were added (none were added by this rollout).
+
+
+## Supabase-only transition — 2026-10-13 17:35 ICT
+
+**CURRENT STATE SUPERSEDES PREVIOUS GOOGLE SHEETS SNAPSHOT INSTRUCTIONS ABOVE.**
+The owner requested stopping automated Google Sheets price sync and using Supabase
+as the sole interactive read location for this *PR4 canary*. The scope is the
+canary only; the unrelated operational Google Sheets dashboard, portfolio
+Tracker and other live workflows were not cut over.
+
+1. **Automation disabled:** `FWIOS PR4 Canary Sync` is set `is_enabled=false`
+   (previously hourly). Existing older `Dashboard Market Sync` was already
+   disabled and was not changed. No further scheduled canary writes to Sheets.
+2. **Sheet projection removed:** deleted exclusively the owned sheet tab
+   `PR4 Canary Snapshot`, sheetId `1579369903`, in spreadsheet
+   `17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`. Pre-delete
+   inspected 6,533 cells including 172 formulas across other five tabs;
+   found **zero** references to the temporary canary tab. Post-delete
+   metadata readback confirmed all five operational tabs remain: Dashboard,
+   Valuation Map, Thesis Tracker, Opportunity Quality, _Data. Trading ledger
+   / holdings / portfolio Tracker were not edited.
+3. **Supabase read-only replacement, verified:** query the existing
+   `fwios.pr4_market_canary_quote_v2(asset)` function through a SELECT in
+   the Supabase project SQL Editor. Exact runnable query is versioned as
+   [queries/pr4_market_canary_current.sql](../../queries/pr4_market_canary_current.sql).
+   This query returns four rows from existing canonical observations, with
+   freshness/session/provenance and explicit ineligible trading/accounting
+   flags, **without adding storage or invoking provider APIs**. Validated
+   four expected symbols and false valuation/accounting eligibility at
+   `2026-10-13 10:35:14 UTC`: BTC 2,798,701 THB (`FRESH` at check),
+   NVDA 226.32001 USD (`LAST_CLOSE`), TTWO 208.82001 USD
+   (`LAST_CLOSE`), USDTHB 33.62546 THB (`STALE`). These are not fixed
+   current prices; new SQL SELECT runs recalculate freshness.
+4. **No extra DB view deployed:** An additional optional view migration was
+   proposed but the tool's safety gate rejected deployment. The un-applied
+   migration was immediately removed from the PR branch. The existing
+   `fwios.pr4_market_canary_quote_v2` RPC is sufficient and remains
+   untouched.
+5. **Auth boundaries remain:** SQL Editor requires a project admin session.
+   The previous Edge Function `market-price-canary-v1` remains deployed
+   with `verify_jwt=true`; an authenticated end-to-end HTTP request has
+   **not** been verified, and the FWIOS Supabase project had 0 `auth.users`
+   on inspection. Therefore **no standalone web price dashboard** or
+   end-user browser auth was implemented in this transition.
+
+**Rollback:** no automated canary sync is needed. To recreate a snapshot,
+explicitly request it; otherwise leave Google Sheets untouched. All
+legacy market provider workers and Cron remain subject to their prior
+policies; this work does not represent external-provider dispatch cutover.
