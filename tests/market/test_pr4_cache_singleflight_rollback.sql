@@ -55,7 +55,7 @@ begin
 
   -- Priority claim must select P0 even though P4 was enqueued first.
   v_p0:=gen_random_uuid();
-  a:=fwios.pr4_claim_market_refresh_v1(v_p0);
+  a:=fwios.pr4_claim_market_refresh_v1(v_p0,true);
   if a->>'status'<>'CLAIMED' or a->>'priority'<>'P0' then
     raise exception 'P0 was not claimed first: %',a;
   end if;
@@ -86,7 +86,7 @@ begin
   then raise exception 'Cache hit must not reserve credits'; end if;
 
   v_p4:=gen_random_uuid();
-  a:=fwios.pr4_claim_market_refresh_v1(v_p4);
+  a:=fwios.pr4_claim_market_refresh_v1(v_p4,true);
   if a->>'priority'<>'P4' then raise exception 'P4 claim failed: %',a; end if;
   b:=fwios.reserve_api_quota_unified_v1(v_provider,'MARKET_PRICE',
     'SIMPLE_PRICE','pr4-qa',a->>'request_key',a->>'signature','P4',
@@ -98,7 +98,7 @@ begin
   c:=fwios.pr4_publish_market_refresh_v1(a->>'flight_key',v_p4,(b->>'usage_id')::uuid,
     200,clock_timestamp(),'24X7','B');
   if (c->>'ok')::boolean is distinct from true then raise exception 'P4 publish failed: %',c; end if;
-  a:=fwios.pr4_claim_market_refresh_v1(gen_random_uuid());
+  a:=fwios.pr4_claim_market_refresh_v1(gen_random_uuid(),true);
   b:=fwios.reserve_api_quota_unified_v1(v_provider,'MARKET_PRICE',
     'SIMPLE_PRICE','pr4-qa',a->>'request_key',a->>'signature','P4',
     null::uuid,v_instrument::text,'{}'::jsonb);
@@ -110,10 +110,20 @@ begin
     where provider_key=v_provider;
   if v_after<>v_before+2 then raise exception 'Unexpected quota rows: % -> %',v_before,v_after; end if;
   if has_function_privilege('anon',
-     'fwios.pr4_claim_market_refresh_v1(uuid)','EXECUTE')
+     'fwios.pr4_claim_market_refresh_v1(uuid,boolean)','EXECUTE')
      or has_function_privilege('authenticated',
      'fwios.pr4_publish_market_refresh_v1(text,uuid,uuid,numeric,timestamptz,text,text)','EXECUTE')
   then raise exception 'PR4 private RPC must deny frontend roles'; end if;
+  -- Old unscoped method is inaccessible even to service_role.
+  if has_function_privilege('service_role',
+     'fwios.pr4_claim_market_refresh_v1(uuid)','EXECUTE')
+     or not has_function_privilege('service_role',
+     'fwios.pr4_claim_market_refresh_v1(uuid,boolean)','EXECUTE') then
+    raise exception 'QA scoped claim hardening failed'; end if;
+  -- Scope must NOT claim queued QA rows when the live-only scope is requested.
+  if (fwios.pr4_claim_market_refresh_v1(gen_random_uuid(),false)->>'status')<>'EMPTY' then
+    raise exception 'Live scope may never claim QA fixture'; end if;
+
   raise notice 'PASS PR4 rollback-only: cache 0 credits, join, P0 order, P4 reserve, PR3 lifecycle, publication, security';
 end $qa$;
 rollback;
