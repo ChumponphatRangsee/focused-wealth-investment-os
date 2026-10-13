@@ -19,6 +19,85 @@ authority_model:
   live_state_overrides_stale_docs: true
 
 
+architecture_refactor_v3:
+  status: PROPOSED_NOT_CUT_OVER
+  contract_mode: DOCUMENTATION_ONLY
+  recorded_at: "2026-10-13"
+  architecture_doc: docs/architecture/FWIOS_ARCHITECTURE_V3.md
+  implementation_plan: docs/implementation/API_QUOTA_IMPLEMENTATION_PLAN.md
+  active_authority_preserved_until_approved_cutover: true
+  production_accounting_cutover_complete: false
+  live_portfolio_state_compatibility: "portfolio_state.current_authority remains effective until explicit cutover"
+  target_ownership:
+    shared_market_price_and_fx: "Supabase FWIOS Market Data Service"
+    fundamental_and_research_state: "Supabase FWIOS Research"
+    transaction_system_of_record: "Investment Portfolio Tracker - Chumponphat / Transactions"
+    portfolio_accounting_and_holdings: "Investment Portfolio Tracker - Chumponphat"
+    research_and_scanner_view: "Focused Wealth Dashboard - Chumponphat"
+    github_contracts_tests_migrations: GitHub
+  target_invariants:
+    no_second_portfolio_transaction_ledger: true
+    no_direct_production_market_provider_calls_from_sheets: true
+    consumers_share_canonical_market_observation: true
+    focused_dashboard_cannot_write_trades_or_cost_basis: true
+    portfolio_context_read_only_and_summary_only: true
+    portfolio_quantity_and_cost_basis_from_transactions_only: true
+    no_legacy_table_drop_during_cutover: true
+    preserve_current_decision_research_lineage_and_human_approval: true
+    auto_trade: false
+  planned_cutover_gates: [QUOTA_SAFE, CACHE_SAFE, PORTFOLIO_RECONCILED, SCANNER_BUDGET_SAFE, RESEARCH_COMPATIBLE]
+  rollback_to_verified_legacy_read_path: true
+
+api_quota_control_v3:
+  status: PROPOSED_NOT_CUT_OVER
+  contract_mode: DOCUMENTATION_ONLY
+  production_enforcement_claimed: false
+  implementation_priority: P0_BEFORE_MARKET_DATA_CUTOVER
+  required_external_call_sequence: [CACHE_CHECK, FRESHNESS_CHECK, IN_FLIGHT_DEDUPLICATION, QUOTA_CHECK, ATOMIC_RESERVATION, PROVIDER_CALL, USAGE_FINALIZATION]
+  missing_or_inactive_provider_policy: DENY
+  quota_dimensions: [PROVIDER_PLAN, ENDPOINT, CAPABILITY, CONSUMER_PRIORITY, MINUTE, HOUR, DAY, CREDIT_COST, CONCURRENCY, RESET_BOUNDARY]
+  provider_and_endpoint_limits_must_be_verified: true
+  distributed_single_flight_required: true
+  billable_retries_require_quota: true
+  quota_reservations_atomic_and_idempotent: true
+  external_calls_and_cache_hits_auditable: true
+  provider_credentials_server_side_only: true
+  market_hours_aware_for_stocks: true
+  crypto_trades_24_7: true
+  data_freshness_must_be_visible: true
+  stale_prices_cannot_pass_price_sensitive_decision_gates: true
+  runtime_consumer_priorities:
+    P0: CURRENT_HOLDINGS
+    P1: FOCUSED_OPPORTUNITIES
+    P2: ACTIVE_RESEARCH_THESIS
+    P3: WATCHLIST
+    P4: BROAD_SP500_SCANNER
+  background_scanner_may_spend_emergency_reserve: false
+  manual_refresh_can_bypass_quota: false
+  default_budget_allocation_is_provisional: true
+  suggested_allocation_pct:
+    holdings: 25
+    focused_opportunities: 25
+    active_research: 20
+    broad_scanner: 20
+    emergency_reserve: 10
+  allocation_subject_to_provider_plan_credits: true
+  inventory_existing_foundations:
+    provider_registry: fwios.decision_refresh_provider_registry
+    decision_quota_policy: fwios.decision_refresh_api_quota_policy
+    decision_usage: fwios.decision_refresh_api_usage
+    daily_close_policy: fwios.market_daily_close_policy
+    daily_close_usage: fwios.market_daily_close_api_usage
+    canonical_observations: fwios.market_observations
+    portfolio_price_compatibility: fwios.v_portfolio_market_quote_current
+  known_migration_gaps:
+    - "Current decision reservation permits UNLIMITED_OR_UNCONFIGURED on missing policy; must fail closed."
+    - "Daily-close and decision-refresh quotas are separately tracked; verify unified budgets."
+    - "Canonical price service, shared single-flight, protected allocations and full consumer coverage require acceptance tests."
+  release_sequence: [A_QUOTA_FOUNDATION, B_SHARED_MARKET_AND_TRACKER, C_RESEARCH_SCANNER_LEGACY]
+  production_feature_flags_default: OFF
+
+
 architecture_redesign_v1:
   epic_issue: 31
   migration_status: ACTIVE
