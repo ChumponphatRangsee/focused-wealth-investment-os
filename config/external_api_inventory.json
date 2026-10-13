@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-10-13",
+  "scope": "GitHub-tracked Supabase Edge Functions; excludes deployed-only and external service/Sheet runtime coverage.",
+  "contract_status": "BASELINE_NOT_CUT_OVER",
+  "inventory_owner": "FWIOS engineering / GitHub review",
+  "function_paths": [
+    {
+      "slug": "dashboard-refresh-csv-v1",
+      "external_http": false,
+      "providers": [],
+      "quota_mode": "NOT_APPLICABLE",
+      "auth_observation": "JWT_OFF_APPLICATION_QUERY_TOKEN",
+      "consumer": "FOCUSED_DASHBOARD",
+      "finding": "RISK-001"
+    },
+    {
+      "slug": "decision-refresh-worker-v1",
+      "external_http": true,
+      "providers": [
+        "TWELVE_DATA",
+        "ALPHA_VANTAGE",
+        "SEC"
+      ],
+      "quota_mode": "PARTIAL_LEGACY",
+      "auth_observation": "VERIFY_DEPLOYED_APPLICATION_AUTH",
+      "consumer": "DECISION_RESEARCH",
+      "finding": "RISK-003"
+    },
+    {
+      "slug": "decision-refresh-provider-validator-v1",
+      "external_http": true,
+      "providers": [
+        "TWELVE_DATA",
+        "ALPHA_VANTAGE"
+      ],
+      "quota_mode": "PARTIAL_LEGACY",
+      "auth_observation": "VERIFY_DEPLOYED_APPLICATION_AUTH",
+      "consumer": "PROVIDER_VALIDATION",
+      "finding": "RISK-003"
+    },
+    {
+      "slug": "market-daily-close-worker-v1",
+      "external_http": true,
+      "providers": [
+        "TWELVE_DATA"
+      ],
+      "quota_mode": "LEGACY_DAILY_CLOSE_POLICY",
+      "auth_observation": "JWT_OFF_APPLICATION_HEADER_TOKEN",
+      "consumer": "MARKET_DAILY_CLOSE",
+      "finding": "RISK-003"
+    },
+    {
+      "slug": "portfolio-mtm-refresh-v1",
+      "external_http": true,
+      "providers": [
+        "TWELVE_DATA",
+        "COINGECKO",
+        "FX"
+      ],
+      "quota_mode": "PARTIAL_UNMETERED_PROVIDER",
+      "auth_observation": "JWT_OFF_APPLICATION_HEADER_TOKEN",
+      "consumer": "PORTFOLIO_MTM_LEGACY",
+      "finding": "RISK-002"
+    }
+  ],
+  "planned_additions": "Every new GitHub-tracked function needs an inventory entry and a verified external-call/credit gate before production promotion.",
+  "live_only_functions": [
+    "dashboard-refresh-probe-v1",
+    "dashboard-refresh-env-probe-v1",
+    "dashboard-refresh-db-probe-v1",
+    "dashboard-refresh-query-probe-v1",
+    "dashboard-refresh-role-probe-v1",
+    "decision-refresh-price-lag-retry-v1"
+  ],
+  "warning": "Function code inventory is not a verification of deployed source parity or complete quota compliance. Existing exceptions are intentionally marked as debt; do not relabel them COMPLIANT without runtime tests."
+}
