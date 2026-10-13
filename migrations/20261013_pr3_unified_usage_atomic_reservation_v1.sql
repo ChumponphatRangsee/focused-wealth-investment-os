@@ -129,6 +129,7 @@ declare
   v_group text;
   v_plan text;
   v_rule jsonb;
+  v_registry_limits jsonb;
   v_zone text;
   v_now timestamptz;
   v_day_start timestamptz;
@@ -173,10 +174,24 @@ begin
 
   v_group := v_policy->>'provider_group';
   v_plan := v_policy->>'plan_id';
-  v_min_limit := (v_policy->'limits'->>'minute')::numeric;
-  v_hour_limit := (v_policy->'limits'->>'hour')::numeric;
-  v_day_limit := (v_policy->'limits'->>'day')::numeric;
-  v_con_limit := (v_policy->'limits'->>'concurrent')::integer;
+  -- PR 2 resolver exposes legacy operational ceilings. The original
+  -- registry config owns missing provider-specific minute/hour/concurrency.
+  select r.config->'unified_quota_v1'->'limits'
+    into v_registry_limits
+  from fwios.decision_refresh_provider_registry r
+  where r.provider_key=v_provider;
+  v_min_limit := coalesce(
+    (v_policy->'limits'->>'minute')::numeric,
+    (v_registry_limits->>'minute')::numeric);
+  v_hour_limit := coalesce(
+    (v_policy->'limits'->>'hour')::numeric,
+    (v_registry_limits->>'hour')::numeric);
+  v_day_limit := coalesce(
+    (v_policy->'limits'->>'day')::numeric,
+    (v_registry_limits->>'day')::numeric);
+  v_con_limit := coalesce(
+    (v_policy->'limits'->>'concurrent')::integer,
+    (v_registry_limits->>'concurrent')::integer);
   v_class_limit := (v_policy->'limits'->>'endpoint_class')::numeric;
   v_class := case
     when v_provider='ALPHA_VANTAGE_PRICE' then 'PRICE'
@@ -200,13 +215,15 @@ begin
   v_zone := v_rule->>'timezone';
   if v_group is null or v_group='' or v_plan is null or v_plan=''
      or v_day_limit is null or v_day_limit<=0
+     or (v_min_limit is not null and v_min_limit<=0)
+     or (v_hour_limit is not null and v_hour_limit<=0)
+     or (v_con_limit is not null and v_con_limit<=0)
      or v_cost is null or v_cost<=0
      or v_lease_seconds not between 10 and 900
      or v_rule->>'type' <> 'CALENDAR_DAY'
      or v_zone is null
      or not exists(select 1 from pg_timezone_names where name=v_zone)
-     or (v_min_limit is null and
-           v_policy->'limits'->>'minute' is distinct from 'NOT_APPLICABLE')
+     or v_min_limit is null
      or (v_hour_limit is null and
            (select config->'unified_quota_v1'->>'hourly_limit_status'
               from fwios.decision_refresh_provider_registry
@@ -342,7 +359,6 @@ declare
   v_current text;
   v_credit numeric;
   v_request_key text;
-  v_result record;
   v_outcome text := upper(trim(coalesce(p_outcome,'')));
   v_actual numeric;
 begin
