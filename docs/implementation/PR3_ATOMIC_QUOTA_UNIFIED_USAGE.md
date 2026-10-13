@@ -1,6 +1,6 @@
 # PR 3 — Atomic Quota Reservation & Unified Usage
 
-**Status:** DRAFT / stacked on PR 2. Not deployed, not cut over, not merged.
+**Status (2026-10-13):** DB migrations APPLIED to the existing Production Supabase project, used as the owner's authorized test environment. GitHub PR remains DRAFT / stacked on PR 2 / UNMERGED. New worker dispatch cutover is OFF; legacy v1 quota reservation bodies ARE replaced by the compatibility bridge.
 
 ## Reuse existing Supabase
 
@@ -63,7 +63,19 @@ Run only against STAGING after both PR 2 + PR 3 migrations. The Python stress te
 - PR 4 owns cache-first/single-flight/protected scheduling, and PR 5–7 own market-data/Tracker cutover.
 - Verify true parallel atomicity, vendor time-zone reset boundaries, DST, failure-after-dispatch and partial credits before activating a provider.
 - Do not describe system-wide quota safety as complete while any external-call path bypasses this gate.
-- Supabase production, Google Sheets, transactions, holdings, credentials and legacy usage history remain unchanged by authoring this PR.
+- Production DB functions, existing provider-registry descriptors and nullable usage columns **have changed** via the three migration records; they are live. No Edge Function code, scheduled job definitions, Google Sheets, transactions, holdings, credentials or historical usage rows were changed. No new outbound API request was made in testing.
+- The 20 independent-session concurrency stress, worker end-to-end/canary, vendor-plan verification, reset-time/DST and real HTTP 429 tests remain PENDING. Do not claim full quota safety.
+
+## Production-test receipt — 2026-10-13
+
+Applied with the Supabase migration API, sequentially:
+1. `fwios_pr2_unified_provider_registry_quota_policy_v1`
+2. `fwios_pr3_unified_usage_atomic_reservation_v1`
+3. `fwios_pr3_legacy_quota_reservation_bridge_v1`
+
+PR 2 read-only regressions PASS; PR 3 rollback-only synthetic transactional regressions PASS including fail-closed, idempotent reservation, pre-dispatch refund, DISPATCHED gate, daily ceiling, 429 cooldown and legacy deny. First daily-ceiling test hit minute ceiling by design, corrected test fixture (minute=10/hour=10/day=2), reran successfully. Usage totals remain unchanged: decision=353, daily close=3232 at test time. Service-role access and anon/authenticated denial verified. Existing cron remains enabled and already-deployed worker binaries were not modified.
+
+**Unverified:** 20 concurrent independent DB sessions, production worker throughput and real vendor-credit correctness. The database test is not proof of successful cross-worker production rollout.
 
 ## Rollback
 
