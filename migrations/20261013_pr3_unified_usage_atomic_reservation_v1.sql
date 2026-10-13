@@ -19,6 +19,7 @@ begin
     execute format('alter table %s add column if not exists quota_credit_reserved numeric(18,6)',v_table);
     execute format('alter table %s add column if not exists quota_credit_actual numeric(18,6)',v_table);
     execute format('alter table %s add column if not exists quota_expires_at timestamptz',v_table);
+    execute format('alter table %s add column if not exists quota_dispatched_at timestamptz',v_table);
     execute format('alter table %s add column if not exists quota_finalized_at timestamptz',v_table);
     execute format('alter table %s add column if not exists quota_retry_after timestamptz',v_table);
     execute format('alter table %s add column if not exists quota_http_status integer',v_table);
@@ -63,6 +64,7 @@ select
   u.quota_credit_reserved as reserved_credits,
   u.quota_credit_actual as actual_credits,
   u.quota_expires_at as expires_at,
+  u.quota_dispatched_at as dispatched_at,
   u.quota_finalized_at as finalized_at,
   u.quota_retry_after as retry_after,
   u.quota_http_status as http_status,
@@ -93,6 +95,7 @@ select
   u.quota_credit_reserved,
   u.quota_credit_actual,
   u.quota_expires_at,
+  u.quota_dispatched_at,
   u.quota_finalized_at,
   u.quota_retry_after,
   u.quota_http_status,
@@ -278,7 +281,7 @@ begin
       (where called_at >= v_day_start and called_at < v_day_end
          and endpoint_class=v_class),0),
     count(*) filter
-      (where outcome='RESERVED'
+      (where outcome in ('RESERVED','DISPATCHED')
          and coalesce(expires_at,called_at + interval '2 minutes') > v_now),
     max(retry_after) filter (where retry_after > v_now)
   into v_used_min,v_used_hour,v_used_day,v_used_class,v_inflight,v_cooldown
@@ -347,6 +350,78 @@ begin
     'priority',v_priority,'status','RESERVED');
 end $fn$;
 
+-- The trusted caller MUST mark DISPATCHED immediately before external network I/O.
+-- A repeated mark or expired lease must never authorize another provider call.
+create or replace function fwios.mark_api_quota_dispatched_v1(
+  p_usage_id uuid,
+  p_timeout_seconds integer default 30
+) returns jsonb
+language plpgsql volatile security invoker
+set search_path to 'pg_catalog','fwios'
+as $fn$
+declare
+  v_ledger text;
+  v_group text;
+  v_request_key text;
+  v_current text;
+  v_expiry timestamptz;
+  v_now timestamptz;
+begin
+  if p_usage_id is null or p_timeout_seconds not between 5 and 300 then
+    return jsonb_build_object('allowed',false,'reason','INVALID_DISPATCH_ARGUMENTS');
+  end if;
+
+  select ledger,provider_group,request_key into v_ledger,v_group,v_request_key
+  from (
+    select 'DECISION_REFRESH'::text ledger,provider_group,quota_request_key request_key
+      from fwios.decision_refresh_api_usage where usage_id=p_usage_id
+    union all
+    select 'MARKET_DAILY_CLOSE',coalesce(quota_provider_group,provider_key),
+      quota_request_key from fwios.market_daily_close_api_usage where usage_id=p_usage_id
+  ) a;
+
+  if v_request_key is null then
+    return jsonb_build_object('allowed',false,'reason','UNMANAGED_OR_UNKNOWN_RESERVATION');
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended('fwios-api-account:'||v_group,0));
+  if v_ledger='DECISION_REFRESH' then
+    select outcome,quota_expires_at into v_current,v_expiry
+    from fwios.decision_refresh_api_usage where usage_id=p_usage_id for update;
+  else
+    select outcome,quota_expires_at into v_current,v_expiry
+    from fwios.market_daily_close_api_usage where usage_id=p_usage_id for update;
+  end if;
+
+  v_now := clock_timestamp();
+  if v_current <> 'RESERVED' then
+    return jsonb_build_object('allowed',false,'reason','ALREADY_DISPATCHED_OR_FINALIZED',
+      'outcome',v_current);
+  end if;
+  if v_expiry is null or v_expiry<=v_now then
+    return jsonb_build_object('allowed',false,'reason','RESERVATION_LEASE_EXPIRED');
+  end if;
+
+  if v_ledger='DECISION_REFRESH' then
+    update fwios.decision_refresh_api_usage
+    set outcome='DISPATCHED',quota_dispatched_at=v_now,
+      quota_expires_at=greatest(quota_expires_at,
+        v_now+make_interval(secs=>p_timeout_seconds+30)),
+      metadata=metadata||'{"provider_called":true}'::jsonb
+    where usage_id=p_usage_id and outcome='RESERVED';
+  else
+    update fwios.market_daily_close_api_usage
+    set outcome='DISPATCHED',quota_dispatched_at=v_now,
+      quota_expires_at=greatest(quota_expires_at,
+        v_now+make_interval(secs=>p_timeout_seconds+30)),
+      metadata=metadata||'{"provider_called":true}'::jsonb
+    where usage_id=p_usage_id and outcome='RESERVED';
+  end if;
+
+  return jsonb_build_object('allowed',true,'usage_id',p_usage_id,
+    'status','DISPATCHED','timeout_seconds',p_timeout_seconds);
+end $fn$;
+
 -- Success/error finalization is idempotent. No inferred refunds:
 -- only an explicit *pre-dispatch* RELEASED can set spend=0.
 create or replace function fwios.finalize_api_quota_usage_v1(
@@ -367,6 +442,7 @@ declare
   v_current text;
   v_credit numeric;
   v_request_key text;
+  v_dispatched timestamptz;
   v_outcome text := upper(trim(coalesce(p_outcome,'')));
   v_actual numeric;
 begin
@@ -400,17 +476,23 @@ begin
 
   -- Immutable terminal records protect against double-spend and late retries.
   if v_ledger='DECISION_REFRESH' then
-    select outcome,quota_credit_reserved
-      into v_current,v_credit
+    select outcome,quota_credit_reserved,quota_dispatched_at
+      into v_current,v_credit,v_dispatched
     from fwios.decision_refresh_api_usage where usage_id=p_usage_id for update;
   else
-    select outcome,quota_credit_reserved
-      into v_current,v_credit
+    select outcome,quota_credit_reserved,quota_dispatched_at
+      into v_current,v_credit,v_dispatched
     from fwios.market_daily_close_api_usage where usage_id=p_usage_id for update;
   end if;
-  if v_current<>'RESERVED' then
+  if v_current not in ('RESERVED','DISPATCHED') then
     return jsonb_build_object('ok',true,'changed',false,'usage_id',p_usage_id,
       'outcome',v_current,'reason','ALREADY_FINALIZED');
+  end if;
+  if (v_outcome='RELEASED' and (v_current<>'RESERVED' or v_dispatched is not null))
+     or (v_outcome in ('SUCCESS','BILLABLE_FAILURE','PROVIDER_ERROR')
+           and (v_current<>'DISPATCHED' or v_dispatched is null)) then
+    return jsonb_build_object('ok',false,'changed',false,'usage_id',p_usage_id,
+      'reason','INVALID_QUOTA_STATE_TRANSITION');
   end if;
 
   v_actual := case when v_outcome='RELEASED' then 0
@@ -441,6 +523,10 @@ end $fn$;
 
 revoke all on function fwios.reserve_api_quota_unified_v1(
   text,text,text,text,text,text,text,uuid,text,jsonb) from public,anon,authenticated;
+revoke all on function fwios.mark_api_quota_dispatched_v1(uuid,integer)
+  from public,anon,authenticated;
+grant execute on function fwios.mark_api_quota_dispatched_v1(uuid,integer)
+  to service_role;
 revoke all on function fwios.finalize_api_quota_usage_v1(
   uuid,text,numeric,integer,timestamptz,text,boolean) from public,anon,authenticated;
 grant execute on function fwios.reserve_api_quota_unified_v1(
