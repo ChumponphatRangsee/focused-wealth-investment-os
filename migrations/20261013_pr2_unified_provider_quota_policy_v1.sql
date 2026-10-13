@@ -175,7 +175,7 @@ begin
     when v_source not in ('fwios.market_daily_close_policy',
                           'fwios.decision_refresh_api_quota_policy')
       or v_source is null then 'BUDGET_SOURCE_NOT_CONFIGURED'
-    when not v_budget_active then 'BUDGET_POLICY_NOT_ACTIVE'
+    when not coalesce(v_budget_active,false) then 'BUDGET_POLICY_NOT_ACTIVE'
     when v_day is null or v_day<=0 then 'DAILY_BUDGET_NOT_CONFIGURED'
     when v_source='fwios.market_daily_close_policy' and
          (v_min is null or v_min<=0) then 'MINUTE_BUDGET_NOT_CONFIGURED'
@@ -191,7 +191,7 @@ begin
       then 'HOURLY_LIMIT_UNVERIFIED'
     when coalesce(v_contract->>'concurrency_limit_status','') not in ('VERIFIED','NOT_APPLICABLE')
       then 'CONCURRENCY_LIMIT_UNVERIFIED'
-    when jsonb_typeof(v_route->'credit_cost') <> 'number' then 'ENDPOINT_COST_UNVERIFIED'
+    when coalesce(jsonb_typeof(v_route->'credit_cost'),'null') <> 'number' then 'ENDPOINT_COST_UNVERIFIED'
     when (v_route->>'credit_cost')::numeric<=0 then 'INVALID_ENDPOINT_COST'
     else 'CONFIGURED_PENDING_ATOMIC_QUOTA_GATE'
   end;
@@ -205,7 +205,12 @@ begin
     'budget_source',v_source,
     'limits',jsonb_build_object(
       'minute',v_min,'hour',null,'day',v_day,'concurrent',null,
-      'endpoint_class',v_class,'protected_daily_reserve',v_reserve),
+      'endpoint_class',v_class,
+      'legacy_headroom_outside_daily_budget',
+        case when v_key='TWELVE_DATA' then v_reserve else null end,
+      'reserve_bucket_within_daily_budget',
+        case when v_key in ('ALPHA_VANTAGE_PRICE','ALPHA_VANTAGE_CONSENSUS')
+          then v_reserve else null end),
     'legacy_accounting_timezone',v_contract->>'legacy_accounting_timezone',
     'vendor_reset_status',v_contract->>'vendor_reset_status',
     'endpoint_credit_cost',v_route->'credit_cost',
