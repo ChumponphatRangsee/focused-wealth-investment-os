@@ -80,3 +80,38 @@ PR 2 read-only regressions PASS; PR 3 rollback-only synthetic transactional regr
 ## Rollback
 
 Disable unified dispatch/cutover feature flag; restore prior validated worker and legacy v1 function definitions in a separate reviewed migration if needed. Never truncate old usage logs or erase reserved credits. Keep historical observations and transaction accounting untouched.
+
+## Simulation Harness — PR3 extension (2026-10-13)
+
+### Artifacts
+
+- `tests/market/fixtures/pr3_mock_provider_scenarios_v1.json` — deterministic fixed-seed synthetic holdings and mock provider responses: exact-session close, missing date, invalid price, Alpha daily close, CoinGecko quote, Frankfurter FX, HTTP 429 and timeout.
+- `tests/market/pr3_mock_provider_harness.py` — offline Python standard-library adapter contract checker; NO outbound HTTP, NO database connection, NO keys, NO real portfolio writes. This validates mock parsing and expectations only, not deployed Edge Function parity.
+- `.github/workflows/pr3-mock-harness.yml` — pull-request and manual CI workflow to compile/run the offline adapter checks. CI execution result is not yet verified.
+- `tests/market/pr3_atomic_concurrency_staging.py` — existing 20 independent PostgreSQL connection stress runner (requires an explicit non-production staging URL); NOT yet run end-to-end.
+
+### Actual Production-as-test validation
+
+Explicitly authorized use of the existing Supabase project, with QA-only provider keys, simulated account/credit plan, **no actual HTTP requests** and cleanup afterward.
+
+1. PR2 provider-policy and PR3 rollback-only SQL regressions: **PASS**.
+2. 5 separate concurrent Supabase RPC SQL invocations, 1 unit limit: **PASS — 1 allowed, 4 minute-budget rejected, 0 tool errors**.
+3. QA fixture cleanup post-test: **PASS — 0 QA provider rows / 0 QA usage rows**.
+4. Attempted 20 parallel calls over connector: **INCONCLUSIVE** because the orchestration reached the connector tool-call limit before all replies could be collected. Its QA provider and usage were separately removed and verified 0 remaining. This is NOT a 20-worker pass.
+5. CI mock adapter execution: **NOT YET VERIFIED**.
+6. Deployed Edge Functions end-to-end using Mock Transport: **NOT IMPLEMENTED**, and vendor plans/credit costs remain unverified.
+
+The 5-call outcome demonstrates locking and deny-budget behavior at this small concurrency level, not general real-world 20+ worker scalability. To complete PR3 acceptance without a local Supabase CLI, run the existing guarded Python/psql test in a suitable ephemeral cloud runner with credentials restricted to the test instance, or equivalent independent-session cloud test approved for Production-as-test, and verify cleanup. No new staging Supabase project is required, though such tests must remain QA-only.
+
+### Mandatory gate before PR4
+
+- [x] PR2/PR3 database migrations installed and regressions passed on Production-as-test.
+- [x] 5-request real database parallel smoke test passed and cleanup checked.
+- [x] Mock provider fixtures, offline harness code and CI definition authored.
+- [ ] Offline mock harness CI run confirmed green.
+- [ ] 20 independent-session atomicity stress test confirmed green.
+- [ ] Mock responses routed through the same Edge Function adapter/business logic as real providers (currently the harness tests a standalone normalizer).
+- [ ] Provider-account limits, reset rules, endpoint costs and 429 semantics verified against actual vendor plans before activating any new provider.
+- [ ] All currently deployed external provider HTTP paths inventoried/migrated; CoinGecko and Frankfurter still bypass central quota.
+
+**PR4 must not be represented as an unblocked production cutover until these gates are met.** No PR4 implementation was started in this update.
