@@ -195,8 +195,16 @@ begin
   v_class_limit := (v_policy->'limits'->>'endpoint_class')::numeric;
   v_class := case
     when v_provider='ALPHA_VANTAGE_PRICE' then 'PRICE'
-    when v_provider='ALPHA_VANTAGE_CONSENSUS' then 'VALIDATOR'
+    when v_provider='ALPHA_VANTAGE_CONSENSUS' then 'RESERVE'
     else null end;
+  -- Existing decision worker bills EARNINGS_ESTIMATES through RESERVE,
+  -- not VALIDATOR. Reuse the operational RESERVE bucket, not the stale
+  -- PR 2 descriptor hint for consensus.
+  if v_provider='ALPHA_VANTAGE_CONSENSUS' then
+    select reserve_budget::numeric into v_class_limit
+    from fwios.decision_refresh_api_quota_policy
+    where provider_group=v_group and active=true;
+  end if;
   v_cost := (v_policy->>'endpoint_credit_cost')::numeric;
 
   -- The reserved amount for P0 must be *explicit*. Old Twelve Data
