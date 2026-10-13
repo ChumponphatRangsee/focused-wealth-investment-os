@@ -26,7 +26,7 @@ const db:MarketGateway={
       ${r.qaOnly===true}) v`;return x[0].v;
   },
   async claim(workerId){
-    const x=await sql!`select fwios.pr4_claim_market_refresh_v1(${workerId}::uuid) v`;
+    const x=await sql!`select fwios.pr4_claim_market_refresh_v1(${workerId}::uuid,true) v`;
     return x[0].v;
   },
   async reserve(c){
