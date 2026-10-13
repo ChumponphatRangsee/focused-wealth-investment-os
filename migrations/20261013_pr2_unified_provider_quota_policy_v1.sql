@@ -78,7 +78,8 @@ insert into fwios.decision_refresh_provider_registry
 values
 ('COINGECKO','CRYPTO_MARKET_PRICE','CoinGecko','B',false,false,'DISABLED',
  jsonb_build_object('unified_quota_v1',jsonb_build_object(
-   'plan_id','UNVERIFIED','provider_group','COINGECKO','budget_source','UNCONFIGURED',
+   'plan_id','UNVERIFIED','provider_group','COINGECKO','budget_source','fwios.decision_refresh_provider_registry.config',
+   'limits',jsonb_build_object('minute',null,'hour',null,'day',null,'concurrent',null,'protected_reserve',null),
    'entitlement_status','UNVERIFIED','endpoint_cost_status','UNVERIFIED',
    'vendor_reset_status','UNVERIFIED','hourly_limit_status','UNVERIFIED',
    'concurrency_limit_status','UNVERIFIED','shared_scope','PROVIDER_ACCOUNT',
@@ -87,7 +88,8 @@ values
      'capabilities',jsonb_build_array('MARKET_PRICE')))))),
 ('FRANKFURTER_FX','FOREIGN_EXCHANGE','Frankfurter FX','B',false,false,'DISABLED',
  jsonb_build_object('unified_quota_v1',jsonb_build_object(
-   'plan_id','UNVERIFIED','provider_group','FRANKFURTER_FX','budget_source','UNCONFIGURED',
+   'plan_id','UNVERIFIED','provider_group','FRANKFURTER_FX','budget_source','fwios.decision_refresh_provider_registry.config',
+   'limits',jsonb_build_object('minute',null,'hour',null,'day',null,'concurrent',null,'protected_reserve',null),
    'entitlement_status','UNVERIFIED','endpoint_cost_status','UNVERIFIED',
    'vendor_reset_status','UNVERIFIED','hourly_limit_status','UNVERIFIED',
    'concurrency_limit_status','UNVERIFIED','shared_scope','PROVIDER_ACCOUNT',
@@ -120,6 +122,8 @@ declare
   v_plan text;
   v_day int;
   v_min int;
+  v_hour int;
+  v_concurrent int;
   v_class int;
   v_reserve int;
   v_reason text;
@@ -164,6 +168,25 @@ begin
     into v_budget_active,v_day,v_class,v_reserve
     from fwios.decision_refresh_api_quota_policy p
     where p.provider_group='ALPHA_VANTAGE_SHARED';
+  elsif v_source='fwios.decision_refresh_provider_registry.config' then
+    -- Only providers without legacy operational quota tables use registry JSON.
+    -- Null or malformed limits remain DENY, never unlimited.
+    v_budget_active := true;
+    if jsonb_typeof(v_contract->'limits'->'minute')='number' then
+      v_min := (v_contract->'limits'->>'minute')::int;
+    end if;
+    if jsonb_typeof(v_contract->'limits'->'hour')='number' then
+      v_hour := (v_contract->'limits'->>'hour')::int;
+    end if;
+    if jsonb_typeof(v_contract->'limits'->'day')='number' then
+      v_day := (v_contract->'limits'->>'day')::int;
+    end if;
+    if jsonb_typeof(v_contract->'limits'->'concurrent')='number' then
+      v_concurrent := (v_contract->'limits'->>'concurrent')::int;
+    end if;
+    if jsonb_typeof(v_contract->'limits'->'protected_reserve')='number' then
+      v_reserve := (v_contract->'limits'->>'protected_reserve')::int;
+    end if;
   end if;
 
   v_reason := case
@@ -173,14 +196,24 @@ begin
     when v_route is null then 'ENDPOINT_NOT_CONFIGURED'
     when not coalesce((v_route->'capabilities') ? v_cap,false) then 'CAPABILITY_NOT_CONFIGURED'
     when v_source not in ('fwios.market_daily_close_policy',
-                          'fwios.decision_refresh_api_quota_policy')
+                          'fwios.decision_refresh_api_quota_policy',
+                          'fwios.decision_refresh_provider_registry.config')
       or v_source is null then 'BUDGET_SOURCE_NOT_CONFIGURED'
     when not coalesce(v_budget_active,false) then 'BUDGET_POLICY_NOT_ACTIVE'
     when v_day is null or v_day<=0 then 'DAILY_BUDGET_NOT_CONFIGURED'
-    when v_source='fwios.market_daily_close_policy' and
+    when v_source in ('fwios.market_daily_close_policy',
+                       'fwios.decision_refresh_provider_registry.config') and
          (v_min is null or v_min<=0) then 'MINUTE_BUDGET_NOT_CONFIGURED'
     when v_source='fwios.decision_refresh_api_quota_policy' and
          (v_class is null or v_class<=0) then 'CAPABILITY_BUDGET_NOT_CONFIGURED'
+    when v_source='fwios.decision_refresh_provider_registry.config' and
+         (v_hour is null or v_hour<=0) and
+         coalesce(v_contract->>'hourly_limit_status','') <> 'NOT_APPLICABLE'
+      then 'HOURLY_LIMIT_UNVERIFIED'
+    when v_source='fwios.decision_refresh_provider_registry.config' and
+         (v_concurrent is null or v_concurrent<=0) and
+         coalesce(v_contract->>'concurrency_limit_status','') <> 'NOT_APPLICABLE'
+      then 'CONCURRENCY_LIMIT_UNVERIFIED'
     when coalesce(v_contract->>'entitlement_status','')<>'VERIFIED'
       then 'VENDOR_ENTITLEMENT_UNVERIFIED'
     when coalesce(v_contract->>'endpoint_cost_status','')<>'VERIFIED'
@@ -204,7 +237,7 @@ begin
     'plan_id',v_plan,'policy_version','UNIFIED_QUOTA_V1',
     'budget_source',v_source,
     'limits',jsonb_build_object(
-      'minute',v_min,'hour',null,'day',v_day,'concurrent',null,
+      'minute',v_min,'hour',v_hour,'day',v_day,'concurrent',v_concurrent,
       'endpoint_class',v_class,
       'legacy_headroom_outside_daily_budget',
         case when v_key='TWELVE_DATA' then v_reserve else null end,
@@ -213,6 +246,7 @@ begin
           then v_reserve else null end),
     'legacy_accounting_timezone',v_contract->>'legacy_accounting_timezone',
     'vendor_reset_status',v_contract->>'vendor_reset_status',
+    'vendor_reset_rule',v_contract->'vendor_reset_rule',
     'endpoint_credit_cost',v_route->'credit_cost',
     'thresholds',jsonb_build_object(
       'warning_pct',v_contract->'warning_threshold_pct',
