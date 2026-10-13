@@ -1,6 +1,6 @@
 # PR 2 — Unified Provider Registry & Quota Policy (reuse-first)
 
-**Status:** DRAFT / additive database migration only; **not deployed**, **no production cutover**.  
+**Status (2026-10-13):** Database migration APPLIED to the existing Supabase Production project as the authorized test environment. GitHub PR remains DRAFT / unmerged; provider cutover is still OFF.  
 **Parent:** FWIOS Architecture Refactor v3 / `docs/implementation/API_QUOTA_IMPLEMENTATION_PLAN.md`.  
 **Related:** PR 3 owns shared atomic reservations and usage finalization; PR 4 owns cache/single-flight/priority dispatch.
 
@@ -84,4 +84,4 @@ Never set `entitlement_status=VERIFIED`, `endpoint_cost_status=VERIFIED` or `ven
 
 The proposed migration is additive. With no consumer cutover, simply stop using the resolver. If schema rollback is explicitly needed, drop only `resolve_provider_quota_policy_v1`, remove only the `unified_quota_v1` namespace added to existing rows, and remove the two placeholder rows **only if no new dependency references them**. Never truncate or alter legacy usage, price, or transaction history.
 
-**Not performed in this PR:** Production DB changes, credential rotation, call-path rewiring, ledger unification, API calls, broker trades, portfolio edits, Google Sheets writes or merge.
+**Deployment/test receipt (2026-10-13):** Supabase migration `fwios_pr2_unified_provider_registry_quota_policy_v1` applied successfully to project `ysjbmeukwbfnxnwqchuq`. Read-only regression SQL passed; resolver is deny-by-default, anon cannot execute it, service_role can. Provider registry has 7 rows including disabled CoinGecko and Frankfurter placeholders. No Edge Function deployment, provider cutover, credential rotation, provider API calls, broker trades, portfolio edits, Google Sheets writes or GitHub merge.
