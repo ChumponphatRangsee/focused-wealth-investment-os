@@ -1,6 +1,11 @@
--- FWIOS PR 3 — staging-only transactional regressions.
--- Requires both PR 2 + PR 3 migrations. DO NOT run outside a disposable STAGING DB.
--- All fixture changes automatically roll back after the assertions.
+-- FWIOS PR 3 — rollback-only synthetic transactional regressions.
+-- Requires PR 2 + PR 3 migrations. Default: run on STAGING.
+-- On 2026-10-13 the project owner explicitly authorized Production-as-test.
+-- Production use requires such authorization and a single uninterrupted SQL
+-- session (BEGIN ... ROLLBACK); do NOT split statements across SQL sessions.
+-- The disabled CoinGecko provider is temporarily modified IN TRANSACTION
+-- but never committed; no external calls, holdings or transactions are touched.
+-- Parallel 20-session stress remains a separate staging-only test.
 
 begin;
 
