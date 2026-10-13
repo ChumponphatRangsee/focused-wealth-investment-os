@@ -109,6 +109,19 @@ begin
 
   c := fwios.finalize_api_quota_usage_v1(
     id_b,'SUCCESS',1,200,null,null,true);
+  if c->>'reason' <> 'INVALID_QUOTA_STATE_TRANSITION' then
+    raise exception 'Must mark DISPATCHED before success: %',c;
+  end if;
+  c := fwios.mark_api_quota_dispatched_v1(id_b,30);
+  if (c->>'allowed')::boolean is distinct from true then
+    raise exception 'Dispatch transition failed: %',c;
+  end if;
+  c := fwios.mark_api_quota_dispatched_v1(id_b,30);
+  if (c->>'allowed')::boolean is distinct from false then
+    raise exception 'Duplicate dispatch must be rejected: %',c;
+  end if;
+  c := fwios.finalize_api_quota_usage_v1(
+    id_b,'SUCCESS',1,200,null,null,true);
   if c->>'outcome'<>'SUCCESS' then
     raise exception 'Success finalization failed: %',c;
   end if;
@@ -127,6 +140,10 @@ begin
     raise exception 'Third billable credit must fail: %',a;
   end if;
 
+  c := fwios.mark_api_quota_dispatched_v1((b->>'usage_id')::uuid,30);
+  if (c->>'allowed')::boolean is distinct from true then
+    raise exception 'Dispatch before provider error required: %',c;
+  end if;
   c := fwios.finalize_api_quota_usage_v1(
     (b->>'usage_id')::uuid,'PROVIDER_ERROR',null,429,
     clock_timestamp()+interval '15 minutes','HTTP_429',true);
@@ -160,6 +177,8 @@ begin
   end if;
 
   if has_function_privilege('anon',
+      'fwios.mark_api_quota_dispatched_v1(uuid,integer)','EXECUTE')
+     or has_function_privilege('anon',
       'fwios.reserve_api_quota_unified_v1(text,text,text,text,text,text,text,uuid,text,jsonb)','EXECUTE')
      or has_function_privilege('authenticated',
       'fwios.finalize_api_quota_usage_v1(uuid,text,numeric,integer,timestamptz,text,boolean)','EXECUTE') then
