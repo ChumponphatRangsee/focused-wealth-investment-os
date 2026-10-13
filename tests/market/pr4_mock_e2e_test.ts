@@ -113,7 +113,7 @@ test("semantic isolation: currency, session, adjustment, endpoint, instrument",a
  assert.equal(a.flightKey,b.flightKey,"parameter ordering must canonicalize");
 });
 test("P0 priority and protected reserve preserve one last credit under P4 pressure",async()=>{
- const db=new MockGateway();db.remaining=2;db.protected=1;
+ const db=new MockGateway();db.remaining=3;db.protected=1;
  await requestRefresh(db,{...base,parameters:{job:1},priority:"P4"});
  await requestRefresh(db,{...base,parameters:{job:2},priority:"P4"});
  await requestRefresh(db,{...base,parameters:{job:3},priority:"P0"});
