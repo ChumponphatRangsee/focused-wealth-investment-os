@@ -1,0 +1,26 @@
+name: PR5 Native USD Adapter (offline)
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/_shared/pr5_coingecko_usd_adapter.ts'
+      - 'tests/pr5_coingecko_native_usd_adapter_test.ts'
+      - '.github/workflows/pr5-native-usd-adapter.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-usd-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Test pure CoinGecko native USD adapter (no API/network/DB credentials)
+        run: deno test tests/pr5_coingecko_native_usd_adapter_test.ts
+
+# No secrets, vendor requests, Supabase connection, scheduled sync, or dispatch.
