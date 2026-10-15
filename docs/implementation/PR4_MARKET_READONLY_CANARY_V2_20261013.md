@@ -184,3 +184,53 @@ Tracker and other live workflows were not cut over.
 explicitly request it; otherwise leave Google Sheets untouched. All
 legacy market provider workers and Cron remain subject to their prior
 policies; this work does not represent external-provider dispatch cutover.
+
+
+## USD-oriented Canary projection — 2026-10-15
+
+At the owner's request, the **current** direct-read Canary and the protected Edge
+endpoint now prefer USD for asset prices. The existing `fwios.pr4_market_canary_quote_v2`
+function was deliberately preserved for old/compatibility consumers. New additive
+read-only projection: `fwios.pr4_market_canary_usd_v1(asset)`
+(source: `migrations/20261015_pr4_market_canary_usd_v1.sql`).
+It calls only existing stored canonical v2 observations and cannot reach providers.
+
+- BTC: **USD derived**, not an independent native BTC/USD provider quote.
+  `BTC/USD = stored CoinGecko BTC/THB / stored Twelve Data USDTHB`.
+  The response declares `quote_kind=CRYPTO_FX_DERIVED`,
+  `price_is_derived=true`, USD currency, CoinGecko source observation ID,
+  FX observation ID/provider/time/rate/status and the stricter of BTC/FX validity.
+  **If FX is STALE, the derived BTC/USD is STALE, even if BTC/THB is fresh.**
+  If either source is missing or invalid, return MISSING instead of an invented
+  USD quote. This price is **never** valuation/accounting/trading eligible.
+- NVDA/TTWO: genuine stored regular closes in USD, `LAST_CLOSE` rather than
+  live market price, with `price_is_derived=false`.
+- USDTHB: remains an FX rate in **THB per 1 USD**, with explicit
+  `price_unit=THB_PER_USD`, not falsely displayed as a USD-asset price;
+  the FX reference is still attached to NVDA rather than an independent
+  canonical FX identity.
+- No new market data rows, Google Sheets projection/sync, quota reservation,
+  provider call, transaction change, portfolio holdings change, or cron changes.
+
+**Verified SQL at 2026-10-15 07:07:47 UTC:**
+BTC 80,639.77339092 USD, `STALE` due to FX 33.62972 THB/USD;
+NVDA 221.30 USD `LAST_CLOSE`; TTWO 201.23 USD `LAST_CLOSE`;
+USDTHB 33.62972 THB/USD `STALE`. These are a timestamped TEST RECEIPT,
+**not current trade-ready/live market quotes**. Provenance and
+`accounting_eligible=false` were checked for all four.
+
+- SQL Editor consumer: `queries/pr4_market_canary_current.sql` calls USD v1
+  and includes derived/source/FX metadata.
+- Edge consumer: `market-price-canary-v1` has been changed to call USD v1
+  and deployed **ACTIVE version 3, verify_jwt=true**. No public/anonymous
+  permissions were granted; the existing JWT-protected HTTP end-to-end test
+  remains PENDING because no authenticated FWIOS end-user JWT was available.
+- The Google Sheets Canary Sync stays DISABLED; the deleted temporary Canary
+  sheet was **not** restored. Existing v2 directly queried by name still
+  returns BTC/THB, by intentional backward compatibility.
+
+**Next improvement:** obtain a native verified BTC/USD canonical observation
+via the centrally quota-controlled CoinGecko adapter. Only after native USD
+price is available and freshness/plan cost are verified should USD Canary
+prefer it and avoid dependency on stale attached FX. Do not activate provider
+dispatch simply for a cosmetic currency switch.
