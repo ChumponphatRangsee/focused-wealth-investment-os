@@ -132,7 +132,7 @@ to delete. Do not remove canonical price/FX observations or trading history.
 - PR5 shadow SQL coverage still **70 assets: 63 Stock LAST_CLOSE, 6 Crypto MISSING and 1 Stock CRWD MISSING**. Native asset unit USD maintained. Stock last close is **not** a live price.
 - RPC grants still `anon=false, authenticated=false, service_role=true`.
 - Active cron **8**, Auth users **0**, PR4 IN_FLIGHT **0**.
-- `CRWD`: zero rows in `fwios.market_observations` for the canonical symbol at the time of the check. This is an upstream acquisition gap, not merely currency-validation rejection. No invented quote or GOOGLEFINANCE write.
+- `CRWD`: zero rows in `fwios.market_observations` for the canonical symbol at the time of the check. Deeper read-only trace found **0 CRWD jobs in `fwios.market_daily_close_jobs`, 0 rows in `fwios.market_daily_closes`, and 0 CRWD entries in `fwios.market_daily_close_api_usage`**. This establishes absence of ingestion/attempt evidence in those tables (not a proven cause of omission). Diagnose stock-universe/producer coverage before any authorized provider call; no invented quote or GOOGLEFINANCE write.
 - CoinGecko unified policy dry-read:
   `fwios.resolve_provider_quota_policy_v1('COINGECKO','CRYPTO_SPOT','/simple/price')`
   returned `reason=PROVIDER_DISABLED`, `allowed=false`, `dispatch_allowed=false`, `policy_ready=false`, `endpoint_credit_cost=null`, `vendor_reset_status=UNVERIFIED`. Registry remains `active=false`, `DISABLED`, `SHADOW_ONLY`, `plan_id=UNVERIFIED`, `entitlement_status=UNVERIFIED`.
