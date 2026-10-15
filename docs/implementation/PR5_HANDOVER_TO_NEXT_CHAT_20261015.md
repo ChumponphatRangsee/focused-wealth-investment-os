@@ -23,7 +23,7 @@
 | Additive native-USD read RPC | `migrations/20261015_pr5_native_usd_read_shadow_v1.sql` | **Applied** to Supabase as `fwios.pr5_native_usd_read_shadow_v1`; SQL function is `fwios.pr5_native_usd_price_shadow_v1(text)` |
 | Read-only shadow consumer | `supabase/functions/market-price-usd-shadow-v1/index.ts` | **Deployed ACTIVE v1**, `verify_jwt=true`; new independent Edge endpoint |
 | Crypto native USD provider adapter | `supabase/functions/_shared/pr5_coingecko_usd_adapter.ts` | Pure parse/validate/request-URL builder; **not wired to HTTP dispatch**, no live CoinGecko USD request |
-| Adapter test source | `tests/pr5_coingecko_native_usd_adapter_test.ts` | 8 synthetic Deno tests written, **NOT run** |
+| Adapter test source | `tests/pr5_coingecko_native_usd_adapter_test.ts` | 8 synthetic Deno tests **PASS / 0 FAIL in GitHub Actions on 2026-10-15** |
 | All-instrument shadow audit | `queries/pr5_native_usd_shadow_all.sql` | Executed successfully; exactly **70 asset rows** |
 | Native USD original-data coverage | `queries/pr5_usd_native_coverage.sql` (in upstream PR4 branch) | SQL audited 70 instruments |
 | Operational runbook | `docs/implementation/PR5_NATIVE_USD_SHADOW_RUNBOOK_20261015.md` | Deployed receipts, rollback, limits documented |
@@ -69,7 +69,7 @@ CRWD has a canonical active instrument but no PASS native USD observation in `fw
 ## 5. Remaining work, suggested exact order
 
 1. **Verify CoinGecko real plan and quota end-to-end:** endpoint permission, minute/day/reset/credit costs, shared provider account and existing legacy worker requests; confirm PR3 Reservation → Dispatch → Finalize controls (including retries, 429, failure credits). Continue fail-closed if any critical entitlement fact cannot be confirmed.
-2. **Run eight local Deno unit tests**, e.g. `deno test tests/pr5_coingecko_native_usd_adapter_test.ts`. Do not claim PASS before executing. Add tests for DB null cases/identity ambiguity and any discovered bugs; do not over-test unnecessarily.
+2. **COMPLETE: all eight CoinGecko pure adapter unit tests passed** in Deno 2.x GitHub Actions run #38720690779 (2026-10-15). This is not a live provider, DB or authenticated Edge test. Add additional tests only for discovered bugs.
 3. **Integrate USD six-crypto batch adapter** with protected PR4 cache/single-flight/priority, not an independent raw `fetch` loop, only after verified quota. Store genuine USD source observations (price, instrument ID, provider, timestamp, session, provenance) in the canonical market observation path, keeping historical THB facts.
 4. **Resolve CRWD verified USD source** under the same provider policy; do not invent quote or copy a sheet value as trusted market data without source verification.
 5. **Re-run 70-asset USD audit and freshness gates:** 70 USD-native, or explicit `MISSING`/blocked, no silent currency conversions, cross-session stock rules, crypto TTL, proof of no double-spend.
@@ -99,3 +99,14 @@ Read these GitHub artifacts first:
 The newly deployed `market-price-usd-shadow-v1` is read-only and has no production consumers. If necessary, deactivate only this Edge function; leave migration and historical observation data intact (private EXECUTE grants). No need to change existing Cron, provider policy or Google Sheets. Do not expose service-role or `SUPABASE_DB_URL` secrets in GitHub or Sheets.
 
 **Important label:** PR5 is *implemented for native-USD shadow read*, **not completed for native USD ingestion or production portfolio usage**.
+
+
+## 8. Continuation verified 2026-10-15 — latest receipts (supersedes earlier NOT RUN wording)
+
+- **Code commit:** `934d8f7` adds an offline Deno CI workflow; [run #38720690779](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/actions/runs/38720690779) is **SUCCESS: eight tests passed, zero failed**. All eight existing synthetic test cases ran; there was no vendor dispatch or API credit use.
+- Supabase still **63 LAST_CLOSE native USD stocks + 7 MISSING**. RPC grants `anon=false / authenticated=false / service_role=true`, new Edge ACTIVE v1 `verify_jwt=true`; active Cron 8, in-flight PR4 0, Auth users 0.
+- **Quota policy READ proof:** `resolve_provider_quota_policy_v1('COINGECKO','CRYPTO_SPOT','/simple/price')` gives `allowed=false`, `dispatch_allowed=false`, `reason=PROVIDER_DISABLED`, `endpoint_credit_cost=null`, `vendor_reset_status=UNVERIFIED`. Actual FWIOS CoinGecko account and vendor credits remain **UNVERIFIED**.
+- **Legacy public path clarified:** `fwios-portfolio-mtm-refresh` scheduled every 15 minutes; legacy `portfolio-mtm-refresh-v1` calls CoinGecko public URL `api.coingecko.com` for THB without a CoinGecko key and without PR3 unified quota. This is an IP/public rate-limit exposure, **not proof of a shared paid/Demo account**; reconcile both before enabling new provider dispatch.
+- **CRWD forensic check:** zero raw `fwios.market_observations` rows for canonical CRWD at inspection, so do not invent a native USD quote; approved upstream source acquisition needed.
+- Authenticated Edge HTTP E2E is **still pending**, not simulated with service-role keys.
+- **New documents:** [updated PR5 runbook](./PR5_NATIVE_USD_SHADOW_RUNBOOK_20261015.md) includes tests and live evidence; [PR6 gated shadow-sync plan](./PR6_PORTFOLIO_TRACKER_SHADOW_SYNC_GATED_PLAN.md) is design-only. Google Sheets, Cron, ledger/accounting, historical THB quotes and all provider flags unchanged. PR #49–52 remain Draft; no merge.
