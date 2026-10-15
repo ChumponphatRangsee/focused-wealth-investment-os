@@ -73,9 +73,8 @@ input/output validation with no fetch, no DB or secrets:
 - Requires positive numeric USD price and valid <=15m provider timestamp,
   forbids stale/future/missing/THB-only rows as READY.
 - `tests/pr5_coingecko_native_usd_adapter_test.ts` contains 8
-  synthetic Deno unit test cases. **Unit tests are checked in, but no
-  Deno test runner was available in this execution environment; do not
-  report test suite as executed**.
+  synthetic Deno unit test cases. **The 8 tests have now been executed in a Deno 2.x GitHub Actions job:
+  8 PASS / 0 FAIL on 2026-10-15**; see the follow-up receipt below.
 - There is no scheduled dispatch, network call, quota debit, candidate
   write/publish or legacy-worker replacement.
 
@@ -117,3 +116,32 @@ New Edge `market-price-usd-shadow-v1` can be disabled without touching
 function has no writer or downstream production consumer and may be left
 installed with private service-role-only execute permissions; no records
 to delete. Do not remove canonical price/FX observations or trading history.
+
+## Follow-up receipt — 2026-10-15, PR5 continuation (actual execution)
+
+### Offline unit test CI — PASS
+
+- Added `.github/workflows/pr5-native-usd-adapter.yml` on PR5 branch; workflow uses Deno 2.x with `deno test tests/pr5_coingecko_native_usd_adapter_test.ts`.
+- Actual PR #52 [GitHub Actions run #38720690779](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/actions/runs/38720690779) completed **SUCCESS**. Job logs explicitly report **8 passed / 0 failed** (2026-10-15 10:30 UTC).
+- Source tests cover USD-only batch URL, all six positive USD responses, THB-only rejection, stale/future timestamps, partial response, invalid prices and duplicate symbol rejection.
+- No vendor call, DB write, API key or credential was part of the test. This is **unit coverage only**, not authenticated Edge HTTP E2E or native-USD ingestion.
+
+### Live read-only checks (no changes to workloads)
+
+- Connected Supabase project `ysjbmeukwbfnxnwqchuq`: ACTIVE_HEALTHY; new Edge `market-price-usd-shadow-v1` **ACTIVE v1** and `verify_jwt=true`.
+- PR5 shadow SQL coverage still **70 assets: 63 Stock LAST_CLOSE, 6 Crypto MISSING and 1 Stock CRWD MISSING**. Native asset unit USD maintained. Stock last close is **not** a live price.
+- RPC grants still `anon=false, authenticated=false, service_role=true`.
+- Active cron **8**, Auth users **0**, PR4 IN_FLIGHT **0**.
+- `CRWD`: zero rows in `fwios.market_observations` for the canonical symbol at the time of the check. This is an upstream acquisition gap, not merely currency-validation rejection. No invented quote or GOOGLEFINANCE write.
+- CoinGecko unified policy dry-read:
+  `fwios.resolve_provider_quota_policy_v1('COINGECKO','CRYPTO_SPOT','/simple/price')`
+  returned `reason=PROVIDER_DISABLED`, `allowed=false`, `dispatch_allowed=false`, `policy_ready=false`, `endpoint_credit_cost=null`, `vendor_reset_status=UNVERIFIED`. Registry remains `active=false`, `DISABLED`, `SHADOW_ONLY`, `plan_id=UNVERIFIED`, `entitlement_status=UNVERIFIED`.
+- Legacy cron `fwios-portfolio-mtm-refresh` is scheduled `*/15 * * * *` (96 execution *opportunities* per 24 hours; actual request count not proven). Legacy Edge `portfolio-mtm-refresh-v1` uses unauthenticated public `api.coingecko.com/api/v3/simple/price?...` with `vs_currencies=thb`, **no CoinGecko account API key in this call path**, and it does not pass through PR3 CoinGecko reserve/dispatch/finalize. Public per-IP capacity and any later account-key credit bucket must be reviewed separately. Do not falsely treat legacy public requests as demonstrated charges to an unverified future Demo/Pro account.
+- Official CoinGecko support (checked 2026-10-15): [credit accounting](https://support.coingecko.com/articles/1864417806-how-does-coingecko-api-count-the-api-usage-credit), [public rate limits](https://support.coingecko.com/articles/5125303456-what-is-the-rate-limit-for-coingecko-api-public-plan), [API account usage through /key](https://support.coingecko.com/articles/1894202112-how-to-check-your-api-call-usage-via-endpoint). Successful HTTP 200 commonly costs one monthly credit, but 4xx/5xx still consume per-minute capacity; actual FWIOS plan, remaining balance, reset and IP/key sharing **NOT VERIFIED**. Checking documentation is not checking entitlement.
+- Authenticated Edge HTTP E2E remains **PENDING**: zero Auth users and no authorized user JWT; protected edge DB connection has not been proven via HTTP. Do not disable JWT verification to bypass this.
+
+### Go/no-go
+
+**NO-GO for real provider dispatch or Tracker sync.** Before enabling CoinGecko native USD, verify the actual vendor plan and key/public-IP boundaries, limit/billing windows and endpoint costs; inventory legacy usage; guarantee all new dispatch via PR3 atomic reservation and PR4 single-flight with no duplicate spend; verify native USD persistence and CRWD source. No existing Cron/transaction/holding/cost basis/THB history/Google Sheets data was modified in this continuation.
+
+PR6 design-only prerequisite checklist: [PR6 gated shadow-sync plan](./PR6_PORTFOLIO_TRACKER_SHADOW_SYNC_GATED_PLAN.md). No PR6 live implementation or Sheets cutover yet.
