@@ -168,3 +168,15 @@ Roll out behind feature flags: observe current state → parallel shadow prices 
 - **Release C / P2–P3:** Research dashboard cleanup, quota-aware tiered scanner, advanced health/alerts and legacy retirement.
 
 See the [implementation plan](../implementation/API_QUOTA_IMPLEMENTATION_PLAN.md) for PR dependencies, acceptance tests and ownership. This document **does not authorize** production writes or automatic trading.
+
+
+## 11. USD-only canonical asset price requirement (2026-10-15)
+
+**Owner decision:** All supported investable assets must have a **USD-denominated canonical market price** for new consumer-facing data. This applies to stocks, ETFs, and all six crypto assets (BTC, ETH, XRP, SOL, HBAR, DOGE), not only PR4 Canary. The new normalized price contract must expose `price_usd`, `currency=USD`, observation ID, provider, source time, freshness/session/provenance and an eligibility gate.
+
+- **Ingestion:** USD-listed stocks already have USD quotes/closes in market observations. The current crypto ingestion uses CoinGecko `vs_currencies=thb`; new native USD crypto ingestion should use `vs_currencies=usd` through the protected quota/cache path. Do not switch the live THB-dependent portfolio worker until a shadow reconciliation and consumer cutover.
+- **Legacy audit:** Retain historical THB source observations with their *truthful original units*; never relabel historical THB prices as USD, rewrite past financial records, or destroy provenance. After cutover, newly published canonical **asset** prices must be USD, even if historical raw ingestion records remain in their original currencies.
+- **FX exception:** USDTHB represents THB per one USD and is an FX instrument/reference, not a USD-denominated asset price. Thai-baht trade amounts, cash, fees and cost basis are accounting records, not quotes, and remain unchanged.
+- **Consumer ownership:** Supabase supplies canonical USD asset prices only; Investment Portfolio Tracker computes THB display and valuations using a separately validated USDTHB rate in Google Sheets (`price_thb=price_usd*USDTHB`). Avoid silent fixed-rate fallbacks; expose blocked or stale FX. Do not push THB-valued asset prices as a second authoritative market-price feed.
+- **Canary caveat:** Current BTC/USD Canary is *derived from BTC/THB divided by attached USDTHB* and goes STALE with FX; it is an interim, non-accounting test and **not evidence of native USD crypto ingestion**. The PR5 native USD service must reject/flag missing USD sources rather than silently return stale FX-derived prices as valid USD.
+- **Rollout:** update the PR5 price contract, add six native USD crypto feeds, verify global API quota, then PR6 shadow comparison and PR7 portfolio read cutover. Keep old workers, chronology and transaction ledger unchanged until parity gates pass.
