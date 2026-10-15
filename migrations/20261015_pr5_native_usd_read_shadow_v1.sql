@@ -26,7 +26,7 @@ begin
       'trading_eligible',false,'new_provider_calls',0,'new_quota_reservations',0);
   end if;
 
-  select count(*),min(i.instrument_id),min(i.asset_class)
+  select count(*),(array_agg(i.instrument_id))[1],(array_agg(i.asset_class))[1]
     into v_count,v_instrument_id,v_class
   from fwios.instruments i
   join fwios.v_instrument_identity_current id
