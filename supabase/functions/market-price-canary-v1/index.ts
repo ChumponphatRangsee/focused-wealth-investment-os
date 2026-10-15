@@ -1,5 +1,5 @@
 // FWIOS PR4 bounded, read-only real market observations.
-// Canary allowlist: BTC, NVDA, TTWO, USDTHB (FX reference-only).
+// Canary USD display: BTC is FX-derived (STALE if FX stale); NVDA/TTWO USD.\n// USDTHB is THB per USD and retains its proper unit (FX reference-only).
 // No provider HTTP, quota reservation, portfolio accounting or trade writes.
 // Authentication SIGNATURE and expiration are enforced by the Supabase gateway.
 // DEPLOY ONLY WITH verify_jwt=true.
@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
   }
   try {
     // Single parameterized query, immutable data source; no caller SQL or outbound HTTP.
-    const rows = await sql`select fwios.pr4_market_canary_quote_v2(${requested}::text) as data`;
+    const rows = await sql`select fwios.pr4_market_canary_usd_v1(${requested}::text) as data`;
     const data = rows[0]?.data;
     if (!data || data.status === "MISSING") {
       return Response.json(data ?? {status: "MISSING", canary_only: true},
