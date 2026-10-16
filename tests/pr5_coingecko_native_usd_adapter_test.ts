@@ -1,6 +1,6 @@
 // Run locally via: deno test tests/pr5_coingecko_native_usd_adapter_test.ts
 // Unit only: no network, no DB writes and no vendor quota.
-import { buildCoinGeckoUsdBatchUrl, parseCoinGeckoUsdBatch } from
+import { buildCoinGeckoUsdBatchUrl, buildCoinGeckoUsdThbCompatBatchUrl, parseCoinGeckoUsdBatch } from
   "../supabase/functions/_shared/pr5_coingecko_usd_adapter.ts";
 import type { CryptoSymbol } from
   "../supabase/functions/_shared/pr5_coingecko_usd_adapter.ts";
@@ -25,6 +25,11 @@ Deno.test("batch contract requests USD for 6 crypto ids",()=>{
  check(u.searchParams.get("ids")===assets.map(s=>ids[s]).join(","),"id map");
  check(u.searchParams.get("include_last_updated_at")==="true","timestamp required");
  check(!u.searchParams.toString().includes("thb"),"no THB");
+});
+Deno.test("compat batch requests USD and THB in one provider call",()=>{
+ const u=new URL(buildCoinGeckoUsdThbCompatBatchUrl(assets));
+ check(u.searchParams.get("vs_currencies")==="usd,thb","same call must request usd,thb");
+ check(u.searchParams.get("ids")===assets.map(s=>ids[s]).join(","),"same six ids");
 });
 Deno.test("all 6 USD responses validated and sourced",()=>{
  const z=parseCoinGeckoUsdBatch(valid,assets,at);
