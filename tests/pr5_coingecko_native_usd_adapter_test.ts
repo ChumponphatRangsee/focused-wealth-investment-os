@@ -1,5 +1,5 @@
 // Run locally via: deno test tests/pr5_coingecko_native_usd_adapter_test.ts
-// Unit only: no network, no DB writes and no vendor quota.
+// Unit only: no vendor network, no DB writes and no vendor quota. CI also type-checks the MVP worker integration.
 import { buildCoinGeckoUsdBatchUrl, buildCoinGeckoUsdThbCompatBatchUrl, parseCoinGeckoUsdBatch } from
   "../supabase/functions/_shared/pr5_coingecko_usd_adapter.ts";
 import type { CryptoSymbol } from
