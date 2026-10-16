@@ -110,3 +110,23 @@ The newly deployed `market-price-usd-shadow-v1` is read-only and has no producti
 - **CRWD forensic check:** zero raw `fwios.market_observations` rows for canonical CRWD at inspection, so do not invent a native USD quote; approved upstream source acquisition needed.
 - Authenticated Edge HTTP E2E is **still pending**, not simulated with service-role keys.
 - **New documents:** [updated PR5 runbook](./PR5_NATIVE_USD_SHADOW_RUNBOOK_20261015.md) includes tests and live evidence; [PR6 gated shadow-sync plan](./PR6_PORTFOLIO_TRACKER_SHADOW_SYNC_GATED_PLAN.md) is design-only. Google Sheets, Cron, ledger/accounting, historical THB quotes and all provider flags unchanged. PR #49–52 remain Draft; no merge.
+
+
+## 9. MVP-first continuation — 2026-10-16 (current handover)
+
+Owner changed Phase 1 strategy from infrastructure-first to feature-first. Keep existing PR2–PR4 foundations, but defer further enterprise-scale hardening unless required by a working feature.
+
+### Current live result
+
+- CoinGecko crypto: legacy portfolio worker now requests `usd,thb` in the same batch call. Existing THB snapshots remain; native USD is additionally persisted to canonical market observations.
+- `portfolio-mtm-refresh-v1`: ACTIVE v2. Verification request HTTP 200; 6 crypto legacy updates + 6 native USD publishes; no USD errors; no new Cron.
+- CRWD: daily-close universe gap fixed by adding active canonical stocks at lowest existing priority. Targeted quota-guarded Twelve Data close passed.
+- PR5 coverage: **70/70**, comprising **64 Stock LAST_CLOSE + 6 Crypto FRESH**, 0 MISSING.
+- Tracker: hidden `_Market_Data` exists with 70 USD rows, separate USDTHB provenance and Sheet-side THB formulas. Existing `Price Data`, `Transactions`, `Holdings`, cost basis and P&L unchanged.
+- Open holdings reconciliation: 10 unique assets mapped; mean absolute current-vs-shadow price delta ~0.87%; largest TTWO ~3.91%. Stock deltas mainly reflect live/current Price Data vs PR5 LAST_CLOSE semantics.
+
+### Next MVP step
+
+Do not spend the next cycle extending PR2–PR4 infrastructure. Decide/implement the simplest accepted stock pricing rule for the Tracker (live held-stock quote when valid, otherwise explicit LAST_CLOSE), rerun reconciliation, then make a separately reversible Price Data **read-only market-price source cutover**. Never change Transactions, quantities, cost basis or trading.
+
+Phase-1 roadmap: `docs/implementation/PHASE1_MVP_FIRST_ROADMAP_20261016.md`.
