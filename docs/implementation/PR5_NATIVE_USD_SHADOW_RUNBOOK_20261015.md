@@ -145,3 +145,14 @@ to delete. Do not remove canonical price/FX observations or trading history.
 **NO-GO for real provider dispatch or Tracker sync.** Before enabling CoinGecko native USD, verify the actual vendor plan and key/public-IP boundaries, limit/billing windows and endpoint costs; inventory legacy usage; guarantee all new dispatch via PR3 atomic reservation and PR4 single-flight with no duplicate spend; verify native USD persistence and CRWD source. No existing Cron/transaction/holding/cost basis/THB history/Google Sheets data was modified in this continuation.
 
 PR6 design-only prerequisite checklist: [PR6 gated shadow-sync plan](./PR6_PORTFOLIO_TRACKER_SHADOW_SYNC_GATED_PLAN.md). No PR6 live implementation or Sheets cutover yet.
+
+
+## MVP-first implementation receipt — 2026-10-16
+
+- CI run #38833494783: combined CoinGecko USD+THB adapter tests and Deno worker type-check PASS.
+- Deployed existing `portfolio-mtm-refresh-v1` as v2; Cron cadence unchanged. Crypto uses one existing CoinGecko batch request for `usd,thb`; six native USD observations were published while legacy THB snapshots continued.
+- Authorized smoke run returned HTTP 200, `usd_updated=6`, no crypto USD errors, portfolio pricing gate PASS, auto_trade=false.
+- Added migration `pr5_mvp_canonical_stock_daily_close_coverage_v1`: existing daily-close universe now also includes active canonical common stocks at lowest priority. This added CRWD only in the current universe (63→64 stocks); existing Twelve Data quota guard remained active.
+- CRWD targeted backfill: PASS, session 2026-10-14, USD close 249.28999, provider TWELVE_DATA, quota allowed.
+- Final PR5 shadow readback: **70/70 covered** — 64 Stock LAST_CLOSE + 6 Crypto FRESH, 0 MISSING.
+- Portfolio Tracker hidden `_Market_Data` shadow created separately; no Price Data/Transactions/Holdings/Cost Basis/Cron cutover.
