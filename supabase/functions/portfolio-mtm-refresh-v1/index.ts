@@ -185,7 +185,12 @@ async function refreshStock(ticker:string,key:string,fx:any,now:Date){
       price=Number(d?.close??d?.price??d?.previous_close);
       marketStatus=d?.is_market_open===true?"OPEN":(d?.is_market_open===false?"CLOSED":"UNKNOWN");
       if(!(price>0))throw new Error("INVALID_QUOTE_PRICE");
-      await markUsage(gate,"PASS",{capability:"PORTFOLIO_QUOTE",price});
+      await markUsage(gate,"PASS",{
+        capability:"PORTFOLIO_QUOTE",price,
+        provider_last_quote_at:d?.last_quote_at??null,
+        provider_timestamp:d?.timestamp??null,
+        market_status:marketStatus
+      });
     }catch(e){
       await markUsage(gate,"ERROR",{capability:"PORTFOLIO_QUOTE",error:(e instanceof Error?e.message:String(e)).slice(0,180)});
       price=null;
@@ -201,13 +206,25 @@ async function refreshStock(ticker:string,key:string,fx:any,now:Date){
     payload={session_date:r[0].session_date,primary_provider:r[0].primary_provider,retrieved_at:r[0].retrieved_at};
   }
   const thb=Number(price)*Number(fx.rate);
+  const providerEpoch=providerName==="TWELVE_DATA_QUOTE"
+    ? Number(payload?.last_quote_at??payload?.timestamp)
+    : NaN;
+  const observedAt=Number.isFinite(providerEpoch)&&providerEpoch>0
+    ? new Date(providerEpoch*1000)
+    : now;
   await insertQuote({
     asset_symbol:ticker,asset_class:"Stock",price_native:Number(price),native_currency:"USD",
     fx_rate_thb:Number(fx.rate),price_thb:thb,provider:providerName,source_tier:"A",
-    observed_at:now,valid_until:stockValidity(now),market_status:marketStatus,
-    raw_payload:{quote:payload,fx_provider:fx.provider,fx_payload:fx.payload}
+    observed_at:observedAt,valid_until:stockValidity(now),market_status:marketStatus,
+    raw_payload:{
+      quote:payload,fx_provider:fx.provider,fx_payload:fx.payload,
+      fwios_pr7_mvp:{scope:"OPEN_HOLDINGS_ONLY",provider_observed_at:observedAt.toISOString()}
+    }
   });
-  return {ticker,status:"PASS",price_usd:Number(price),fx_rate_thb:Number(fx.rate),price_thb:thb,provider:providerName};
+  return {
+    ticker,status:"PASS",price_usd:Number(price),fx_rate_thb:Number(fx.rate),price_thb:thb,
+    provider:providerName,market_status:marketStatus,observed_at:observedAt.toISOString()
+  };
 }
 
 Deno.serve(async(req:Request)=>{
@@ -284,7 +301,7 @@ Deno.serve(async(req:Request)=>{
 
   return Response.json({
     ok:String(health.pricing_gate)==="PASS",
-    worker:WORKER,version:1,run_id:runId,force_all:forceAll,
+    worker:WORKER,version:2,run_id:runId,force_all:forceAll,
     stock_refresh_attempted:doStocks,crypto:cryptoResult,stocks:stockResults,
     fx_rate_thb:fx?.rate??null,pricing_gate:health.pricing_gate,
     fresh_asset_count:health.fresh_asset_count,open_asset_count:health.open_asset_count,
