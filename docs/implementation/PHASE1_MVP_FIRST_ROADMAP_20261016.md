@@ -51,3 +51,18 @@ A normal workflow should be possible without SQL/GitHub intervention:
 - prices expose freshness/source;
 - failures degrade visibly instead of corrupting accounting;
 - no automated trade execution.
+
+
+## PR7 Task 1 receipt — Held-stock live quote MVP (2026-10-16)
+
+**Status: COMPLETE**
+
+- Scope is dynamically derived from open stock positions only. Current set: `MSFT, NVDA, TLN, TTWO` (4 stocks); closed CRWD and the rest of the 64-stock canonical universe are not polled by this portfolio live-quote loop.
+- Existing `portfolio-mtm-refresh-v1` Twelve Data `/quote` path and existing atomic daily/minute quota reservation are reused; no new stock provider or new Cron was added.
+- Correctness fix: canonical stock quote observation time now uses Twelve Data `last_quote_at` (fallback `timestamp`) instead of request `now()`, preventing an old vendor quote from masquerading as newly observed.
+- CI run `38836600779` passed adapter tests and Deno worker type-check.
+- Edge function deployed ACTIVE as `portfolio-mtm-refresh-v1` v3.
+- One authorized force verification run returned HTTP 200 and exactly four stock results: MSFT, NVDA, TLN, TTWO; all PASS, no errors, pricing gate PASS, auto_trade=false.
+- Verification happened while US market was closed. Twelve Data correctly returned `market_status=CLOSED`; PR5 shadow resolver therefore continued to expose `LAST_CLOSE` rather than falsely label the closed quote `FRESH`. During market hours, only an `OPEN` quote no older than 15 minutes is eligible as `STOCK_LIVE_QUOTE / FRESH`.
+
+No Price Data cutover, transaction/accounting mutation, or additional 64-stock live polling was enabled.
