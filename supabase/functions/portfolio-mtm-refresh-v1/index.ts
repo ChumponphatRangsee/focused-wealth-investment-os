@@ -1,3 +1,5 @@
+import { buildCoinGeckoUsdThbCompatBatchUrl, parseCoinGeckoUsdBatch } from "../_shared/pr5_coingecko_usd_adapter.ts";
+import type { CryptoSymbol } from "../_shared/pr5_coingecko_usd_adapter.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import postgres from "npm:postgres@3.4.3";
 
@@ -110,30 +112,67 @@ async function insertQuote(q:any){
     ${q.observed_at},${q.valid_until},${q.market_status},'PASS',${q.raw_payload}::jsonb
   )`;
 }
+async function publishNativeUsdCrypto(
+  symbol:CryptoSymbol,priceUsd:number,providerTs:Date,providerLastUpdatedAt:unknown
+){
+  const raw={
+    provider_last_updated_at:providerLastUpdatedAt??null,
+    source_url:"https://api.coingecko.com/api/v3/simple/price",
+    fwios_pr5_mvp:{native_usd:true,legacy_thb_compat:true,same_provider_request:true}
+  };
+  const r=await sql!`select fwios.ensure_market_observation_v1(
+    fwios.resolve_instrument_id_v1(${symbol},'Crypto',null,null),
+    'LIVE_QUOTE',${priceUsd},'USD',${providerTs.toISOString().slice(0,10)}::date,
+    ${providerTs},'24X7','COINGECKO','B','https://api.coingecko.com/api/v3/simple/price',
+    'PASS',${raw}::jsonb,null,null
+  ) observation_id`;
+  if(!r[0]?.observation_id)throw new Error("USD_OBSERVATION_NOT_PUBLISHED");
+  return String(r[0].observation_id);
+}
 async function refreshCrypto(assets:any[]){
-  const ids:Record<string,string>={
+  const ids:Record<CryptoSymbol,string>={
     BTC:"bitcoin",ETH:"ethereum",XRP:"ripple",SOL:"solana",HBAR:"hedera-hashgraph",DOGE:"dogecoin"
   };
-  const symbols=assets.map(a=>String(a.asset_symbol)).filter(s=>ids[s]);
-  if(!symbols.length)return {attempted:false,updated:0,missing:[]};
-  const uniqueIds=[...new Set(symbols.map(s=>ids[s]))];
-  const url=`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(uniqueIds.join(","))}&vs_currencies=thb&include_last_updated_at=true`;
-  const d=await fetchJson(url,{"Accept":"application/json"});
-  const now=new Date();let updated=0;const missing:string[]=[];
+  const symbols=[...new Set(
+    assets.map(a=>String(a.asset_symbol).toUpperCase())
+      .filter((s):s is CryptoSymbol=>Object.prototype.hasOwnProperty.call(ids,s))
+  )];
+  if(!symbols.length)return {attempted:false,updated:0,usd_updated:0,missing:[],usd_missing:[],usd_errors:[]};
+  // MVP: one existing CoinGecko request now returns both currencies.
+  // This does not add a second vendor call or change the 15-minute Cron cadence.
+  const d=await fetchJson(buildCoinGeckoUsdThbCompatBatchUrl(symbols),{"Accept":"application/json"});
+  const now=new Date();
+  const usdParsed=parseCoinGeckoUsdBatch(d,symbols,now);
+  const usdByAsset=new Map(usdParsed.map(x=>[x.asset,x]));
+  let updated=0,usdUpdated=0;
+  const missing:string[]=[],usdMissing:string[]=[],usdErrors:any[]=[];
   for(const s of symbols){
-    const x=d?.[ids[s]],p=Number(x?.thb);
-    if(!(p>0)){missing.push(s);continue;}
+    const x=d?.[ids[s]],pThb=Number(x?.thb);
+    if(!(pThb>0)){missing.push(s);continue;}
     const providerTs=Number(x?.last_updated_at)>0?new Date(Number(x.last_updated_at)*1000):now;
+    const usd=usdByAsset.get(s);
+    if(usd?.status==="READY"){
+      try{
+        await publishNativeUsdCrypto(s,usd.candidate.price_usd,providerTs,x?.last_updated_at);
+        usdUpdated++;
+      }catch(e){
+        usdErrors.push({asset:s,error:(e instanceof Error?e.message:String(e)).slice(0,180)});
+      }
+    }else{
+      usdMissing.push(s);
+      if(usd)usdErrors.push({asset:s,status:usd.status,reason:usd.reason});
+    }
+    // Legacy THB compatibility path remains exactly in place for current portfolio consumers.
     await insertQuote({
-      asset_symbol:s,asset_class:"Crypto",price_native:p,native_currency:"THB",
-      fx_rate_thb:1,price_thb:p,provider:"COINGECKO",source_tier:"B",
+      asset_symbol:s,asset_class:"Crypto",price_native:pThb,native_currency:"THB",
+      fx_rate_thb:1,price_thb:pThb,provider:"COINGECKO",source_tier:"B",
       observed_at:providerTs,valid_until:new Date(now.getTime()+45*60_000),
       market_status:"24X7",
       raw_payload:{provider_last_updated_at:x?.last_updated_at??null,source_url:"https://api.coingecko.com/api/v3/simple/price"}
     });
     updated++;
   }
-  return {attempted:true,updated,missing};
+  return {attempted:true,updated,usd_updated:usdUpdated,missing,usd_missing:usdMissing,usd_errors:usdErrors};
 }
 async function refreshStock(ticker:string,key:string,fx:any,now:Date){
   const gate=await reserve(ticker,{capability:"PORTFOLIO_QUOTE"});
@@ -191,7 +230,7 @@ Deno.serve(async(req:Request)=>{
   const crypto=assets.filter((a:any)=>String(a.asset_class).toUpperCase()==="CRYPTO");
   const stocks=assets.filter((a:any)=>String(a.asset_class).toUpperCase()==="STOCK");
 
-  let cryptoResult:any={attempted:false,updated:0,missing:[]};
+  let cryptoResult:any={attempted:false,updated:0,usd_updated:0,missing:[],usd_missing:[],usd_errors:[]};
   let stockResults:any[]=[];
   let fx:any=null;
   let errors:any[]=[];
