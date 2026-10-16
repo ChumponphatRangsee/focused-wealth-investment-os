@@ -124,7 +124,7 @@ async function publishNativeUsdCrypto(
     fwios.resolve_instrument_id_v1(${symbol},'Crypto',null,null),
     'LIVE_QUOTE',${priceUsd},'USD',${providerTs.toISOString().slice(0,10)}::date,
     ${providerTs},'24X7','COINGECKO','B','https://api.coingecko.com/api/v3/simple/price',
-    'PASS',${raw}::jsonb,null,null
+    'PASS',${JSON.stringify(raw)}::jsonb,null,null
   ) observation_id`;
   if(!r[0]?.observation_id)throw new Error("USD_OBSERVATION_NOT_PUBLISHED");
   return String(r[0].observation_id);
@@ -267,18 +267,18 @@ Deno.serve(async(req:Request)=>{
     stock_refresh_attempted=${doStocks},
     crypto_refresh_attempted=${cryptoResult.attempted===true},
     fx_rate_thb=${fx?.rate??null},
-    detail=${{crypto:cryptoResult,stocks:stockResults,errors,price_health:health}}::jsonb
+    detail=${JSON.stringify({crypto:cryptoResult,stocks:stockResults,errors,price_health:health})}::jsonb
     where run_id=${runId}::uuid`;
 
   await sql`update fwios.system_state set
-    state_value=state_value||${{
+    state_value=state_value||${JSON.stringify({
       portfolio_mark_to_market_status:String(health.pricing_gate||"BLOCKED"),
       portfolio_mark_to_market_value_thb:value==null?null:Number(value),
       portfolio_mark_to_market_last_refresh:now.toISOString(),
       portfolio_mark_to_market_worker_version:1,
       portfolio_mark_to_market_run_id:runId,
       auto_trade:false
-    }}::jsonb,
+    })}::jsonb,
     updated_at=now(),as_of_text=(now() at time zone 'Asia/Bangkok')::date::text
     where state_key='architecture_consolidation_v1'`;
 
