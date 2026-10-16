@@ -1,7 +1,7 @@
 # PR6 preparation — Portfolio Tracker native-USD shadow sync (GATED, NOT ENABLED)
 
 **Date:** 2026-10-15 (Asia/Bangkok)  
-**Status:** DESIGN ONLY; no PR6 branch, deployment, Sheets mutation, sync job, or consumer cutover.  
+**Status:** FIRST WORKING SHADOW IMPLEMENTED 2026-10-16; hidden `_Market_Data` snapshot exists in the Tracker. No Price Data/Transactions/Holdings/Cost Basis formula cutover and no new sync Cron.  
 **Prerequisite:** PR5 #52 must meet ingestion, security, source and quota gates first.
 
 ## Ownership invariant
@@ -36,3 +36,38 @@ Initial PR6 is **read-only comparison**: no scheduled import, no live consumer f
 ## Exit / no-go
 
 **No-go on 2026-10-15:** CoinGecko new provider entry is `DISABLED / SHADOW_ONLY / UNVERIFIED`; six crypto and CRWD native USD price missing; authenticated HTTP E2E not completed. PR6 planning may proceed, but do not start syncing Sheets or cut over.
+
+
+## MVP-first execution receipt — 2026-10-16
+
+Owner approved a Phase-1 feature-first simplification: preserve safety/data integrity, but defer advanced distributed scheduling/quota hardening until usage requires it.
+
+### PR5 prerequisite now satisfied for shadow use
+
+- CoinGecko legacy portfolio request was changed from THB-only to **USD+THB in the same existing batch request**, so native USD crypto was added without a second CoinGecko HTTP call or Cron increase.
+- `portfolio-mtm-refresh-v1` v2 deployed; one authorized verification run published all six native USD crypto observations while keeping existing THB snapshots.
+- CRWD root cause was missing daily-close universe membership. The existing quota-guarded daily-close universe now includes active canonical stocks after holdings/research/company priorities; CRWD backfill passed through Twelve Data quota and produced a verified USD regular close.
+- PR5 shadow coverage after verification: **70/70** — 64 Stock `LAST_CLOSE`, 6 Crypto `FRESH`, 0 `MISSING`.
+
+### Tracker shadow created
+
+Spreadsheet: `Investment Portfolio Tracker - Chumponphat`.
+
+Hidden tab `_Market_Data` now contains:
+- 70 canonical assets with `price_usd`, provider, observation ID, source/session/freshness metadata;
+- separate `USDTHB` FX reference and provenance;
+- `price_thb_shadow` calculated **inside Google Sheets** as `price_usd × USDTHB`;
+- `shadow_only=true` and `valuation_eligible=false` retained from PR5.
+
+No formulas or values were changed in `Price Data`, `Transactions`, `Holdings`, cost basis, cash, or P&L.
+
+### Read-only reconciliation before cutover
+
+Current open holdings map to 10 unique assets and all 10 exist in the shadow table.
+
+- Mean absolute current-vs-shadow price difference: **~0.87%**.
+- Crypto differences were small at the comparison time.
+- Stock differences are expected to be larger because PR5 stock shadow is currently `LAST_CLOSE` while existing `Price Data` can use live GoogleFinance/provider prices.
+- Largest observed difference: **TTWO ~3.91%**.
+
+**Decision:** Shadow feature is usable; production `Price Data` cutover remains deferred. Next MVP work should improve/define stock live-vs-last-close behavior and then perform an explicit read cutover only when the owner accepts the pricing semantics.
