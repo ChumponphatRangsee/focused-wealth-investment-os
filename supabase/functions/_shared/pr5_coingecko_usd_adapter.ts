@@ -36,18 +36,34 @@ export type UsdCryptoResult =
   | { asset: CryptoSymbol; status: "READY"; candidate: UsdCryptoCandidate }
   | { asset: CryptoSymbol; status: "MISSING" | "INVALID" | "STALE"; reason: string };
 
-/** Provider endpoint + parameters, but does not make a request. */
-export function buildCoinGeckoUsdBatchUrl(symbols: readonly CryptoSymbol[]): string {
+function validateBatch(symbols: readonly CryptoSymbol[]): void {
   if (symbols.length < 1 || symbols.length > 6 ||
       new Set(symbols).size !== symbols.length ||
       symbols.some((s) => !Object.prototype.hasOwnProperty.call(ID_BY_SYMBOL, s))) {
     throw new Error("INVALID_CRYPTO_BATCH");
   }
+}
+
+function buildBatchUrl(symbols: readonly CryptoSymbol[], currencies: string): string {
+  validateBatch(symbols);
   const url = new URL("https://api.coingecko.com/api/v3/simple/price");
   url.searchParams.set("ids", symbols.map((s) => ID_BY_SYMBOL[s]).join(","));
-  url.searchParams.set("vs_currencies", "usd");
+  url.searchParams.set("vs_currencies", currencies);
   url.searchParams.set("include_last_updated_at", "true");
   return url.toString();
+}
+
+/** Native USD-only request contract for the future canonical provider path. */
+export function buildCoinGeckoUsdBatchUrl(symbols: readonly CryptoSymbol[]): string {
+  return buildBatchUrl(symbols, "usd");
+}
+
+/**
+ * MVP compatibility request: preserve the existing THB legacy consumer while
+ * adding native USD in the SAME CoinGecko request (no additional HTTP call).
+ */
+export function buildCoinGeckoUsdThbCompatBatchUrl(symbols: readonly CryptoSymbol[]): string {
+  return buildBatchUrl(symbols, "usd,thb");
 }
 
 function isObject(v: unknown): v is Record<string, unknown> {
