@@ -119,3 +119,44 @@ Live check on 2026-10-17 showed latest `REGULAR_CLOSE` session still `2026-10-15
 This does not invalidate the native Google Sheet write/read-back E2E. It does block any claim that 07:00 stock data is latest-session complete and therefore blocks `Price Data` cutover.
 
 Resolve EOD schedule/session alignment first, including US/Bangkok day boundary and DST.
+
+
+## P0 timing resolution receipt — 2026-10-17
+
+Live stock pipeline was re-aligned so canonical US EOD closes are available before the portfolio and Sheet consumers.
+
+Schedules:
+- EOD enqueue: `5 22 * * 1-5` UTC = 05:05 Asia/Bangkok Tue-Sat.
+- EOD worker: `*/2 22-23 * * 1-5` UTC.
+- Stock portfolio sync: `0 0 * * 2-6` UTC = 07:00 Asia/Bangkok Tue-Sat.
+- Native Sheet sync: unchanged `10 0 * * *` UTC = 07:10 Asia/Bangkok daily.
+
+The enqueue targets `(now() at time zone 'America/New_York')::date`, not
+`decision_refresh_target_session_v1(now())`. At 22:05 UTC this is the same
+completed US session date and is after the 16:00 ET regular close across DST.
+
+Validation:
+- targeted 2026-10-16 held-stock EOD run PASS 4/4;
+- latest canonical REGULAR_CLOSE for MSFT/NVDA/TLN/TTWO = 2026-10-16;
+- portfolio DAILY_CLOSE_ONLY validation PASS, 10/10 fresh open assets;
+- native Sheet validation PASS, 70 rows, 10/10 open holdings;
+- _Market_Data held-stock observation IDs match the canonical 2026-10-16 observations;
+- Price Data cutover remains false.
+
+Final read-only reconciliation:
+- mean absolute USD difference across 10 unique open assets ~0.0889%;
+- max USD difference XRP ~0.4538% (daily crypto snapshot timing);
+- current Holdings market value ~THB 334,126.47;
+- shadow market value ~THB 333,825.15;
+- delta ~THB -301.32 (-0.0902%).
+
+No Price Data, Transactions, Holdings, Cost Basis, P&L, cash or trade records were changed.
+
+Migration:
+`migrations/20261017104500_pr7_stock_eod_pre_0700_timing_v1.sql`
+
+Phase-1 holiday behavior remains fail-closed: a full US holiday can enqueue a
+weekday run, but the exact-session worker cannot publish a nonexistent session,
+so portfolio consumers retain the prior completed canonical session. A formal
+exchange-calendar skip is deferred quota-efficiency hardening, not a pricing
+correctness dependency for this cutover proposal.
