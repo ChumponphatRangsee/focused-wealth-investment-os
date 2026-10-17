@@ -301,11 +301,13 @@ Deno.serve(async(req:Request)=>{
   let fx:any=null;
   let errors:any[]=[];
 
-  try{cryptoResult=await refreshCrypto(crypto);}catch(e){errors.push({scope:"CRYPTO",error:(e instanceof Error?e.message:String(e)).slice(0,240)});}
+  if(refreshCryptoEnabled){
+    try{cryptoResult=await refreshCrypto(crypto);}catch(e){errors.push({scope:"CRYPTO",error:(e instanceof Error?e.message:String(e)).slice(0,240)});}
+  }
 
-  const stockSeed=await needsStockSeed();
-  const stockDue=await heldStockRefreshDue(now);
-  const doStocks=forceAll||stockSeed||(inStockPollWindow(now)&&stockDue);
+  // Phase-1 cost control: no intraday stock quote polling.
+  // Only the dedicated post-close Cron passes DAILY_CLOSE_ONLY.
+  const doStocks=stockMode==="DAILY_CLOSE_ONLY";
   if(doStocks&&stocks.length){
     const p=await provider();
     const key=await secret(p?.secret_name);
@@ -315,7 +317,7 @@ Deno.serve(async(req:Request)=>{
       try{
         fx=await getFxUsdThb(key);
         for(const a of stocks){
-          try{stockResults.push(await refreshStock(String(a.asset_symbol),key,fx,now));}
+          try{stockResults.push(await refreshStockFromDailyClose(String(a.asset_symbol),fx,now));}
           catch(e){stockResults.push({ticker:String(a.asset_symbol),status:"ERROR",error:(e instanceof Error?e.message:String(e)).slice(0,240)});}
         }
       }catch(e){errors.push({scope:"FX",error:(e instanceof Error?e.message:String(e)).slice(0,240)});}
@@ -353,8 +355,8 @@ Deno.serve(async(req:Request)=>{
   return Response.json({
     ok:String(health.pricing_gate)==="PASS",
     worker:WORKER,version:3,run_id:runId,force_all:forceAll,stock_mode:stockMode,refresh_crypto:refreshCryptoEnabled,
-    stock_refresh_attempted:doStocks,stock_refresh_due:stockDue,stock_seed_required:stockSeed,
-    stock_refresh_interval_minutes:60,crypto:cryptoResult,stocks:stockResults,
+    stock_refresh_attempted:doStocks,stock_refresh_policy:"DAILY_POST_CLOSE",
+    crypto:cryptoResult,stocks:stockResults,
     fx_rate_thb:fx?.rate??null,pricing_gate:health.pricing_gate,
     fresh_asset_count:health.fresh_asset_count,open_asset_count:health.open_asset_count,
     portfolio_value_thb:value,errors,auto_trade:false
