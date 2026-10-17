@@ -318,4 +318,13 @@ Current live validation is PASS:
 - all production quote reads remain `trading_eligible=false`,
 - `auto_trade=false`.
 
+Sheet-side accounting consistency was also checked without mutation: the 15 open
+account-level Holdings rows sum to approximately THB 333,825.15 using the current
+native Price Data. Do **not** compare that total to
+`fwios.portfolio_mtm_runs.portfolio_value_thb` as an accounting source of truth:
+`fwios.v_portfolio_positions_current` is still on the older
+`PORTFOLIO-MTM-20260924-01` position snapshot and contains stale quantities (for
+example TTWO differs from the live Sheet). This is a non-authoritative Supabase
+position-snapshot drift, not a reason to rewrite Sheet accounting records.
+
 However, the US-close cadence migration was installed after the latest Friday close window. The `2026-10-16` current-cadence EOD receipt is `PR7_TIMING_VALIDATION`, not an autonomous cron run. Therefore the requested 1–2 autonomous US-close session observation is not yet complete and must not be claimed as verified. The next eligible U.S. session is the first real scheduled E2E observation.
