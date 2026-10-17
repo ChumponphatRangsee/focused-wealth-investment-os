@@ -5,6 +5,8 @@ on:
     paths:
       - 'supabase/functions/_shared/pr5_coingecko_usd_adapter.ts'
       - 'supabase/functions/portfolio-mtm-refresh-v1/index.ts'
+      - 'supabase/functions/portfolio-sheet-shadow-sync-v1/index.ts'
+      - 'supabase/functions/portfolio-sheet-shadow-sync-v1/deno.json'
       - 'tests/pr5_coingecko_native_usd_adapter_test.ts'
       - '.github/workflows/pr5-native-usd-adapter.yml'
   workflow_dispatch:
@@ -25,5 +27,7 @@ jobs:
         run: deno test tests/pr5_coingecko_native_usd_adapter_test.ts
       - name: Type-check MVP portfolio worker integration
         run: deno check supabase/functions/portfolio-mtm-refresh-v1/index.ts
+      - name: Type-check native Google Sheet shadow sync worker
+        run: deno check supabase/functions/portfolio-sheet-shadow-sync-v1/index.ts
 
-# No secrets, vendor requests, Supabase connection, scheduled sync, or dispatch.
+# CI is offline/type-check only. No secrets, Google writes, vendor requests, Supabase connection, or scheduled dispatch.
