@@ -131,7 +131,7 @@ async function loadShadowPayload() {
         and not (i.metadata ? 'qa_identity')
     ),
     snap as (
-      select u.asset_symbol, fwios.pr5_native_usd_price_shadow_v1(u.asset_symbol) q
+      select u.asset_symbol, fwios.pr7_native_usd_price_read_v1(u.asset_symbol) q
       from universe u
     )
     select
@@ -183,24 +183,30 @@ async function loadShadowPayload() {
   if (!fxRows.length) throw new Error("USDTHB_FX_MISSING");
   const fx = fxRows[0];
 
-  const values = rows.map((r: any) => [
-    String(r.asset_symbol),
-    String(r.instrument_id),
-    String(r.asset_class),
-    Number(r.price_usd),
-    String(r.currency),
-    String(r.status),
-    String(r.quote_kind),
-    String(r.provider),
-    String(r.observation_id),
-    String(r.observed_at),
-    String(r.session_date),
-    String(r.valid_until),
-    r.source_native_usd === true,
-    r.shadow_only === true,
-    r.valuation_eligible === true,
-    String(r.checked_at),
-  ]);
+  const openSet = new Set(openAssets.map((s) => s.toUpperCase()));
+  const values = rows.map((r: any) => {
+    const asset = String(r.asset_symbol).toUpperCase();
+    const isOpen = openSet.has(asset);
+    const nativeEligible = r.valuation_eligible === true;
+    return [
+      asset,
+      String(r.instrument_id),
+      String(r.asset_class),
+      Number(r.price_usd),
+      String(r.currency),
+      String(r.status),
+      String(r.quote_kind),
+      String(r.provider),
+      String(r.observation_id),
+      String(r.observed_at),
+      String(r.session_date),
+      String(r.valid_until),
+      r.source_native_usd === true,
+      !isOpen,
+      isOpen && nativeEligible,
+      String(r.checked_at),
+    ];
+  });
 
   return {
     health,
@@ -274,7 +280,7 @@ async function recordState(status: string, detail: Record<string, unknown>) {
         portfolio_tracker_shadow_sync_last_attempt: new Date().toISOString(),
         portfolio_tracker_shadow_sync_detail: detail,
         portfolio_tracker_shadow_sync_worker: WORKER,
-        portfolio_tracker_shadow_sync_price_data_cutover: false,
+        portfolio_tracker_shadow_sync_price_data_cutover: true,
       })}::jsonb,
       updated_at=now(),
       as_of_text=(now() at time zone 'Asia/Bangkok')::date::text
@@ -313,7 +319,7 @@ Deno.serve(async (req: Request) => {
       open_assets: payload.openAssets,
       pricing_gate: String(payload.health?.pricing_gate || ""),
       fx_rate_thb_per_usd: Number(payload.fx[1]),
-      price_data_cutover: false,
+      price_data_cutover: true,
       auto_trade: false,
     };
 
@@ -365,7 +371,7 @@ Deno.serve(async (req: Request) => {
       dry_run: dryRun,
       write_attempted: !dryRun,
       error: message,
-      price_data_cutover: false,
+      price_data_cutover: true,
       auto_trade: false,
     }, { status: 503 });
   }
