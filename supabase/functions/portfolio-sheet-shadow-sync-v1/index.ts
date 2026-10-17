@@ -376,6 +376,74 @@ async function writeShadow(payload: Awaited<ReturnType<typeof loadShadowPayload>
   return { rowCount, endRow, openAssets: payload.openAssets };
 }
 
+const VALUATION_SHEET_NAME = "FWIOS Live Valuation";
+
+async function publishLiveValuation(token: string, currentBatchId: string) {
+  const accounts = await sql!`select account_view_key, portfolio_value_thb,
+      open_position_rows, unique_open_assets, unpriced_positions, valuation_gate,
+      source_batch_id, projection_received_at
+    from fwios.v_portfolio_live_account_valuation_v1
+    order by case account_view_key
+      when 'ALL' then 0 when 'best' then 1 when 'loan_money' then 2 when 'mom' then 3 else 9 end`;
+  const labels: Record<string, string> = {
+    "ALL": "ALL", "best": "Best", "loan_money": "Loan Money", "mom": "Mom"
+  };
+  if (accounts.length !== 4 ||
+      accounts.some((r: any) => !labels[String(r.account_view_key)] ||
+        String(r.valuation_gate) !== "PASS" || Number(r.unpriced_positions) !== 0 ||
+        String(r.source_batch_id) !== currentBatchId ||
+        !Number.isFinite(Number(r.portfolio_value_thb)))) {
+    throw new Error("LIVE_VALUATION_VIEW_NOT_READY");
+  }
+  const all = Number(accounts[0].portfolio_value_thb);
+  const parts = accounts.slice(1).reduce((sum: number, r: any) =>
+    sum + Number(r.portfolio_value_thb), 0);
+  if (Math.abs(all - parts) > 0.01) throw new Error("LIVE_VALUATION_TOTAL_MISMATCH");
+
+  const syncedAt = new Date().toISOString();
+  const values = accounts.map((r: any) => [
+    labels[String(r.account_view_key)], Number(r.portfolio_value_thb),
+    Number(r.open_position_rows), Number(r.unique_open_assets),
+    Number(r.unpriced_positions), String(r.valuation_gate),
+    String(r.source_batch_id), new Date(r.projection_received_at).toISOString(),
+    syncedAt
+  ]);
+  const range = "'" + VALUATION_SHEET_NAME + "'!A5:I8";
+  await googleJson(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchUpdate`,
+    token, { method: "POST", body: JSON.stringify({
+      valueInputOption: "RAW",
+      data: [{ range, majorDimension: "ROWS", values }]
+    })});
+  const uri = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID +
+    "/values/" + encodeURIComponent("'" + VALUATION_SHEET_NAME + "'!A4:J8") +
+    "?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE";
+  const readback = await googleJson(uri, token);
+  const actual: unknown[][] = Array.isArray(readback?.values) ? readback.values : [];
+  if (actual.length !== 5) throw new Error("LIVE_VALUATION_READBACK_ROWS");
+  for (let i=0;i<4;i++) {
+    const expected=values[i], got=actual[i+1] || [];
+    if (String(got[0])!==String(expected[0]) ||
+        String(got[5])!=="PASS" ||
+        String(got[6])!==String(expected[6]) ||
+        String(got[7])!==String(expected[7]) ||
+        String(got[8])!==String(expected[8])) {
+      throw new Error("LIVE_VALUATION_READBACK_IDENTITY_"+i);
+    }
+    for (const col of [1,2,3,4]) {
+      if (!Number.isFinite(Number(got[col])) ||
+          Math.abs(Number(got[col])-Number(expected[col]))>0.000001) {
+        throw new Error("LIVE_VALUATION_READBACK_VALUE_"+i+"_"+col);
+      }
+    }
+    if (!Number.isFinite(Number(got[9])) || Math.abs(Number(got[9]))>0.02) {
+      throw new Error("LIVE_VALUATION_SHEET_RECONCILIATION_FAILED_"+i);
+    }
+  }
+  return {source_view:"fwios.v_portfolio_live_account_valuation_v1",
+    sheet:VALUATION_SHEET_NAME,rows:4,total_thb:all,
+    source_batch_id:currentBatchId,verified:true};
+}
+
 async function recordState(status: string, detail: Record<string, unknown>) {
   try {
     await sql!`update fwios.system_state
@@ -453,6 +521,7 @@ Deno.serve(async (req: Request) => {
     const accountingRows = await readLiveHoldings(googleToken);
     const receipt = await writeShadow(payload, googleToken);
     const projection = await saveLiveHoldings(accountingRows);
+    const valuation = await publishLiveValuation(googleToken, projection.batch_id);
     await recordState("PASS", {
       ...base,
       sheet: SHEET_NAME,
@@ -460,6 +529,7 @@ Deno.serve(async (req: Request) => {
       full_price_and_fx_readback_verified: true,
       live_projection_batch_id: projection.batch_id,
       live_position_count: projection.rows,
+      account_valuation_sync: valuation,
       read_only_accounting: true,
       service_account_email: sa.client_email,
     });
@@ -473,6 +543,7 @@ Deno.serve(async (req: Request) => {
       full_price_and_fx_readback_verified: true,
       live_projection_batch_id: projection.batch_id,
       live_position_count: projection.rows,
+      account_valuation_sync: valuation,
       read_only_accounting: true,
       service_account_email: sa.client_email,
     });
