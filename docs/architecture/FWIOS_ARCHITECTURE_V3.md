@@ -1,11 +1,21 @@
 # FWIOS Architecture Refactor v3 — Quota-Aware Shared Market Data
 
-**Status:** PROPOSED / DOCUMENTATION ONLY — NOT CUT OVER  
+**Status:** TARGET ARCHITECTURE / PARTIAL PHASE-1 CUTOVER ACTIVE  
 **Plan recorded:** 2026-10-13 (Asia/Bangkok)  
 **Implementation:** [API Quota Implementation Plan](../implementation/API_QUOTA_IMPLEMENTATION_PLAN.md)  
 **Active contract:** [system-contract.yaml](../../contracts/system-contract.yaml)
 
 > This is the **target architecture**, not a claim that the current production architecture has migrated. Retain the active FWIOS 0.87.x paths, historical decision snapshots, market-observation compatibility views, and human-execution-only rules until regression-based cutover.
+
+> **Phase-1 operational update — 2026-10-17:** the portfolio market-price read
+> slice of Release B has now been cut over under the controlled
+> `FWIOS_NATIVE` switch:
+> `Supabase canonical USD/FX → _Market_Data → Price Data → Holdings`.
+> The native Sheet worker is ACTIVE v2 and follows the US-market-close cadence.
+> This does **not** mean the full v3 target architecture is cut over: research,
+> scanner and broader legacy retirement remain staged. Transactions, quantities,
+> cost basis, realized P&L and human-execution-only rules remain unchanged;
+> `auto_trade=false`.
 
 ## 1. Purpose and ownership
 
@@ -19,7 +29,7 @@ Three independent business responsibilities must not become three independent AP
 
 The Tracker's `Transactions` sheet is the **target sole system of record for trades**; position quantities and cost basis derive from it. The current `portfolio_state.current_authority: Supabase` in the live contract describes *today's operational decision/portfolio read model*, not the desired post-cutover transaction authority. It must remain effective until a verified migration is explicitly approved. A read-only portfolio **summary** may be sent to research/portfolio-fit consumers after cutover; it must not recreate a Supabase trading ledger.
 
-**Current live state (read-only inspection 2026-10-13):**
+**Historical live snapshot (read-only inspection 2026-10-13; superseded for portfolio price-read state by the 2026-10-17 update above):**
 - Tracker tabs include `Transactions`, `Price Data`, `Holdings`; `_Market_Data` does **not** yet exist. `Price Data` still uses CoinGecko/GoogleFinance/FX formulas.
 - Focused Dashboard's `_Data` contains a legacy portfolio summary / refresh integration. It is **not** proof that Research already reads Tracker-owned accounting.
 - Supabase already contains `fwios.market_observations`, `fwios.portfolio_market_quote_snapshots`, and `fwios.v_portfolio_market_quote_current`. At inspection this price view had 6 crypto + 4 stocks marked FRESH. Meanwhile `fwios.v_market_price_latest` was stale/blocked; do **not** simply repoint consumers to it.
@@ -168,3 +178,52 @@ Roll out behind feature flags: observe current state → parallel shadow prices 
 - **Release C / P2–P3:** Research dashboard cleanup, quota-aware tiered scanner, advanced health/alerts and legacy retirement.
 
 See the [implementation plan](../implementation/API_QUOTA_IMPLEMENTATION_PLAN.md) for PR dependencies, acceptance tests and ownership. This document **does not authorize** production writes or automatic trading.
+
+
+## 11. USD-only canonical asset price requirement (2026-10-15)
+
+**Owner decision:** All supported investable assets must have a **USD-denominated canonical market price** for new consumer-facing data. This applies to stocks, ETFs, and all six crypto assets (BTC, ETH, XRP, SOL, HBAR, DOGE), not only PR4 Canary. The new normalized price contract must expose `price_usd`, `currency=USD`, observation ID, provider, source time, freshness/session/provenance and an eligibility gate.
+
+- **Ingestion:** USD-listed stocks already have USD quotes/closes in market observations. The current crypto ingestion uses CoinGecko `vs_currencies=thb`; new native USD crypto ingestion should use `vs_currencies=usd` through the protected quota/cache path. Do not switch the live THB-dependent portfolio worker until a shadow reconciliation and consumer cutover.
+- **Legacy audit:** Retain historical THB source observations with their *truthful original units*; never relabel historical THB prices as USD, rewrite past financial records, or destroy provenance. After cutover, newly published canonical **asset** prices must be USD, even if historical raw ingestion records remain in their original currencies.
+- **FX exception:** USDTHB represents THB per one USD and is an FX instrument/reference, not a USD-denominated asset price. Thai-baht trade amounts, cash, fees and cost basis are accounting records, not quotes, and remain unchanged.
+- **Consumer ownership:** Supabase supplies canonical USD asset prices only; Investment Portfolio Tracker computes THB display and valuations using a separately validated USDTHB rate in Google Sheets (`price_thb=price_usd*USDTHB`). Avoid silent fixed-rate fallbacks; expose blocked or stale FX. Do not push THB-valued asset prices as a second authoritative market-price feed.
+- **Canary caveat:** Current BTC/USD Canary is *derived from BTC/THB divided by attached USDTHB* and goes STALE with FX; it is an interim, non-accounting test and **not evidence of native USD crypto ingestion**. The PR5 native USD service must reject/flag missing USD sources rather than silently return stale FX-derived prices as valid USD.
+- **Rollout:** update the PR5 price contract, add six native USD crypto feeds, verify global API quota, then PR6 shadow comparison and PR7 portfolio read cutover. Keep old workers, chronology and transaction ledger unchanged until parity gates pass.
+
+
+## 12. Historical native Tracker shadow-sync plan — 2026-10-17 (superseded)
+
+The target `_Market_Data` projection now has an FWIOS-native delivery worker:
+- Edge Function: `portfolio-sheet-shadow-sync-v1`.
+- Scheduler target: 07:10 Asia/Bangkok, after the 07:00 portfolio refresh.
+- The worker writes only the Tracker's hidden `_Market_Data` projection and separate USDTHB block.
+- It fails closed on pricing-gate failure, missing open-holding coverage, missing FX, missing Google credential, Google write error, or read-back mismatch.
+- `Price Data`, Transactions, Holdings, Cost Basis and accounting formulas are outside the worker's write scope.
+- Scheduler is enabled after service-account credential + Google Sheet sharing + native E2E write/read-back PASS.
+- Temporary ChatGPT sync has been disabled after native scheduler activation.
+
+This operational note does not authorize portfolio accounting or Price Data cutover.
+
+
+## 12A. Historical pre-activation Tracker receipt — 2026-10-17 (superseded)
+
+The target `_Market_Data` projection now has an FWIOS-native delivery worker:
+- Edge Function: `portfolio-sheet-shadow-sync-v1`.
+- Scheduler target: 07:10 Asia/Bangkok, after the 07:00 portfolio refresh.
+- The worker writes only the Tracker's hidden `_Market_Data` projection and separate USDTHB block.
+- It fails closed on pricing-gate failure, missing open-holding coverage, missing FX, missing Google credential, Google write error, or read-back mismatch.
+- `Price Data`, Transactions, Holdings, Cost Basis and accounting formulas are outside the worker's write scope.
+- Scheduler remains disabled until service-account credential + Google Sheet sharing + native E2E write/read-back pass.
+- Temporary ChatGPT sync is fallback-only and must be removed after the native scheduler is verified.
+
+This operational note does not authorize portfolio accounting or Price Data cutover.
+
+
+### Native delivery cutover receipt — 2026-10-17
+- Native Google Sheets write/read-back E2E PASS.
+- 70 shadow rows verified; all 10 open holdings covered.
+- USDTHB provenance PASS.
+- Native 07:10 Asia/Bangkok scheduler active.
+- ChatGPT fallback disabled.
+- Price Data/accounting read cutover remains pending separate reconciliation approval.

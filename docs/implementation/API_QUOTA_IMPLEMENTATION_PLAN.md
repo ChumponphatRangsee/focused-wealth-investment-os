@@ -70,21 +70,21 @@
 
 **PR 5 — Canonical Market Price Service**
 - Reuse `market_observations` and `v_portfolio_market_quote_current` legacy compatibility where verified.
-- Expose `fwios.v_market_price_current` or a safe service contract with `instrument_id, asset_symbol, asset_class, price_native, native_currency, fx_rate_thb, price_thb, provider, source_tier, observed_at, valid_until, market_status, freshness_status, provenance_status, price_gate`.
-- Cover CoinGecko THB-native crypto, USD stock prices + canonical USDTHB, FX fallback and valuation-safe missing/stale handling.
+- Expose `fwios.v_market_price_current` or a safe service contract with `instrument_id, asset_symbol, asset_class, price_usd, currency='USD', provider, source_tier, observation_id, observed_at, valid_until, market_status, freshness_status, provenance_status, price_gate`. Do not return THB-valued asset prices as authoritative. Preserve original raw-source currency observations for audit, never overwrite historical THB with USD labels.
+- Cover **all** investable instruments with native USD canonical market prices: ingest CoinGecko six-crypto batch using `vs_currencies=usd` through the verified provider quota; US stock/ETF observations already mostly USD. Keep USDTHB only as a distinct FX reference for display/accounting conversion in Google Sheets. A missing native USD quote returns blocked/missing, not stale FX-derived USD promoted to production.
 - Respect exchange sessions; after-hours and last-close are explicit, not faked LIVE. Batch requests when provider credit semantics permit.
 - Keep exposed views secured (view-RLS implications, least-privilege role access) and service credentials out of Sheets/frontends.
 - Acceptance: same asset price/observation ID across participating consumers, source provenance readable, stale candidate decision blocked.
 
 **PR 6 — Tracker Market Data Import + Shadow Comparison**
-- Add hidden `_Market_Data` tab and authorized import from the canonical price service; no provider keys in cells.
+- Add hidden `_Market_Data` tab and authorized import of `price_usd`, currency USD, observation identity, timestamps and price_gate from the canonical price service; no provider keys in cells, no duplicate Supabase-calculated THB asset-price feed. Google Sheets owns USDTHB conversion and must mark invalid/stale FX rather than silently accepting a fixed fallback.
 - Leave `Transactions` and `Holdings` accounting formulas intact; calculate side-by-side old vs new `Price Data` values.
 - Include cash/fixed-value treatment and every open instrument, not merely symbols present in scanner or old price view.
 - Capture snapshots across Best / Loan Money / Mom / ALL, including source row integrity and timestamps.
 - Acceptance: all open holdings have valid price or explicit missing/stale state; parity report and differences signed off.
 
 **PR 7 — Portfolio Valuation Cutover**
-- Gate `Price Data` → `Holdings` → `Portfolio Value` / `Unrealized P&L` on approved canonical observation set; continue calculating quantity and cost basis only from Tracker transactions.
+- Gate `Price Data` → `Holdings` → `Portfolio Value` / `Unrealized P&L` on approved canonical **USD** quote observations and separately validated USDTHB conversion within the Tracker; continue calculating quantity and cost basis only from Tracker transactions.
 - Reconcile within `<= THB 0.01` for sums using the same exact observation set and agreed rounding; do not use price drift from mismatched timestamps as accounting defects.
 - Preserve last known value with a visible STALE/QUOTA_BLOCKED status when necessary, but never authorize investment decisions from blocked prices.
 - Remove direct production CoinGecko/GOOGLEFINANCE price calls *after* parity and monitoring tests, not before.
