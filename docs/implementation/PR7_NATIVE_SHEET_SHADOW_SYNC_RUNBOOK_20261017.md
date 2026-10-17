@@ -1,7 +1,7 @@
 # PR7 Native Portfolio Tracker Shadow Sync — Runbook
 
 **Date:** 2026-10-17  
-**Status:** DEPLOYED / DRY-RUN PASS / GOOGLE WRITE BLOCKED ON CREDENTIAL  
+**Status:** DEPLOYED / NATIVE WRITE+READBACK PASS / CRON ACTIVE  
 **Target:** `Investment Portfolio Tracker - Chumponphat` → hidden `_Market_Data` only.
 
 ## Purpose
@@ -55,13 +55,9 @@ Cron:
 - job: `fwios-portfolio-sheet-shadow-sync-native`
 - schedule: `10 0 * * *`
 - local time: 07:10 Asia/Bangkok daily
-- **active=false until native E2E write passes**
+- **active=true after native E2E write/read-back PASS**
 
-Activation after credential installation:
-
-`select cron.alter_job(<jobid>, active => true);`
-
-Do not activate merely because dry-run passes.
+Activation gate completed on 2026-10-17 after credential installation and native write/read-back verification.
 
 ## Verification receipt — 2026-10-17
 
@@ -88,14 +84,20 @@ Fail-closed live-write probe without Google credential:
 - write_attempted=false
 - Google Sheet not touched by the native worker
 
+Native E2E after credential installation:
+- HTTP 200
+- write_attempted=true
+- verified_row_count=70
+- open holdings 10/10 covered
+- Google read-back confirmed 70 data rows + header
+- USDTHB block present and provenance PASS
+- Price Data cutover=false
+- auto_trade=false
+- native Cron enabled at 07:10 Asia/Bangkok
+- temporary ChatGPT automation disabled
+
 ## Cutover rule
 
-Keep the temporary ChatGPT automation enabled until:
-1. the Vault credential exists;
-2. Sheet access is granted to the service account;
-3. manual native write returns HTTP 200;
-4. Google read-back verifies all shadow rows and open holdings;
-5. the 07:10 native Cron is enabled and verified;
-6. only then disable the ChatGPT automation.
+Cutover completed: Vault credential exists, Sheet sharing works, manual native write/read-back passed, the 07:10 native Cron is enabled, and the temporary ChatGPT automation is disabled.
 
 `Price Data` remains unchanged until separate reconciliation approval.
