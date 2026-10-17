@@ -23,7 +23,7 @@ Do not remove safety-critical controls: secrets stay server-side, provider calls
    - Compare against current Price Data/Holdings without changing accounting.
    - Current receipt: implemented; open holdings shadow reconciliation complete.
 
-3. **PR7 Price Data read cutover — only after semantic acceptance**
+3. **PR7 Price Data read cutover — COMPLETE (controlled FWIOS_NATIVE mode)**
    - Decide whether stock valuation uses last close, live quote, or explicit fallback.
    - Replace only market-price read formulas; never rewrite Transactions/Cost Basis.
    - Keep immediate rollback to old read path.
@@ -178,3 +178,22 @@ Migration:
 `migrations/20261017112000_pr7_us_market_close_anchored_schedule_v1.sql`
 
 No Price Data/accounting cutover is authorized by this cadence change.
+
+
+## PR7 controlled Price Data cutover — 2026-10-17
+
+**Status: COMPLETE for the production valuation read path.**
+
+- Owner explicitly approved cutover after shadow reconciliation.
+- Added backend eligibility wrapper `fwios.pr7_native_usd_price_read_v1`.
+- 10/10 current open holdings are native valuation eligible.
+- `AI Integration Config!B21 = FWIOS_NATIVE` is active; `LEGACY` is the immediate rollback.
+- Price Data Resolved Price and USDTHB use `_Market_Data` for eligible open Stock/Crypto.
+- Stock values are canonical `LAST_CLOSE`; Crypto values are daily `FRESH` snapshots.
+- Manual Override remains highest priority.
+- Native-scoped failures are fail-closed; no silent fallback.
+- Cash remains fixed and VOO/non-open rows remain legacy.
+- Holdings formulas were not rewritten and recalculated to ~THB 333,825.15 total, matching shadow reconciliation.
+- Transactions, Cost Basis, realized P&L and trade execution were not changed.
+- Native Sheet worker is ACTIVE v2 with `price_data_cutover=true` and `auto_trade=false`.
+- Remaining cleanup is retirement of the old direct-CoinGecko Sheet writer that can still update rollback/audit-side crypto cells; it is no longer authoritative for valuation.
