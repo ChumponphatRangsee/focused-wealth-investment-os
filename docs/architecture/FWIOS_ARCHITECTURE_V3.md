@@ -180,3 +180,17 @@ See the [implementation plan](../implementation/API_QUOTA_IMPLEMENTATION_PLAN.md
 - **Consumer ownership:** Supabase supplies canonical USD asset prices only; Investment Portfolio Tracker computes THB display and valuations using a separately validated USDTHB rate in Google Sheets (`price_thb=price_usd*USDTHB`). Avoid silent fixed-rate fallbacks; expose blocked or stale FX. Do not push THB-valued asset prices as a second authoritative market-price feed.
 - **Canary caveat:** Current BTC/USD Canary is *derived from BTC/THB divided by attached USDTHB* and goes STALE with FX; it is an interim, non-accounting test and **not evidence of native USD crypto ingestion**. The PR5 native USD service must reject/flag missing USD sources rather than silently return stale FX-derived prices as valid USD.
 - **Rollout:** update the PR5 price contract, add six native USD crypto feeds, verify global API quota, then PR6 shadow comparison and PR7 portfolio read cutover. Keep old workers, chronology and transaction ledger unchanged until parity gates pass.
+
+
+## 12. Native Tracker shadow sync implementation note — 2026-10-17
+
+The target `_Market_Data` projection now has an FWIOS-native delivery worker:
+- Edge Function: `portfolio-sheet-shadow-sync-v1`.
+- Scheduler target: 07:10 Asia/Bangkok, after the 07:00 portfolio refresh.
+- The worker writes only the Tracker's hidden `_Market_Data` projection and separate USDTHB block.
+- It fails closed on pricing-gate failure, missing open-holding coverage, missing FX, missing Google credential, Google write error, or read-back mismatch.
+- `Price Data`, Transactions, Holdings, Cost Basis and accounting formulas are outside the worker's write scope.
+- Scheduler remains disabled until service-account credential + Google Sheet sharing + native E2E write/read-back pass.
+- Temporary ChatGPT sync is fallback-only and must be removed after the native scheduler is verified.
+
+This operational note does not authorize portfolio accounting or Price Data cutover.
