@@ -157,3 +157,24 @@ Final read-only reconciliation:
 
 No Price Data, Transactions, Holdings, Cost Basis, cash or P&L formula/value was changed.
 A controlled Price Data read cutover is now proposal-ready, but remains blocked on explicit owner approval.
+
+
+## PR7 latest cadence policy — follow US market close (2026-10-17)
+
+Owner removed the fixed 07:00 Asia/Bangkok timing requirement.
+
+Current Phase-1 schedule is anchored to `America/New_York`:
+- EOD enqueue at 16:05 ET on US weekdays.
+- EOD workers operate 16:05–17:05 ET.
+- Held-stock `DAILY_CLOSE_ONLY` sync at 17:10 ET, only when all current open held stocks have the same-session canonical close.
+- Crypto daily snapshot at 17:10 ET.
+- Native `_Market_Data` sync at 17:20 ET.
+- Typical Bangkok times are ~04:10/04:20 during US daylight time and ~05:10/05:20 during US standard time.
+- DST is handled by New York local-time guards rather than a fixed Bangkok clock.
+
+Stocks therefore use the latest completed US regular close directly after the market-close pipeline. Crypto remains a daily spot snapshot because crypto has no US regular close.
+
+Migration:
+`migrations/20261017112000_pr7_us_market_close_anchored_schedule_v1.sql`
+
+No Price Data/accounting cutover is authorized by this cadence change.
