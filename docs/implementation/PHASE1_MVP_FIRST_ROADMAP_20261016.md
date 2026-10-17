@@ -101,3 +101,19 @@ Final schedule:
 - PR5 shadow labels crypto as `CRYPTO_DAILY_SNAPSHOT`.
 - Smoke verification: 6/6 crypto updated and 6/6 native USD published; no missing/errors; pricing gate PASS.
 - Deployed `portfolio-mtm-refresh-v1` ACTIVE v7.
+
+
+## PR7 native Tracker shadow sync — 2026-10-17
+
+Owner requested the temporary ChatGPT Sheet automation be replaced by a native FWIOS sync, but only after native E2E passes.
+
+Current native status:
+- Edge Function `portfolio-sheet-shadow-sync-v1` deployed ACTIVE v1.
+- Worker is fail-closed and targets only `Investment Portfolio Tracker - Chumponphat / _Market_Data`.
+- Native dry-run PASS: 70 shadow rows, 10/10 open holdings covered, pricing gate PASS, USDTHB present, no accounting/Price Data mutation.
+- Live-write probe without Google credential correctly returned HTTP 503 with `GOOGLE_SERVICE_ACCOUNT_CREDENTIAL_MISSING` and `write_attempted=false`.
+- Native Cron `fwios-portfolio-sheet-shadow-sync-native` exists at 00:10 UTC (07:10 Asia/Bangkok) but is **active=false** until Google service-account E2E succeeds.
+- Portfolio refresh schedules are 07:00 Asia/Bangkok: Crypto daily; Stock weekdays.
+- Required Vault secret: `fwios_google_sheets_service_account_json`.
+- Temporary ChatGPT sync remains enabled only as fallback until native write + read-back + Cron verification pass.
+- `Price Data` cutover remains explicitly forbidden pending final reconciliation.
