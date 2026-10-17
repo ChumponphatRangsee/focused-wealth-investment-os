@@ -101,3 +101,21 @@ Native E2E after credential installation:
 Cutover completed: Vault credential exists, Sheet sharing works, manual native write/read-back passed, the 07:10 native Cron is enabled, and the temporary ChatGPT automation is disabled.
 
 `Price Data` remains unchanged until separate reconciliation approval.
+
+
+## P0 upstream timing issue discovered before handover
+
+Native Sheet delivery is healthy, but the stock source feeding it is not yet guaranteed to be the newest US close by 07:00 Asia/Bangkok.
+
+Live schedules:
+- `fwios-market-daily-close-enqueue`: `25 5 * * 1-5` UTC
+- `fwios-market-daily-close-worker`: `*/2 5-8 * * 1-5` UTC
+- `fwios-portfolio-stock-post-close-sync`: `0 0 * * 1-5` UTC
+
+Therefore the portfolio stock sync occurs before the broad EOD ingestion window.
+
+Live check on 2026-10-17 showed latest `REGULAR_CLOSE` session still `2026-10-15` for MSFT, NVDA, TLN and TTWO, despite the 2026-10-16 US session already being closed.
+
+This does not invalidate the native Google Sheet write/read-back E2E. It does block any claim that 07:00 stock data is latest-session complete and therefore blocks `Price Data` cutover.
+
+Resolve EOD schedule/session alignment first, including US/Bangkok day boundary and DST.
