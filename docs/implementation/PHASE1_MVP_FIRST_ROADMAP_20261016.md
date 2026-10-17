@@ -66,3 +66,23 @@ A normal workflow should be possible without SQL/GitHub intervention:
 - Verification happened while US market was closed. Twelve Data correctly returned `market_status=CLOSED`; PR5 shadow resolver therefore continued to expose `LAST_CLOSE` rather than falsely label the closed quote `FRESH`. During market hours, only an `OPEN` quote no older than 15 minutes is eligible as `STOCK_LIVE_QUOTE / FRESH`.
 
 No Price Data cutover, transaction/accounting mutation, or additional 64-stock live polling was enabled.
+
+
+## PR7 Task 1 policy revision — Daily post-close stocks (2026-10-17)
+
+Owner rejected intraday stock polling as too frequent for Phase 1.
+
+Final Phase-1 stock policy:
+- **No intraday stock /quote polling.**
+- Existing 15-minute portfolio Cron remains for Crypto only; stock mode defaults to `OFF`.
+- Open-Holdings stock prices sync **once per weekday after the EOD pipeline**, via `fwios-portfolio-stock-post-close-sync` at `08:15 UTC` (15:15 Asia/Bangkok).
+- Daily stock sync reads already-ingested canonical `REGULAR_CLOSE` observations and writes only the current Open Holdings into the portfolio quote snapshot.
+- Current Open Holdings stocks: `MSFT, NVDA, TLN, TTWO`.
+- The daily sync performs no per-stock quote API calls. Verification quota log showed only one `USD/THB` FX call.
+- Smoke verification:
+  - stock mode OFF -> HTTP 200, `stock_refresh_attempted=false`, `stocks=[]`;
+  - DAILY_CLOSE_ONLY -> HTTP 200, 4/4 held stocks PASS as `LAST_CLOSE`, Crypto skipped;
+  - pricing gate PASS, auto_trade=false.
+- Daily-close scanner ingestion for the broader canonical stock universe remains separate and unchanged.
+
+This replaces the prior Task-1 intraday-live behavior for Phase 1.
