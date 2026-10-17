@@ -442,11 +442,17 @@ Deno.serve(async (req: Request) => {
     if (!sa?.client_email || !sa?.private_key) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON_INCOMPLETE");
 
     const googleToken = await getGoogleAccessToken(sa);
+    const accountingRows = await readLiveHoldings(googleToken);
     const receipt = await writeShadow(payload, googleToken);
+    const projection = await saveLiveHoldings(accountingRows);
     await recordState("PASS", {
       ...base,
       sheet: SHEET_NAME,
       row_count: receipt.rowCount,
+      full_price_and_fx_readback_verified: true,
+      live_projection_batch_id: projection.batch_id,
+      live_position_count: projection.rows,
+      read_only_accounting: true,
       service_account_email: sa.client_email,
     });
 
@@ -456,6 +462,10 @@ Deno.serve(async (req: Request) => {
       write_attempted: true,
       sheet: SHEET_NAME,
       verified_row_count: receipt.rowCount,
+      full_price_and_fx_readback_verified: true,
+      live_projection_batch_id: projection.batch_id,
+      live_position_count: projection.rows,
+      read_only_accounting: true,
       service_account_email: sa.client_email,
     });
   } catch (error) {
