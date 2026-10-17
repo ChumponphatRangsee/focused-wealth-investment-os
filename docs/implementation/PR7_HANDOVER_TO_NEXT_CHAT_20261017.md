@@ -188,26 +188,40 @@ Holiday note for Phase-1: the weekday EOD Cron can still enqueue on a full US ma
 
 ## Price Data cutover status
 
-**NOT DONE.**
+**DONE — CONTROLLED FWIOS_NATIVE READ CUTOVER ACTIVE (2026-10-17).**
 
-Current production accounting read path is unchanged:
-`Price Data → Holdings`
+Current production market-price read path:
+`Supabase canonical market data → _Market_Data → Price Data → Holdings`
 
-Shadow path:
-`Supabase canonical market data → _Market_Data`
+The owner explicitly approved the controlled cutover. Transactions, Cost Basis, realized P&L and Holdings formulas were not rewritten. Holdings recalculated through its existing Price Data lookup path.
 
-Proposed controlled path, only after explicit owner approval:
-`_Market_Data → Price Data read formulas → Holdings`
+Implemented cutover controls:
+1. `AI Integration Config!B21` is the rollback switch: `LEGACY` / `FWIOS_NATIVE`; current value = `FWIOS_NATIVE`.
+2. Manual Override remains highest priority.
+3. Open Stock/Crypto rows read native USD and validated USDTHB from `_Market_Data`.
+4. In-scope native rows fail closed when canonical valuation is not eligible; they do not silently fall back to legacy live data.
+5. Legacy Live Price inputs remain in column L for rollback compatibility.
+6. Cash remains fixed; VOO and non-open/unsupported rows remain on legacy path.
 
-Recommended cutover mechanism:
-1. add a single `LEGACY` / `FWIOS_NATIVE` read-mode control;
-2. preserve Manual Override as highest priority;
-3. for Stock/Crypto rows, `FWIOS_NATIVE` mode reads native USD + validated USDTHB from `_Market_Data` and fails closed when canonical data is missing;
-4. keep current legacy Live Price / GoogleFinance formulas intact as rollback inputs, not silent fallback while native mode is active;
-5. leave Cash fixed and VOO/unsupported ETF behavior on the legacy path in Phase-1;
-6. switch only the read mode after owner approval, re-read Holdings totals, and roll back by returning the control to `LEGACY` if validation fails.
+Backend cutover gate:
+- `fwios.pr7_native_usd_price_read_v1(text)`
+- migration: `migrations/20261017114500_pr7_native_price_read_cutover_v1.sql`
+- 10/10 current open holdings returned `valuation_eligible=true`.
+- `trading_eligible=false` remains enforced.
 
-Do not rewrite Transactions or Cost Basis during this cutover.
+Native Sheet worker:
+- `portfolio-sheet-shadow-sync-v1` ACTIVE v2
+- writes `shadow_only=false` + `valuation_eligible=true` only for current open eligible holdings.
+- manual cutover-prep write/read-back: HTTP 200, 70 rows, 10/10 open holdings, pricing gate PASS, USDTHB 33.45758, `price_data_cutover=true`, `auto_trade=false`.
+
+Post-cutover Holdings validation:
+- Best ≈ THB 226,107.96
+- Loan Money ≈ THB 47,446.25
+- Mom ≈ THB 60,270.93
+- ALL ≈ THB 333,825.15
+These match the pre-cutover shadow reconciliation.
+
+A legacy direct-CoinGecko writer can still update the rollback/audit-side crypto cells (notably legacy Live Price and sometimes audit/status). The native production valuation path remains isolated in Resolved Price + native FX and continued to match `_Market_Data`. The old direct CoinGecko path is deprecated and should be removed once its external trigger/source is identified; no active ChatGPT portfolio automation was found to be causing it.
 
 ## Current open holdings
 
@@ -239,7 +253,7 @@ Current open stocks:
 - No second transaction ledger in Supabase.
 - No automated trade execution.
 - Never merge PR #52 without explicit owner permission.
-- Keep `Price Data` unchanged until reconciliation is accepted.
+- `Price Data` is now cut over through the controlled `FWIOS_NATIVE` switch; rollback is `AI Integration Config!B21 = LEGACY`.
 
 ## New-chat kickoff prompt
 
@@ -251,10 +265,10 @@ Before doing anything:
 2. Inspect live PR #52 and branch `feat/pr5-native-usd-price-shadow`.
 3. Inspect Supabase live Cron and latest REGULAR_CLOSE sessions.
 4. Do not merge PR #52.
-5. Do not touch Price Data, Transactions, Holdings, Cost Basis or P&L yet.
+5. Price Data read cutover is already active. Do not rewrite Transactions, Holdings formulas, Cost Basis or P&L.
 
 Immediate task:
-Fix/validate the EOD stock daily-close timing so latest US regular close is canonical before the 07:00 Asia/Bangkok portfolio stock sync. Then verify the 07:10 native `_Market_Data` sync uses that same latest session. After that, do final shadow reconciliation and propose the controlled Price Data read cutover, but do not execute cutover without explicit owner approval.
+Preserve the active controlled Price Data cutover, identify/retire the remaining legacy direct-CoinGecko Sheet writer without disturbing the rollback path, and continue the Phase-1 Focused Dashboard MVP. Keep PR #52 Draft/Unmerged unless the owner explicitly approves merge.
 
 
 ## Latest owner policy — US-market-close anchored cadence
