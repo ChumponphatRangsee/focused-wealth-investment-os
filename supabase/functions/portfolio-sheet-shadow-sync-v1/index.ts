@@ -521,6 +521,7 @@ Deno.serve(async (req: Request) => {
     const accountingRows = await readLiveHoldings(googleToken);
     const receipt = await writeShadow(payload, googleToken);
     const projection = await saveLiveHoldings(accountingRows);
+    const valuation = await publishLiveValuation(googleToken, projection.batch_id);
     await recordState("PASS", {
       ...base,
       sheet: SHEET_NAME,
@@ -528,6 +529,7 @@ Deno.serve(async (req: Request) => {
       full_price_and_fx_readback_verified: true,
       live_projection_batch_id: projection.batch_id,
       live_position_count: projection.rows,
+      account_valuation_sync: valuation,
       read_only_accounting: true,
       service_account_email: sa.client_email,
     });
@@ -541,6 +543,7 @@ Deno.serve(async (req: Request) => {
       full_price_and_fx_readback_verified: true,
       live_projection_batch_id: projection.batch_id,
       live_position_count: projection.rows,
+      account_valuation_sync: valuation,
       read_only_accounting: true,
       service_account_email: sa.client_email,
     });
