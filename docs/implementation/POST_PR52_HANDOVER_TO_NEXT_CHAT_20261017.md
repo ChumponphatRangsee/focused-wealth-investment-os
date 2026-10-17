@@ -296,10 +296,21 @@ Immediate isolation applied without touching accounting records:
 
 - restored system-owned formulas in crypto `Price Data` G/H/M for BTC, DOGE, ETH, HBAR, SOL and XRP;
 - retained column L only as the legacy rollback live-price input;
-- verified all six rows now report `FWIOS_NATIVE | FRESH | CRYPTO_DAILY_SNAPSHOT` and native observation IDs;
+- verified the restoration initially produced `FWIOS_NATIVE | FRESH | CRYPTO_DAILY_SNAPSHOT` and native observation IDs;
 - did not modify `Transactions`, `Holdings`, quantities, cost basis, realized P&L, cash or trading state.
 
-Final retirement still requires deleting/disabling the bound Google trigger at its source. Until then, a future trigger run could overwrite G/H/M again and should be treated as an operational blocker, not a valuation-source failure.
+The cleanup gate then **failed**: at `2026-10-17T11:26:31Z` (18:26 Asia/Bangkok)
+the owner-side Google process ran again and replaced G/H/M with literal
+`LIVE | CoinGecko batch ...` values. This occurred about ten minutes after the
+prior observed legacy write and confirms a recurring trigger.
+
+Final retirement therefore still requires deleting/disabling the bound Google
+trigger at its source. The connected Drive/Sheets surface can repair the cells
+but cannot administer Apps Script triggers, so repeatedly rewriting G/H/M is
+not a valid fix. Treat the active trigger as an operational blocker for clean
+audit/status ownership. The native valuation source itself remains isolated:
+`Resolved Price` continues to select eligible `_Market_Data` under
+`FWIOS_NATIVE`.
 
 ### US-close E2E status
 
