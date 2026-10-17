@@ -148,7 +148,7 @@ async function refreshCrypto(assets:any[]){
     await insertQuote({
       asset_symbol:s,asset_class:"Crypto",price_native:pThb,native_currency:"THB",
       fx_rate_thb:1,price_thb:pThb,provider:"COINGECKO",source_tier:"B",
-      observed_at:providerTs,valid_until:new Date(now.getTime()+45*60_000),
+      observed_at:providerTs,valid_until:new Date(now.getTime()+30*60*60_000),
       market_status:"24X7",
       raw_payload:{provider_last_updated_at:x?.last_updated_at??null,source_url:"https://api.coingecko.com/api/v3/simple/price"}
     });
@@ -273,7 +273,7 @@ Deno.serve(async(req:Request)=>{
   return Response.json({
     ok:String(health.pricing_gate)==="PASS",
     worker:WORKER,version:3,run_id:runId,force_all:forceAll,stock_mode:stockMode,refresh_crypto:refreshCryptoEnabled,
-    stock_refresh_attempted:doStocks,stock_refresh_policy:"DAILY_POST_CLOSE",
+    stock_refresh_attempted:doStocks,stock_refresh_policy:"DAILY_POST_CLOSE",crypto_refresh_policy:"DAILY_SNAPSHOT",
     crypto:cryptoResult,stocks:stockResults,
     fx_rate_thb:fx?.rate??null,pricing_gate:health.pricing_gate,
     fresh_asset_count:health.fresh_asset_count,open_asset_count:health.open_asset_count,
