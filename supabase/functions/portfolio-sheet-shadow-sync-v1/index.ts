@@ -326,10 +326,18 @@ async function writeShadow(payload: Awaited<ReturnType<typeof loadShadowPayload>
   for (let i = 0; i < payload.values.length; i++) {
     const expected = payload.values[i];
     const readback = actual[i + 1] || [];
-    for (const col of [0, 1, 5, 6, 7, 8, 10, 14]) {
+    for (const col of [0, 1, 5, 6, 7, 8, 14]) {
       if (String(readback[col] ?? "") !== String(expected[col] ?? "")) {
         throw new Error("SHEET_VERIFY_FIELD_MISMATCH_" + (i + 2) + "_" + col);
       }
+    }
+    // Sheets USER_ENTERED converts ISO session_date into a date serial number.
+    const dateCell = readback[10];
+    const isoDate = typeof dateCell === "number"
+      ? new Date(Date.UTC(1899, 11, 30) + dateCell * 86400000).toISOString().slice(0, 10)
+      : String(dateCell || "").slice(0, 10);
+    if (isoDate !== String(expected[10]).slice(0, 10)) {
+      throw new Error("SHEET_VERIFY_SESSION_MISMATCH_" + (i + 2));
     }
     const p = Number(expected[3]), r = Number(readback[3]);
     if (!Number.isFinite(p) || !Number.isFinite(r) ||
