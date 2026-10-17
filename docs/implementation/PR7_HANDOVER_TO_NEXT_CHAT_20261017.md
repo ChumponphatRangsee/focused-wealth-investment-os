@@ -15,13 +15,24 @@ Phase-1 principle remains MVP-first. Supabase is market-data/state infrastructur
 
 The previous 15-minute portfolio refresh was removed.
 
-Current live portfolio schedules:
+Current live portfolio schedules are **US-market-close anchored** rather than fixed Bangkok time:
+- EOD enqueue: `fwios-market-daily-close-enqueue`
+  - cron candidates `5 20,21 * * 1-5` UTC
+  - guarded to exactly **16:05 America/New_York** Monday-Friday
+- EOD worker: `fwios-market-daily-close-worker`
+  - cron candidates `*/2 20-22 * * 1-5` UTC
+  - guarded to **16:05–17:05 America/New_York**
 - Crypto snapshot: `fwios-portfolio-crypto-daily-snapshot`
-  - cron `0 0 * * *`
-  - 07:00 Asia/Bangkok every day
+  - cron candidates `10 21,22 * * *` UTC
+  - guarded to exactly **17:10 America/New_York** daily
 - Stock held-position sync: `fwios-portfolio-stock-post-close-sync`
-  - cron `0 0 * * 2-6`
-  - 07:00 Asia/Bangkok Tuesday-Saturday (consumes US Monday-Friday closes)
+  - cron candidates `10 21,22 * * 1-5` UTC
+  - guarded to exactly **17:10 America/New_York** Monday-Friday
+  - only dispatches when all current open held stocks already have the same-day canonical `REGULAR_CLOSE`
+- Native `_Market_Data` sync:
+  - cron candidates `20 21,22 * * *` UTC
+  - guarded to exactly **17:20 America/New_York** daily
+- Typical Bangkok mapping: EDT ≈ 03:05 → 04:10 → 04:20 next day; EST ≈ 04:05 → 05:10 → 05:20 next day.
 - Worker: `portfolio-mtm-refresh-v1` ACTIVE v7
 - Crypto is `CRYPTO_DAILY_SNAPSHOT`, 30-hour validity.
 - Stocks use canonical `REGULAR_CLOSE` and are exposed as `LAST_CLOSE`.
@@ -81,8 +92,8 @@ Native E2E receipt:
 
 Native sheet Cron:
 `fwios-portfolio-sheet-shadow-sync-native`
-- cron `10 0 * * *`
-- 07:10 Asia/Bangkok daily
+- cron candidates `20 21,22 * * *`
+- guarded to exactly 17:20 America/New_York daily
 - **active=true**
 
 The ChatGPT automation `FWIOS Sheet Shadow Sync` is now disabled.
@@ -244,3 +255,23 @@ Before doing anything:
 
 Immediate task:
 Fix/validate the EOD stock daily-close timing so latest US regular close is canonical before the 07:00 Asia/Bangkok portfolio stock sync. Then verify the 07:10 native `_Market_Data` sync uses that same latest session. After that, do final shadow reconciliation and propose the controlled Price Data read cutover, but do not execute cutover without explicit owner approval.
+
+
+## Latest owner policy — US-market-close anchored cadence
+
+Owner explicitly removed the fixed 07:00 Asia/Bangkok requirement. Phase-1 now follows the US market clock.
+
+Live policy:
+- regular-session close semantics remain canonical `REGULAR_CLOSE` / `LAST_CLOSE`;
+- EOD ingestion begins 5 minutes after the US regular close;
+- held stocks and crypto snapshot run at 17:10 New York time;
+- native `_Market_Data` sync runs at 17:20 New York time;
+- America/New_York guards handle EDT/EST automatically;
+- the stock consumer is fail-closed when current held-stock close coverage is incomplete;
+- no intraday stock quote polling is re-enabled;
+- no Price Data, Holdings, Transactions, Cost Basis or P&L cutover is included.
+
+Live schedule migration:
+`migrations/20261017112000_pr7_us_market_close_anchored_schedule_v1.sql`
+
+This supersedes the earlier 05:05 → 07:00 → 07:10 Bangkok schedule.
