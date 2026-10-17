@@ -86,3 +86,18 @@ Final Phase-1 stock policy:
 - Daily-close scanner ingestion for the broader canonical stock universe remains separate and unchanged.
 
 This replaces the prior Task-1 intraday-live behavior for Phase 1.
+
+
+## PR7 portfolio refresh policy — daily-only stocks + crypto (2026-10-17)
+
+Owner requested Crypto cadence to match the Phase-1 low-frequency portfolio policy.
+
+Final schedule:
+- Crypto holdings: once daily at 08:15 UTC (15:15 Asia/Bangkok), every day.
+- Stock holdings: once daily at 08:15 UTC (15:15 Asia/Bangkok), Monday-Friday, after the EOD stock pipeline.
+- The former 15-minute portfolio Cron is removed.
+- Crypto refresh is explicit opt-in (`refresh_crypto=true`); worker default is OFF.
+- Crypto daily snapshot validity is 30 hours so it remains usable until the next daily refresh instead of going stale after 15-45 minutes.
+- PR5 shadow labels crypto as `CRYPTO_DAILY_SNAPSHOT`.
+- Smoke verification: 6/6 crypto updated and 6/6 native USD published; no missing/errors; pricing gate PASS.
+- Deployed `portfolio-mtm-refresh-v1` ACTIVE v7.
