@@ -259,6 +259,39 @@ async function writeShadow(payload: Awaited<ReturnType<typeof loadShadowPayload>
   if (missingOpen.length) throw new Error(`SHEET_VERIFY_OPEN_HOLDING_MISSING_${missingOpen.join(",")}`);
   if (String(actual?.[0]?.[0] || "") !== "asset_symbol") throw new Error("SHEET_VERIFY_HEADER_MISMATCH");
 
+  // Compare the native source values with Google's post-write calculation.
+  for (let i = 0; i < payload.values.length; i++) {
+    const expected = payload.values[i];
+    const readback = actual[i + 1] || [];
+    for (const col of [0, 1, 5, 6, 7, 8, 10, 14]) {
+      if (String(readback[col] ?? "") !== String(expected[col] ?? "")) {
+        throw new Error("SHEET_VERIFY_FIELD_MISMATCH_" + (i + 2) + "_" + col);
+      }
+    }
+    const p = Number(expected[3]), r = Number(readback[3]);
+    if (!Number.isFinite(p) || !Number.isFinite(r) ||
+        Math.abs(p - r) > 1e-8 * Math.max(1, Math.abs(p))) {
+      throw new Error("SHEET_VERIFY_USD_PRICE_MISMATCH_" + (i + 2));
+    }
+    if (expected[14] === true) {
+      const expectedThb = p * Number(payload.fx[1]);
+      const readThb = Number(readback[16]);
+      if (!Number.isFinite(readThb) ||
+          Math.abs(expectedThb - readThb) > 1e-7 * Math.max(1, Math.abs(expectedThb))) {
+        throw new Error("SHEET_VERIFY_CONVERTED_PRICE_MISMATCH_" + (i + 2));
+      }
+    }
+  }
+  const actualFx = actual[1] || [];
+  if (String(actualFx[17]) !== String(payload.fx[0]) ||
+      Math.abs(Number(actualFx[18]) - Number(payload.fx[1])) > 1e-9 ||
+      String(actualFx[19]) !== String(payload.fx[2]) ||
+      String(actualFx[20]) !== String(payload.fx[3]) ||
+      String(actualFx[23]) !== String(payload.fx[6])) {
+    throw new Error("SHEET_VERIFY_FX_MISMATCH");
+  }
+
+
   const staleStart = endRow + 1;
   if (staleStart <= SHEET_MAX_ROW) {
     const clearRange = encodeURIComponent(`${SHEET_NAME}!A${staleStart}:X${SHEET_MAX_ROW}`);
