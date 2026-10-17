@@ -1,6 +1,6 @@
 -- PR7 native Google Sheet shadow sync scheduler.
--- Intentionally disabled until the Google Sheets service-account credential is installed,
--- the target spreadsheet is shared to that service account, and a native write E2E passes.
+-- Enabled after Google Sheets service-account credential installation,
+-- target spreadsheet sharing, and successful native write/read-back E2E.
 -- Schedule: 00:10 UTC = 07:10 Asia/Bangkok.
 
 do $$
@@ -38,5 +38,5 @@ begin
     $cron$
   );
 
-  perform cron.alter_job(v_job_id, active => false);
+  perform cron.alter_job(v_job_id, active => true);
 end $$;
