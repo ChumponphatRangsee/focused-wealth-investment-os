@@ -224,6 +224,14 @@ async function loadShadowPayload() {
   };
 }
 
+async function readLiveHoldings(token: string) {
+  const range = "Holdings!A5:L1001";
+  const link = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID +
+    "/values/" + encodeURIComponent(range) + "?valueRenderOption=UNFORMATTED_VALUE";
+  const data = await googleJson(link, token);
+  return Array.isArray(data?.values) ? data.values : [];
+}
+
 async function writeShadow(payload: Awaited<ReturnType<typeof loadShadowPayload>>, token: string) {
   const rowCount = payload.values.length;
   if (rowCount < 1 || rowCount >= SHEET_MAX_ROW) throw new Error("SHADOW_ROW_COUNT_OUT_OF_RANGE");
