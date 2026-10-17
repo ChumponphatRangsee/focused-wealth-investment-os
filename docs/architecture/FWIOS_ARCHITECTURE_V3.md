@@ -190,8 +190,8 @@ The target `_Market_Data` projection now has an FWIOS-native delivery worker:
 - The worker writes only the Tracker's hidden `_Market_Data` projection and separate USDTHB block.
 - It fails closed on pricing-gate failure, missing open-holding coverage, missing FX, missing Google credential, Google write error, or read-back mismatch.
 - `Price Data`, Transactions, Holdings, Cost Basis and accounting formulas are outside the worker's write scope.
-- Scheduler remains disabled until service-account credential + Google Sheet sharing + native E2E write/read-back pass.
-- Temporary ChatGPT sync is fallback-only and must be removed after the native scheduler is verified.
+- Scheduler is enabled after service-account credential + Google Sheet sharing + native E2E write/read-back PASS.
+- Temporary ChatGPT sync has been disabled after native scheduler activation.
 
 This operational note does not authorize portfolio accounting or Price Data cutover.
 
@@ -208,3 +208,12 @@ The target `_Market_Data` projection now has an FWIOS-native delivery worker:
 - Temporary ChatGPT sync is fallback-only and must be removed after the native scheduler is verified.
 
 This operational note does not authorize portfolio accounting or Price Data cutover.
+
+
+### Native delivery cutover receipt — 2026-10-17
+- Native Google Sheets write/read-back E2E PASS.
+- 70 shadow rows verified; all 10 open holdings covered.
+- USDTHB provenance PASS.
+- Native 07:10 Asia/Bangkok scheduler active.
+- ChatGPT fallback disabled.
+- Price Data/accounting read cutover remains pending separate reconciliation approval.
