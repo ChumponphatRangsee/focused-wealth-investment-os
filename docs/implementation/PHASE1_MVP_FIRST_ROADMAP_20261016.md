@@ -112,8 +112,18 @@ Current native status:
 - Worker is fail-closed and targets only `Investment Portfolio Tracker - Chumponphat / _Market_Data`.
 - Native dry-run PASS: 70 shadow rows, 10/10 open holdings covered, pricing gate PASS, USDTHB present, no accounting/Price Data mutation.
 - Live-write probe without Google credential correctly returned HTTP 503 with `GOOGLE_SERVICE_ACCOUNT_CREDENTIAL_MISSING` and `write_attempted=false`.
-- Native Cron `fwios-portfolio-sheet-shadow-sync-native` exists at 00:10 UTC (07:10 Asia/Bangkok) but is **active=false** until Google service-account E2E succeeds.
+- Native Cron `fwios-portfolio-sheet-shadow-sync-native` runs at 00:10 UTC (07:10 Asia/Bangkok) and is **active=true** after Google service-account write/read-back E2E PASS.
 - Portfolio refresh schedules are 07:00 Asia/Bangkok: Crypto daily; Stock weekdays.
 - Required Vault secret: `fwios_google_sheets_service_account_json`.
-- Temporary ChatGPT sync remains enabled only as fallback until native write + read-back + Cron verification pass.
+- Temporary ChatGPT sync has been disabled after native write + read-back + Cron activation PASS.
 - `Price Data` cutover remains explicitly forbidden pending final reconciliation.
+
+
+### Native shadow sync cutover receipt — 2026-10-17
+- Vault Google service-account credential installed.
+- Native Edge write HTTP 200, write_attempted=true.
+- Google read-back verified 70 shadow data rows plus header and 10/10 open holdings.
+- USDTHB block present with PASS provenance.
+- Native 07:10 Asia/Bangkok Cron active.
+- ChatGPT FWIOS Sheet Shadow Sync automation disabled.
+- Price Data cutover remains false.
