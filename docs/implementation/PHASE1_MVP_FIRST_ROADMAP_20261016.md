@@ -3,6 +3,15 @@
 **Decision date:** 2026-10-16  
 **Goal:** Make the investment workflows usable end-to-end before expanding infrastructure for scale.
 
+> **Operational snapshot — 2026-10-17:** the controlled `FWIOS_NATIVE`
+> portfolio price-read cutover is ACTIVE, `portfolio-sheet-shadow-sync-v1`
+> is ACTIVE v2, and the active cadence is anchored to the US market clock
+> (16:05 ET EOD enqueue, 17:10 ET portfolio stock/crypto refresh, 17:20 ET
+> native Sheet sync). Any earlier fixed Bangkok-time cadence or
+> `price_data_cutover=false` passages below are historical receipts, not the
+> current operating policy. `auto_trade=false` remains mandatory and
+> accounting records/formulas are not rewritten.
+
 ## Product-first rule
 
 Phase 1 optimizes for a single-owner / very-low-user-count system. Existing PR2–PR4 quota, reservation, cache and single-flight foundations are retained but **feature expansion and enterprise-scale acceptance work are frozen unless needed to ship a working feature**.
