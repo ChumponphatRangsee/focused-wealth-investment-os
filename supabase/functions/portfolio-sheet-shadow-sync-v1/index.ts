@@ -232,6 +232,33 @@ async function readLiveHoldings(token: string) {
   return Array.isArray(data?.values) ? data.values : [];
 }
 
+function parseLiveHoldings(source: unknown[][]) {
+  const positions: { source_row:number; account_key:string;
+    asset_symbol:string; asset_class:string; quantity:number }[] = [];
+  const accountKeys: Record<string,string> = {
+    "best":"best", "loan money":"loan_money", "mom":"mom"
+  };
+  const seen = new Set<string>();
+  for (let i=0;i<source.length;i++) {
+    const r=source[i] || [];
+    if (String(r[11]||"").trim().toUpperCase()!=="OPEN") continue;
+    const account_key=accountKeys[String(r[0]||"").trim().toLowerCase()];
+    const asset_symbol=String(r[1]||"").trim().toUpperCase();
+    const asset_class=String(r[4]||"").trim();
+    const quantity=Number(r[3]);
+    const unique=account_key+":"+asset_symbol;
+    if (!account_key || !/^[A-Z0-9._-]{1,20}$/.test(asset_symbol) ||
+        !["Stock","Crypto"].includes(asset_class) || !(quantity>0) ||
+        !Number.isFinite(quantity) || seen.has(unique)) {
+      throw new Error("INVALID_LIVE_HOLDINGS_ROW_"+(i+5));
+    }
+    seen.add(unique);
+    positions.push({source_row:i+5,account_key,asset_symbol,asset_class,quantity});
+  }
+  if (!positions.length || positions.length>200) throw new Error("INVALID_LIVE_HOLDINGS_COUNT");
+  return positions;
+}
+
 async function writeShadow(payload: Awaited<ReturnType<typeof loadShadowPayload>>, token: string) {
   const rowCount = payload.values.length;
   if (rowCount < 1 || rowCount >= SHEET_MAX_ROW) throw new Error("SHADOW_ROW_COUNT_OUT_OF_RANGE");
