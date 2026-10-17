@@ -127,3 +127,16 @@ Current native status:
 - Native 07:10 Asia/Bangkok Cron active.
 - ChatGPT FWIOS Sheet Shadow Sync automation disabled.
 - Price Data cutover remains false.
+
+
+## P0 before PR7 Price Data cutover — align stock EOD timing (2026-10-17)
+
+Native `_Market_Data` delivery is complete, but the current stock EOD ingestion window starts after the 07:00 Asia/Bangkok portfolio stock sync. Live verification showed MSFT/NVDA/TLN/TTWO latest `REGULAR_CLOSE` session at 2026-10-15 on 2026-10-17.
+
+Before final reconciliation or any `Price Data` read cutover:
+1. move/validate EOD ingestion so the latest completed US regular session is canonical before 07:00 Asia/Bangkok;
+2. handle US/Bangkok weekday mapping and DST correctly;
+3. verify held-stock session parity through Supabase → portfolio snapshot → `_Market_Data`;
+4. only then perform final shadow reconciliation.
+
+No accounting or Price Data cutover is authorized by this note.
