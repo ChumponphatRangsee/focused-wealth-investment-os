@@ -1,11 +1,21 @@
 # FWIOS Architecture Refactor v3 — Quota-Aware Shared Market Data
 
-**Status:** PROPOSED / DOCUMENTATION ONLY — NOT CUT OVER  
+**Status:** TARGET ARCHITECTURE / PARTIAL PHASE-1 CUTOVER ACTIVE  
 **Plan recorded:** 2026-10-13 (Asia/Bangkok)  
 **Implementation:** [API Quota Implementation Plan](../implementation/API_QUOTA_IMPLEMENTATION_PLAN.md)  
 **Active contract:** [system-contract.yaml](../../contracts/system-contract.yaml)
 
 > This is the **target architecture**, not a claim that the current production architecture has migrated. Retain the active FWIOS 0.87.x paths, historical decision snapshots, market-observation compatibility views, and human-execution-only rules until regression-based cutover.
+
+> **Phase-1 operational update — 2026-10-17:** the portfolio market-price read
+> slice of Release B has now been cut over under the controlled
+> `FWIOS_NATIVE` switch:
+> `Supabase canonical USD/FX → _Market_Data → Price Data → Holdings`.
+> The native Sheet worker is ACTIVE v2 and follows the US-market-close cadence.
+> This does **not** mean the full v3 target architecture is cut over: research,
+> scanner and broader legacy retirement remain staged. Transactions, quantities,
+> cost basis, realized P&L and human-execution-only rules remain unchanged;
+> `auto_trade=false`.
 
 ## 1. Purpose and ownership
 
@@ -19,7 +29,7 @@ Three independent business responsibilities must not become three independent AP
 
 The Tracker's `Transactions` sheet is the **target sole system of record for trades**; position quantities and cost basis derive from it. The current `portfolio_state.current_authority: Supabase` in the live contract describes *today's operational decision/portfolio read model*, not the desired post-cutover transaction authority. It must remain effective until a verified migration is explicitly approved. A read-only portfolio **summary** may be sent to research/portfolio-fit consumers after cutover; it must not recreate a Supabase trading ledger.
 
-**Current live state (read-only inspection 2026-10-13):**
+**Historical live snapshot (read-only inspection 2026-10-13; superseded for portfolio price-read state by the 2026-10-17 update above):**
 - Tracker tabs include `Transactions`, `Price Data`, `Holdings`; `_Market_Data` does **not** yet exist. `Price Data` still uses CoinGecko/GoogleFinance/FX formulas.
 - Focused Dashboard's `_Data` contains a legacy portfolio summary / refresh integration. It is **not** proof that Research already reads Tracker-owned accounting.
 - Supabase already contains `fwios.market_observations`, `fwios.portfolio_market_quote_snapshots`, and `fwios.v_portfolio_market_quote_current`. At inspection this price view had 6 crypto + 4 stocks marked FRESH. Meanwhile `fwios.v_market_price_latest` was stale/blocked; do **not** simply repoint consumers to it.
@@ -182,7 +192,7 @@ See the [implementation plan](../implementation/API_QUOTA_IMPLEMENTATION_PLAN.md
 - **Rollout:** update the PR5 price contract, add six native USD crypto feeds, verify global API quota, then PR6 shadow comparison and PR7 portfolio read cutover. Keep old workers, chronology and transaction ledger unchanged until parity gates pass.
 
 
-## 12. Native Tracker shadow sync implementation note — 2026-10-17
+## 12. Historical native Tracker shadow-sync plan — 2026-10-17 (superseded)
 
 The target `_Market_Data` projection now has an FWIOS-native delivery worker:
 - Edge Function: `portfolio-sheet-shadow-sync-v1`.
@@ -196,7 +206,7 @@ The target `_Market_Data` projection now has an FWIOS-native delivery worker:
 This operational note does not authorize portfolio accounting or Price Data cutover.
 
 
-## 12. Native Tracker shadow sync implementation note — 2026-10-17
+## 12A. Historical pre-activation Tracker receipt — 2026-10-17 (superseded)
 
 The target `_Market_Data` projection now has an FWIOS-native delivery worker:
 - Edge Function: `portfolio-sheet-shadow-sync-v1`.
