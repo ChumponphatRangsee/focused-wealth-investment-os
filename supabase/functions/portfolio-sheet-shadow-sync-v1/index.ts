@@ -259,6 +259,34 @@ function parseLiveHoldings(source: unknown[][]) {
   return positions;
 }
 
+async function saveLiveHoldings(source: unknown[][]) {
+  const positions = parseLiveHoldings(source);
+  const digest = await sha256Hex(JSON.stringify(positions));
+  const distinct = new Set(positions.map(r => r.asset_symbol)).size;
+  return await sql!.begin(async (tx) => {
+    const batch = await tx`insert into fwios.portfolio_live_holdings_batches_v1
+      (spreadsheet_id,sheet_range,source_digest,position_count,unique_asset_count)
+      values (${SPREADSHEET_ID},'Holdings!A5:L1001',${digest},
+        ${positions.length},${distinct})
+      on conflict(source_digest) do update set received_at=now()
+      returning batch_id`;
+    const id = String(batch[0].batch_id);
+    for (const r of positions) {
+      await tx`insert into fwios.portfolio_live_holdings_rows_v1
+        (batch_id,source_row,account_key,asset_symbol,asset_class,quantity)
+        values (${id}::uuid,${r.source_row},${r.account_key},
+          ${r.asset_symbol},${r.asset_class},${r.quantity})
+        on conflict(batch_id,source_row) do nothing`;
+    }
+    const check = await tx`select count(*)::integer n,
+      count(distinct asset_symbol)::integer a
+      from fwios.portfolio_live_holdings_rows_v1 where batch_id=${id}::uuid`;
+    if (Number(check[0].n)!==positions.length ||
+        Number(check[0].a)!==distinct) throw new Error("LIVE_HOLDINGS_VERIFY_FAILED");
+    return { batch_id:id, rows:positions.length, assets:distinct };
+  });
+}
+
 async function writeShadow(payload: Awaited<ReturnType<typeof loadShadowPayload>>, token: string) {
   const rowCount = payload.values.length;
   if (rowCount < 1 || rowCount >= SHEET_MAX_ROW) throw new Error("SHADOW_ROW_COUNT_OUT_OF_RANGE");
