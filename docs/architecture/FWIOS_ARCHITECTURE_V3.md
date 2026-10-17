@@ -194,3 +194,17 @@ The target `_Market_Data` projection now has an FWIOS-native delivery worker:
 - Temporary ChatGPT sync is fallback-only and must be removed after the native scheduler is verified.
 
 This operational note does not authorize portfolio accounting or Price Data cutover.
+
+
+## 12. Native Tracker shadow sync implementation note — 2026-10-17
+
+The target `_Market_Data` projection now has an FWIOS-native delivery worker:
+- Edge Function: `portfolio-sheet-shadow-sync-v1`.
+- Scheduler target: 07:10 Asia/Bangkok, after the 07:00 portfolio refresh.
+- The worker writes only the Tracker's hidden `_Market_Data` projection and separate USDTHB block.
+- It fails closed on pricing-gate failure, missing open-holding coverage, missing FX, missing Google credential, Google write error, or read-back mismatch.
+- `Price Data`, Transactions, Holdings, Cost Basis and accounting formulas are outside the worker's write scope.
+- Scheduler remains disabled until service-account credential + Google Sheet sharing + native E2E write/read-back pass.
+- Temporary ChatGPT sync is fallback-only and must be removed after the native scheduler is verified.
+
+This operational note does not authorize portfolio accounting or Price Data cutover.
