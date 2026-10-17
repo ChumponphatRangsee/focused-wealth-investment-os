@@ -185,6 +185,42 @@ async function refreshCrypto(assets:any[]){
   }
   return {attempted:true,updated,usd_updated:usdUpdated,missing,usd_missing:usdMissing,usd_errors:usdErrors};
 }
+async function refreshStockFromDailyClose(ticker:string,fx:any,now:Date){
+  const r=await sql!`select o.observation_value price_usd,o.observed_at,o.session_date,o.provider,o.observation_id
+    from fwios.market_observations o
+    join fwios.v_instrument_identity_current id on id.instrument_id=o.instrument_id
+    where id.asset_symbol=${ticker}
+      and o.observation_type='REGULAR_CLOSE'
+      and o.value_currency='USD'
+      and o.provenance_status='PASS'
+      and o.observation_value>0
+      and o.source_tier='A'
+    order by o.session_date desc,o.observed_at desc,o.created_at desc
+    limit 1`;
+  if(!r.length||!(Number(r[0].price_usd)>0))
+    return {ticker,status:"BLOCKED",reason:"DAILY_CLOSE_UNAVAILABLE"};
+  const price=Number(r[0].price_usd);
+  const observedAt=new Date(r[0].observed_at);
+  const thb=price*Number(fx.rate);
+  await insertQuote({
+    asset_symbol:ticker,asset_class:"Stock",price_native:price,native_currency:"USD",
+    fx_rate_thb:Number(fx.rate),price_thb:thb,provider:"FWIOS_DAILY_CLOSE_SYNC",source_tier:"A",
+    observed_at:observedAt,valid_until:stockValidity(now),market_status:"LAST_CLOSE",
+    raw_payload:{
+      daily_close_provider:String(r[0].provider),
+      daily_close_observation_id:String(r[0].observation_id),
+      session_date:String(r[0].session_date),
+      fx_provider:fx.provider,fx_payload:fx.payload,
+      fwios_pr7_mvp:{scope:"OPEN_HOLDINGS_ONLY",mode:"DAILY_CLOSE_AFTER_MARKET"}
+    }
+  });
+  return {
+    ticker,status:"PASS",price_usd:price,fx_rate_thb:Number(fx.rate),price_thb:thb,
+    provider:"FWIOS_DAILY_CLOSE_SYNC",market_status:"LAST_CLOSE",
+    observed_at:observedAt.toISOString(),session_date:String(r[0].session_date)
+  };
+}
+
 async function refreshStock(ticker:string,key:string,fx:any,now:Date){
   const gate=await reserve(ticker,{capability:"PORTFOLIO_QUOTE"});
   let price:number|null=null,payload:any=null,providerName="TWELVE_DATA_QUOTE",marketStatus="UNKNOWN";
@@ -250,6 +286,8 @@ Deno.serve(async(req:Request)=>{
 
   let body:any={};try{body=await req.json();}catch{}
   const forceAll=body?.force_all===true;
+  const stockMode=String(body?.stock_mode||"OFF").toUpperCase();
+  const refreshCryptoEnabled=body?.refresh_crypto!==false;
   const runRows=await sql`insert into fwios.portfolio_mtm_runs(run_source)
     values(${String(body?.source||"SCHEDULED")}) returning run_id`;
   const runId=String(runRows[0].run_id);
@@ -305,7 +343,7 @@ Deno.serve(async(req:Request)=>{
       portfolio_mark_to_market_status:String(health.pricing_gate||"BLOCKED"),
       portfolio_mark_to_market_value_thb:value==null?null:Number(value),
       portfolio_mark_to_market_last_refresh:now.toISOString(),
-      portfolio_mark_to_market_worker_version:1,
+      portfolio_mark_to_market_worker_version:3,
       portfolio_mark_to_market_run_id:runId,
       auto_trade:false
     })}::jsonb,
@@ -314,7 +352,7 @@ Deno.serve(async(req:Request)=>{
 
   return Response.json({
     ok:String(health.pricing_gate)==="PASS",
-    worker:WORKER,version:2,run_id:runId,force_all:forceAll,
+    worker:WORKER,version:3,run_id:runId,force_all:forceAll,stock_mode:stockMode,refresh_crypto:refreshCryptoEnabled,
     stock_refresh_attempted:doStocks,stock_refresh_due:stockDue,stock_seed_required:stockSeed,
     stock_refresh_interval_minutes:60,crypto:cryptoResult,stocks:stockResults,
     fx_rate_thb:fx?.rate??null,pricing_gate:health.pricing_gate,
