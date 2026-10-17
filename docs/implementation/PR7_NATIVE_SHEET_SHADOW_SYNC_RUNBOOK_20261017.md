@@ -4,19 +4,26 @@
 **Status:** DEPLOYED / NATIVE WRITE+READBACK PASS / PRICE DATA CUTOVER ACTIVE  
 **Target:** `Investment Portfolio Tracker - Chumponphat` → hidden `_Market_Data` only.
 
+> **Current authoritative state (2026-10-17):** Edge Function
+> `portfolio-sheet-shadow-sync-v1` is ACTIVE v2. The scheduler is anchored to
+> 17:20 `America/New_York` using UTC candidate hours plus a New York wall-clock
+> guard. The controlled `FWIOS_NATIVE` Price Data read cutover is ACTIVE.
+> Earlier fixed 07:00/07:10 Asia/Bangkok and pre-cutover passages below are
+> preserved only as historical validation receipts and are superseded.
+
 ## Purpose
 
 Replace the temporary ChatGPT-driven Sheet shadow sync with an FWIOS-native path:
 
-`07:00 Asia/Bangkok portfolio refresh → 07:10 native Edge Function → _Market_Data`
+`17:10 America/New_York portfolio refresh → 17:20 native Edge Function → _Market_Data`
 
-This does **not** authorize a `Price Data` cutover and does not write Transactions, Holdings, Cost Basis, realized P&L, quantities, cash, or trade execution.
+The worker itself does **not** write `Price Data`, Transactions, Holdings, Cost Basis, realized P&L, quantities, cash, or trade execution. A separate controlled `FWIOS_NATIVE` read cutover was later approved and is now active.
 
 ## Runtime
 
 Edge Function:
 - `portfolio-sheet-shadow-sync-v1`
-- deployed ACTIVE v1
+- deployed ACTIVE v2
 - server-authenticated with the existing FWIOS automation token
 - spreadsheet ID is fixed to the Portfolio Tracker
 - target sheet is fixed to `_Market_Data`
@@ -49,7 +56,7 @@ The worker requests only:
 
 Never commit the credential to GitHub or place it in a readable Google Sheet.
 
-## Scheduler
+## Historical scheduler receipt — superseded
 
 Cron:
 - job: `fwios-portfolio-sheet-shadow-sync-native`
@@ -103,7 +110,7 @@ Cutover completed: Vault credential exists, Sheet sharing works, manual native w
 `Price Data` remains unchanged until separate reconciliation approval.
 
 
-## P0 upstream timing issue discovered before handover
+## Historical P0 upstream timing issue — resolved / superseded
 
 Native Sheet delivery is healthy, but the stock source feeding it is not yet guaranteed to be the newest US close by 07:00 Asia/Bangkok.
 
@@ -121,7 +128,7 @@ This does not invalidate the native Google Sheet write/read-back E2E. It does bl
 Resolve EOD schedule/session alignment first, including US/Bangkok day boundary and DST.
 
 
-## P0 timing resolution receipt — 2026-10-17
+## Historical intermediate timing resolution receipt — superseded by US-close cadence
 
 Live stock pipeline was re-aligned so canonical US EOD closes are available before the portfolio and Sheet consumers.
 
