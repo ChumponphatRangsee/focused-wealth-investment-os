@@ -81,6 +81,17 @@ async function needsStockSeed(){
     ) x`;
   return Number(r[0]?.n||0)>0;
 }
+async function heldStockRefreshDue(now:Date){
+  const r=await sql!`select max(q.observed_at) last_at
+    from fwios.v_portfolio_positions_current p
+    join fwios.v_portfolio_market_quote_current q on q.asset_symbol=p.asset_symbol
+    where upper(p.source_position_status)='OPEN'
+      and upper(p.asset_class)='STOCK'
+      and coalesce(p.quantity,0)>0
+      and q.provider='TWELVE_DATA_QUOTE'`;
+  const last=r[0]?.last_at?new Date(r[0].last_at):null;
+  return !last || now.getTime()-last.getTime()>=60*60_000;
+}
 async function getFxUsdThb(key:string){
   const gate=await reserve("USD/THB",{capability:"PORTFOLIO_FX"});
   if(gate.allowed){
@@ -254,7 +265,9 @@ Deno.serve(async(req:Request)=>{
 
   try{cryptoResult=await refreshCrypto(crypto);}catch(e){errors.push({scope:"CRYPTO",error:(e instanceof Error?e.message:String(e)).slice(0,240)});}
 
-  const doStocks=forceAll||inStockPollWindow(now)||await needsStockSeed();
+  const stockSeed=await needsStockSeed();
+  const stockDue=await heldStockRefreshDue(now);
+  const doStocks=forceAll||stockSeed||(inStockPollWindow(now)&&stockDue);
   if(doStocks&&stocks.length){
     const p=await provider();
     const key=await secret(p?.secret_name);
@@ -302,7 +315,8 @@ Deno.serve(async(req:Request)=>{
   return Response.json({
     ok:String(health.pricing_gate)==="PASS",
     worker:WORKER,version:2,run_id:runId,force_all:forceAll,
-    stock_refresh_attempted:doStocks,crypto:cryptoResult,stocks:stockResults,
+    stock_refresh_attempted:doStocks,stock_refresh_due:stockDue,stock_seed_required:stockSeed,
+    stock_refresh_interval_minutes:60,crypto:cryptoResult,stocks:stockResults,
     fx_rate_thb:fx?.rate??null,pricing_gate:health.pricing_gate,
     fresh_asset_count:health.fresh_asset_count,open_asset_count:health.open_asset_count,
     portfolio_value_thb:value,errors,auto_trade:false
