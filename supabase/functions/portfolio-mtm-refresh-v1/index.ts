@@ -57,40 +57,11 @@ function stockValidity(now:Date){
   const h=day===5?96:(day===6?72:(day===0?60:48));
   return new Date(now.getTime()+h*3600_000);
 }
-function inStockPollWindow(now:Date){
-  const d=now.getUTCDay();
-  const mins=now.getUTCHours()*60+now.getUTCMinutes();
-  return d>=1&&d<=5&&mins>=13*60&&mins<=22*60;
-}
 async function currentOpenAssets(){
   return await sql!`select distinct asset_symbol,asset_class
     from fwios.v_portfolio_positions_current
     where upper(source_position_status)='OPEN' and coalesce(quantity,0)>0
     order by asset_symbol`;
-}
-async function needsStockSeed(){
-  const r=await sql!`select count(*)::int n
-    from (
-      select distinct p.asset_symbol
-      from fwios.v_portfolio_positions_current p
-      left join fwios.v_portfolio_market_quote_current q on q.asset_symbol=p.asset_symbol
-      where upper(p.source_position_status)='OPEN'
-        and upper(p.asset_class)='STOCK'
-        and coalesce(p.quantity,0)>0
-        and coalesce(q.freshness_status,'MISSING')<>'FRESH'
-    ) x`;
-  return Number(r[0]?.n||0)>0;
-}
-async function heldStockRefreshDue(now:Date){
-  const r=await sql!`select max(q.observed_at) last_at
-    from fwios.v_portfolio_positions_current p
-    join fwios.v_portfolio_market_quote_current q on q.asset_symbol=p.asset_symbol
-    where upper(p.source_position_status)='OPEN'
-      and upper(p.asset_class)='STOCK'
-      and coalesce(p.quantity,0)>0
-      and q.provider='TWELVE_DATA_QUOTE'`;
-  const last=r[0]?.last_at?new Date(r[0].last_at):null;
-  return !last || now.getTime()-last.getTime()>=60*60_000;
 }
 async function getFxUsdThb(key:string){
   const gate=await reserve("USD/THB",{capability:"PORTFOLIO_FX"});
@@ -218,59 +189,6 @@ async function refreshStockFromDailyClose(ticker:string,fx:any,now:Date){
     ticker,status:"PASS",price_usd:price,fx_rate_thb:Number(fx.rate),price_thb:thb,
     provider:"FWIOS_DAILY_CLOSE_SYNC",market_status:"LAST_CLOSE",
     observed_at:observedAt.toISOString(),session_date:String(r[0].session_date)
-  };
-}
-
-async function refreshStock(ticker:string,key:string,fx:any,now:Date){
-  const gate=await reserve(ticker,{capability:"PORTFOLIO_QUOTE"});
-  let price:number|null=null,payload:any=null,providerName="TWELVE_DATA_QUOTE",marketStatus="UNKNOWN";
-  if(gate.allowed){
-    try{
-      const u=`https://api.twelvedata.com/quote?symbol=${encodeURIComponent(ticker)}&apikey=${encodeURIComponent(key)}`;
-      const d=await fetchJson(u); payload=d;
-      if(d?.status==="error")throw new Error(String(d?.message||"TWELVE_DATA_API_ERROR"));
-      price=Number(d?.close??d?.price??d?.previous_close);
-      marketStatus=d?.is_market_open===true?"OPEN":(d?.is_market_open===false?"CLOSED":"UNKNOWN");
-      if(!(price>0))throw new Error("INVALID_QUOTE_PRICE");
-      await markUsage(gate,"PASS",{
-        capability:"PORTFOLIO_QUOTE",price,
-        provider_last_quote_at:d?.last_quote_at??null,
-        provider_timestamp:d?.timestamp??null,
-        market_status:marketStatus
-      });
-    }catch(e){
-      await markUsage(gate,"ERROR",{capability:"PORTFOLIO_QUOTE",error:(e instanceof Error?e.message:String(e)).slice(0,180)});
-      price=null;
-    }
-  }
-  if(!(Number(price)>0)){
-    const r=await sql!`select close_price,session_date,primary_provider,retrieved_at
-      from fwios.v_market_daily_close_latest where asset_symbol=${ticker} limit 1`;
-    if(!r.length||!(Number(r[0].close_price)>0))return {ticker,status:"BLOCKED",reason:gate.allowed?"QUOTE_AND_DAILY_CLOSE_UNAVAILABLE":gate.reason};
-    price=Number(r[0].close_price);
-    providerName="TWELVE_DATA_DAILY_CLOSE_FALLBACK";
-    marketStatus="LAST_CLOSE";
-    payload={session_date:r[0].session_date,primary_provider:r[0].primary_provider,retrieved_at:r[0].retrieved_at};
-  }
-  const thb=Number(price)*Number(fx.rate);
-  const providerEpoch=providerName==="TWELVE_DATA_QUOTE"
-    ? Number(payload?.last_quote_at??payload?.timestamp)
-    : NaN;
-  const observedAt=Number.isFinite(providerEpoch)&&providerEpoch>0
-    ? new Date(providerEpoch*1000)
-    : now;
-  await insertQuote({
-    asset_symbol:ticker,asset_class:"Stock",price_native:Number(price),native_currency:"USD",
-    fx_rate_thb:Number(fx.rate),price_thb:thb,provider:providerName,source_tier:"A",
-    observed_at:observedAt,valid_until:stockValidity(now),market_status:marketStatus,
-    raw_payload:{
-      quote:payload,fx_provider:fx.provider,fx_payload:fx.payload,
-      fwios_pr7_mvp:{scope:"OPEN_HOLDINGS_ONLY",provider_observed_at:observedAt.toISOString()}
-    }
-  });
-  return {
-    ticker,status:"PASS",price_usd:Number(price),fx_rate_thb:Number(fx.rate),price_thb:thb,
-    provider:providerName,market_status:marketStatus,observed_at:observedAt.toISOString()
   };
 }
 
