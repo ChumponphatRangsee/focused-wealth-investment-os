@@ -121,7 +121,7 @@ async function refreshCrypto(assets:any[]){
   )];
   if(!symbols.length)return {attempted:false,updated:0,usd_updated:0,missing:[],usd_missing:[],usd_errors:[]};
   // MVP: one existing CoinGecko request now returns both currencies.
-  // This does not add a second vendor call or change the 15-minute Cron cadence.
+  // One batch call covers all held crypto. Phase 1 invokes this once daily post-close.
   const d=await fetchJson(buildCoinGeckoUsdThbCompatBatchUrl(symbols),{"Accept":"application/json"});
   const now=new Date();
   const usdParsed=parseCoinGeckoUsdBatch(d,symbols,now);
@@ -205,7 +205,7 @@ Deno.serve(async(req:Request)=>{
   let body:any={};try{body=await req.json();}catch{}
   const forceAll=body?.force_all===true;
   const stockMode=String(body?.stock_mode||"OFF").toUpperCase();
-  const refreshCryptoEnabled=body?.refresh_crypto!==false;
+  const refreshCryptoEnabled=body?.refresh_crypto===true;
   const runRows=await sql`insert into fwios.portfolio_mtm_runs(run_source)
     values(${String(body?.source||"SCHEDULED")}) returning run_id`;
   const runId=String(runRows[0].run_id);
@@ -223,8 +223,8 @@ Deno.serve(async(req:Request)=>{
     try{cryptoResult=await refreshCrypto(crypto);}catch(e){errors.push({scope:"CRYPTO",error:(e instanceof Error?e.message:String(e)).slice(0,240)});}
   }
 
-  // Phase-1 cost control: no intraday stock quote polling.
-  // Only the dedicated post-close Cron passes DAILY_CLOSE_ONLY.
+  // Phase-1 cost control: no intraday portfolio polling.
+  // The dedicated post-close Cron refreshes held crypto once and syncs held stocks from daily close.
   const doStocks=stockMode==="DAILY_CLOSE_ONLY";
   if(doStocks&&stocks.length){
     const p=await provider();
