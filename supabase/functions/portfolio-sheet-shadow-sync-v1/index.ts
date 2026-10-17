@@ -224,6 +224,69 @@ async function loadShadowPayload() {
   };
 }
 
+async function readLiveHoldings(token: string) {
+  const range = "Holdings!A5:L1001";
+  const link = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID +
+    "/values/" + encodeURIComponent(range) + "?valueRenderOption=UNFORMATTED_VALUE";
+  const data = await googleJson(link, token);
+  return Array.isArray(data?.values) ? data.values : [];
+}
+
+function parseLiveHoldings(source: unknown[][]) {
+  const positions: { source_row:number; account_key:string;
+    asset_symbol:string; asset_class:string; quantity:number }[] = [];
+  const accountKeys: Record<string,string> = {
+    "best":"best", "loan money":"loan_money", "mom":"mom"
+  };
+  const seen = new Set<string>();
+  for (let i=0;i<source.length;i++) {
+    const r=source[i] || [];
+    if (String(r[11]||"").trim().toUpperCase()!=="OPEN") continue;
+    const account_key=accountKeys[String(r[0]||"").trim().toLowerCase()];
+    const asset_symbol=String(r[1]||"").trim().toUpperCase();
+    const asset_class=String(r[4]||"").trim();
+    const quantity=Number(r[3]);
+    const unique=account_key+":"+asset_symbol;
+    if (!account_key || !/^[A-Z0-9._-]{1,20}$/.test(asset_symbol) ||
+        !["Stock","Crypto"].includes(asset_class) || !(quantity>0) ||
+        !Number.isFinite(quantity) || seen.has(unique)) {
+      throw new Error("INVALID_LIVE_HOLDINGS_ROW_"+(i+5));
+    }
+    seen.add(unique);
+    positions.push({source_row:i+5,account_key,asset_symbol,asset_class,quantity});
+  }
+  if (!positions.length || positions.length>200) throw new Error("INVALID_LIVE_HOLDINGS_COUNT");
+  return positions;
+}
+
+async function saveLiveHoldings(source: unknown[][]) {
+  const positions = parseLiveHoldings(source);
+  const digest = await sha256Hex(JSON.stringify(positions));
+  const distinct = new Set(positions.map(r => r.asset_symbol)).size;
+  return await sql!.begin(async (tx) => {
+    const batch = await tx`insert into fwios.portfolio_live_holdings_batches_v1
+      (spreadsheet_id,sheet_range,source_digest,position_count,unique_asset_count)
+      values (${SPREADSHEET_ID},'Holdings!A5:L1001',${digest},
+        ${positions.length},${distinct})
+      on conflict(source_digest) do update set received_at=now()
+      returning batch_id`;
+    const id = String(batch[0].batch_id);
+    for (const r of positions) {
+      await tx`insert into fwios.portfolio_live_holdings_rows_v1
+        (batch_id,source_row,account_key,asset_symbol,asset_class,quantity)
+        values (${id}::uuid,${r.source_row},${r.account_key},
+          ${r.asset_symbol},${r.asset_class},${r.quantity})
+        on conflict(batch_id,source_row) do nothing`;
+    }
+    const check = await tx`select count(*)::integer n,
+      count(distinct asset_symbol)::integer a
+      from fwios.portfolio_live_holdings_rows_v1 where batch_id=${id}::uuid`;
+    if (Number(check[0].n)!==positions.length ||
+        Number(check[0].a)!==distinct) throw new Error("LIVE_HOLDINGS_VERIFY_FAILED");
+    return { batch_id:id, rows:positions.length, assets:distinct };
+  });
+}
+
 async function writeShadow(payload: Awaited<ReturnType<typeof loadShadowPayload>>, token: string) {
   const rowCount = payload.values.length;
   if (rowCount < 1 || rowCount >= SHEET_MAX_ROW) throw new Error("SHADOW_ROW_COUNT_OUT_OF_RANGE");
@@ -258,6 +321,47 @@ async function writeShadow(payload: Awaited<ReturnType<typeof loadShadowPayload>
   const missingOpen = payload.openAssets.filter((s) => !actualSymbols.has(s));
   if (missingOpen.length) throw new Error(`SHEET_VERIFY_OPEN_HOLDING_MISSING_${missingOpen.join(",")}`);
   if (String(actual?.[0]?.[0] || "") !== "asset_symbol") throw new Error("SHEET_VERIFY_HEADER_MISMATCH");
+
+  // Compare the native source values with Google's post-write calculation.
+  for (let i = 0; i < payload.values.length; i++) {
+    const expected = payload.values[i];
+    const readback = actual[i + 1] || [];
+    for (const col of [0, 1, 5, 6, 7, 8, 14]) {
+      if (String(readback[col] ?? "") !== String(expected[col] ?? "")) {
+        throw new Error("SHEET_VERIFY_FIELD_MISMATCH_" + (i + 2) + "_" + col);
+      }
+    }
+    // Sheets USER_ENTERED converts ISO session_date into a date serial number.
+    const dateCell = readback[10];
+    const isoDate = typeof dateCell === "number"
+      ? new Date(Date.UTC(1899, 11, 30) + dateCell * 86400000).toISOString().slice(0, 10)
+      : String(dateCell || "").slice(0, 10);
+    if (isoDate !== String(expected[10]).slice(0, 10)) {
+      throw new Error("SHEET_VERIFY_SESSION_MISMATCH_" + (i + 2));
+    }
+    const p = Number(expected[3]), r = Number(readback[3]);
+    if (!Number.isFinite(p) || !Number.isFinite(r) ||
+        Math.abs(p - r) > 1e-8 * Math.max(1, Math.abs(p))) {
+      throw new Error("SHEET_VERIFY_USD_PRICE_MISMATCH_" + (i + 2));
+    }
+    if (expected[14] === true) {
+      const expectedThb = p * Number(payload.fx[1]);
+      const readThb = Number(readback[16]);
+      if (!Number.isFinite(readThb) ||
+          Math.abs(expectedThb - readThb) > 1e-7 * Math.max(1, Math.abs(expectedThb))) {
+        throw new Error("SHEET_VERIFY_CONVERTED_PRICE_MISMATCH_" + (i + 2));
+      }
+    }
+  }
+  const actualFx = actual[1] || [];
+  if (String(actualFx[17]) !== String(payload.fx[0]) ||
+      Math.abs(Number(actualFx[18]) - Number(payload.fx[1])) > 1e-9 ||
+      String(actualFx[19]) !== String(payload.fx[2]) ||
+      String(actualFx[20]) !== String(payload.fx[3]) ||
+      String(actualFx[23]) !== String(payload.fx[6])) {
+    throw new Error("SHEET_VERIFY_FX_MISMATCH");
+  }
+
 
   const staleStart = endRow + 1;
   if (staleStart <= SHEET_MAX_ROW) {
@@ -346,11 +450,17 @@ Deno.serve(async (req: Request) => {
     if (!sa?.client_email || !sa?.private_key) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON_INCOMPLETE");
 
     const googleToken = await getGoogleAccessToken(sa);
+    const accountingRows = await readLiveHoldings(googleToken);
     const receipt = await writeShadow(payload, googleToken);
+    const projection = await saveLiveHoldings(accountingRows);
     await recordState("PASS", {
       ...base,
       sheet: SHEET_NAME,
       row_count: receipt.rowCount,
+      full_price_and_fx_readback_verified: true,
+      live_projection_batch_id: projection.batch_id,
+      live_position_count: projection.rows,
+      read_only_accounting: true,
       service_account_email: sa.client_email,
     });
 
@@ -360,6 +470,10 @@ Deno.serve(async (req: Request) => {
       write_attempted: true,
       sheet: SHEET_NAME,
       verified_row_count: receipt.rowCount,
+      full_price_and_fx_readback_verified: true,
+      live_projection_batch_id: projection.batch_id,
+      live_position_count: projection.rows,
+      read_only_accounting: true,
       service_account_email: sa.client_email,
     });
   } catch (error) {
