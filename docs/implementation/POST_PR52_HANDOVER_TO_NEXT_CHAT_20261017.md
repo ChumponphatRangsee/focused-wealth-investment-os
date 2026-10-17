@@ -5,27 +5,22 @@
 **Current integration branch:** `feat/pr4-cache-singleflight-priority`  
 **Current branch head:** `ea5c99414cf430f7613279b42bbc046b8e659800`
 
-## Current PR stack state
+## Current PR stack state — completed
 
-- PR #52 — **MERGED** into PR #51 branch
-  - Merge commit: `ea5c99414cf430f7613279b42bbc046b8e659800`
-  - PR #52 is closed/merged.
-- PR #51 — OPEN / DRAFT / mergeable
-  - base: `feat/pr3-atomic-unified-quota`
-  - head: `feat/pr4-cache-singleflight-priority`
-  - current head already includes PR #52.
-- PR #50 — OPEN / DRAFT / mergeable
-  - base: `feat/pr2-unified-provider-quota-policy`
-  - head: `feat/pr3-atomic-unified-quota`
-- PR #49 — OPEN / DRAFT / mergeable
-  - base: `main`
-  - head: `feat/pr2-unified-provider-quota-policy`
+- PR #52 — **MERGED** into the stacked integration chain.
+  - Merge into PR #51 branch: `ea5c99414cf430f7613279b42bbc046b8e659800`
+- PR #51 — **MERGED**
+  - Merge commit: `738053102456fe47c633a015def02ac60abc107a`
+- PR #50 — **MERGED**
+  - Merge commit: `26be8ed411464a220f12965046ab98aad17a6934`
+- PR #49 — **MERGED into `main`**
+  - Merge commit: `549faaba65174d86569dc35ce6164b185f78c29e`
+- Final PR #49 cleanup head `f534d3b9278080508c4c60057458095d99cf6c8a` passed:
+  - PR3 Mock Provider Harness
+  - PR4 mock Edge-core E2E
+  - PR5 Native USD Adapter (offline)
 
-Latest CI on the post-PR52 PR51 head:
-- PR4 mock Edge-core E2E — PASS
-- PR5 Native USD Adapter (offline) — PASS
-
-**Important:** PR #52 is merged into the stack, but the PR2→PR5 stack is **not yet in `main`**.
+**Important:** the PR2→PR5 stack is now in `main`. Any earlier merge instructions below are retained only as historical execution guidance.
 
 ## What PR #52 completed
 
@@ -233,7 +228,7 @@ Handle separately as technical-debt/security-hardening work after the user-facin
 8. Observe scheduled E2E for 1–2 real US sessions.
 9. Continue Focused Dashboard MVP after the pricing path is stable.
 
-## Copyable kickoff prompt for the next chat
+## Historical kickoff prompt — superseded by the completion receipt below
 
 Continue FWIOS Phase-1 from:
 `docs/implementation/POST_PR52_HANDOVER_TO_NEXT_CHAT_20261017.md`
@@ -266,7 +261,7 @@ This receipt records work performed after the original handover.
 - PR #51 merged into PR #50's branch with merge commit `738053102456fe47c633a015def02ac60abc107a`.
 - PR #50 merged into PR #49's branch with merge commit `26be8ed411464a220f12965046ab98aad17a6934`.
 - Exact-head CI passed before each completed merge.
-- PR #49 remains the final boundary to `main`; re-run CI on the final cleanup head before merging.
+- PR #49 merged into `main` with merge commit `549faaba65174d86569dc35ce6164b185f78c29e` after exact-head CI passed.
 
 ### Documentation cleanup
 
