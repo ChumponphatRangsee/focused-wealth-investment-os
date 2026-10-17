@@ -75,7 +75,7 @@ Owner rejected intraday stock polling as too frequent for Phase 1.
 Final Phase-1 stock policy:
 - **No intraday stock /quote polling.**
 - Existing 15-minute portfolio Cron remains for Crypto only; stock mode defaults to `OFF`.
-- Open-Holdings stock prices sync **once per weekday after the EOD pipeline**, via `fwios-portfolio-stock-post-close-sync` at `08:15 UTC` (15:15 Asia/Bangkok).
+- Open-Holdings stock prices sync **once per completed US weekday session**, via `fwios-portfolio-stock-post-close-sync` at `00:00 UTC Tue-Sat` (07:00 Asia/Bangkok Tue-Sat), after canonical EOD ingestion begins at 22:05 UTC Mon-Fri.
 - Daily stock sync reads already-ingested canonical `REGULAR_CLOSE` observations and writes only the current Open Holdings into the portfolio quote snapshot.
 - Current Open Holdings stocks: `MSFT, NVDA, TLN, TTWO`.
 - The daily sync performs no per-stock quote API calls. Verification quota log showed only one `USD/THB` FX call.
@@ -93,8 +93,8 @@ This replaces the prior Task-1 intraday-live behavior for Phase 1.
 Owner requested Crypto cadence to match the Phase-1 low-frequency portfolio policy.
 
 Final schedule:
-- Crypto holdings: once daily at 08:15 UTC (15:15 Asia/Bangkok), every day.
-- Stock holdings: once daily at 08:15 UTC (15:15 Asia/Bangkok), Monday-Friday, after the EOD stock pipeline.
+- Crypto holdings: once daily at 00:00 UTC (07:00 Asia/Bangkok), every day.
+- Stock holdings: once daily at 00:00 UTC Tue-Sat (07:00 Asia/Bangkok Tue-Sat), after the corresponding US Mon-Fri EOD stock pipeline.
 - The former 15-minute portfolio Cron is removed.
 - Crypto refresh is explicit opt-in (`refresh_crypto=true`); worker default is OFF.
 - Crypto daily snapshot validity is 30 hours so it remains usable until the next daily refresh instead of going stale after 15-45 minutes.
@@ -113,7 +113,7 @@ Current native status:
 - Native dry-run PASS: 70 shadow rows, 10/10 open holdings covered, pricing gate PASS, USDTHB present, no accounting/Price Data mutation.
 - Live-write probe without Google credential correctly returned HTTP 503 with `GOOGLE_SERVICE_ACCOUNT_CREDENTIAL_MISSING` and `write_attempted=false`.
 - Native Cron `fwios-portfolio-sheet-shadow-sync-native` runs at 00:10 UTC (07:10 Asia/Bangkok) and is **active=true** after Google service-account write/read-back E2E PASS.
-- Portfolio refresh schedules are 07:00 Asia/Bangkok: Crypto daily; Stock weekdays.
+- Portfolio refresh schedules are 07:00 Asia/Bangkok: Crypto daily; Stock Tuesday-Saturday, consuming US Monday-Friday closes.
 - Required Vault secret: `fwios_google_sheets_service_account_json`.
 - Temporary ChatGPT sync has been disabled after native write + read-back + Cron activation PASS.
 - `Price Data` cutover remains explicitly forbidden pending final reconciliation.
@@ -129,14 +129,31 @@ Current native status:
 - Price Data cutover remains false.
 
 
-## P0 before PR7 Price Data cutover — align stock EOD timing (2026-10-17)
+## P0 resolved before PR7 Price Data cutover — stock EOD timing (2026-10-17)
 
-Native `_Market_Data` delivery is complete, but the current stock EOD ingestion window starts after the 07:00 Asia/Bangkok portfolio stock sync. Live verification showed MSFT/NVDA/TLN/TTWO latest `REGULAR_CLOSE` session at 2026-10-15 on 2026-10-17.
+The EOD ordering bug is fixed live and captured by
+`migrations/20261017104500_pr7_stock_eod_pre_0700_timing_v1.sql`.
 
-Before final reconciliation or any `Price Data` read cutover:
-1. move/validate EOD ingestion so the latest completed US regular session is canonical before 07:00 Asia/Bangkok;
-2. handle US/Bangkok weekday mapping and DST correctly;
-3. verify held-stock session parity through Supabase → portfolio snapshot → `_Market_Data`;
-4. only then perform final shadow reconciliation.
+Final stock timing:
+- EOD enqueue: `5 22 * * 1-5` UTC = 05:05 Asia/Bangkok Tue-Sat.
+- Enqueue session date: same New York calendar date at 22:05 UTC.
+- EOD worker: `*/2 22-23 * * 1-5` UTC.
+- Held-stock sync: `0 0 * * 2-6` UTC = 07:00 Asia/Bangkok Tue-Sat.
+- Native `_Market_Data` sync: `10 0 * * *` UTC = 07:10 Asia/Bangkok daily.
 
-No accounting or Price Data cutover is authorized by this note.
+Targeted 2026-10-16 verification:
+- EOD held-stock run PASS 4/4 for MSFT/NVDA/TLN/TTWO.
+- All four latest canonical `REGULAR_CLOSE` rows = 2026-10-16.
+- Portfolio DAILY_CLOSE_ONLY validation PASS with 10/10 open assets fresh.
+- Native Sheet sync PASS with 70 rows and 10/10 open holdings.
+- Held-stock observation IDs in `_Market_Data` match the 2026-10-16 canonical observations.
+
+Final read-only reconciliation:
+- mean absolute USD price delta across 10 unique open assets ~0.0889%;
+- max USD delta XRP ~0.4538% due daily crypto snapshot timing;
+- current Holdings market value ~THB 334,126.47;
+- shadow value ~THB 333,825.15;
+- total delta ~THB -301.32 (-0.0902%).
+
+No Price Data, Transactions, Holdings, Cost Basis, cash or P&L formula/value was changed.
+A controlled Price Data read cutover is now proposal-ready, but remains blocked on explicit owner approval.
