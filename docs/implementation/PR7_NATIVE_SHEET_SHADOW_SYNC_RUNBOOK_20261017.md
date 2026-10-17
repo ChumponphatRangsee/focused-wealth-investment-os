@@ -1,7 +1,7 @@
 # PR7 Native Portfolio Tracker Shadow Sync — Runbook
 
 **Date:** 2026-10-17  
-**Status:** DEPLOYED / NATIVE WRITE+READBACK PASS / CRON ACTIVE  
+**Status:** DEPLOYED / NATIVE WRITE+READBACK PASS / PRICE DATA CUTOVER ACTIVE  
 **Target:** `Investment Portfolio Tracker - Chumponphat` → hidden `_Market_Data` only.
 
 ## Purpose
@@ -160,3 +160,41 @@ weekday run, but the exact-session worker cannot publish a nonexistent session,
 so portfolio consumers retain the prior completed canonical session. A formal
 exchange-calendar skip is deferred quota-efficiency hardening, not a pricing
 correctness dependency for this cutover proposal.
+
+
+## Controlled Price Data read cutover receipt — 2026-10-17
+
+Owner explicitly approved the controlled read cutover.
+
+Backend:
+- Added `fwios.pr7_native_usd_price_read_v1(text)`.
+- Eligible Stock requires verified native USD and `LAST_CLOSE` or `FRESH`.
+- Eligible Crypto requires verified native USD and `FRESH`.
+- `valuation_eligible/accounting_eligible=true` only when those rules pass.
+- `trading_eligible=false` always.
+- Migration: `migrations/20261017114500_pr7_native_price_read_cutover_v1.sql`.
+
+Native Sheet sync:
+- `portfolio-sheet-shadow-sync-v1` deployed ACTIVE v2.
+- Open eligible holdings are emitted with `shadow_only=false`, `valuation_eligible=true`.
+- Non-open rows remain shadow-only / non-valuation.
+- Manual native write/read-back PASS: 70 rows, 10/10 open assets, pricing gate PASS, USDTHB 33.45758, `price_data_cutover=true`.
+
+Sheet switch:
+- `AI Integration Config!B21` = `FWIOS_NATIVE`.
+- Rollback = change B21 to `LEGACY`.
+- Manual Override remains highest priority.
+- Native in-scope rows fail closed; no silent legacy fallback.
+- Cash stays fixed; VOO/non-open unsupported rows stay legacy.
+- Legacy Live Price inputs remain available for rollback compatibility.
+
+Validated Holdings after cutover:
+- Best ~THB 226,107.96
+- Loan Money ~THB 47,446.25
+- Mom ~THB 60,270.93
+- ALL ~THB 333,825.15
+
+No Transactions, Cost Basis, realized P&L, quantities, trade execution, or Holdings formulas were rewritten.
+
+Known cleanup:
+- A legacy direct-CoinGecko writer can still refresh legacy crypto Live Price/audit/status cells. It does not change the native Resolved Price/FX valuation path, but it should be retired when its external trigger/source is identified.
