@@ -90,8 +90,8 @@ begin
   end if;
 
   if v_class='Crypto' then
-    v_max_age := interval '15 minutes';
-    v_kind := 'CRYPTO_QUOTE';
+    v_max_age := interval '30 hours';
+    v_kind := 'CRYPTO_DAILY_SNAPSHOT';
     v_status := case
       when v_o.observed_at >= v_now-v_max_age
        and v_o.session_date = (v_now at time zone 'UTC')::date
