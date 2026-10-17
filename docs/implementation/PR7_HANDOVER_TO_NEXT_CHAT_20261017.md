@@ -2,12 +2,16 @@
 
 ## Current status
 
-Repository: `ChumponphatRangsee/focused-wealth-investment-os`  
-Branch: `feat/pr5-native-usd-price-shadow`  
-PR: #52 — **DRAFT / UNMERGED**  
-Do not merge unless the owner explicitly asks.
+> **SUPERSEDED HANDOVER RECEIPT.** Continue from
+> `docs/implementation/POST_PR52_HANDOVER_TO_NEXT_CHAT_20261017.md`.
+> PR #52 has already been merged into the stacked integration chain. Any
+> branch/PR no-merge instructions later in this file are historical only.
 
-Phase-1 principle remains MVP-first. Supabase is market-data/state infrastructure; Google Sheet `Investment Portfolio Tracker - Chumponphat` remains the portfolio accounting/transaction surface. No automated trading.
+Repository: `ChumponphatRangsee/focused-wealth-investment-os`  
+Operational state: controlled `FWIOS_NATIVE` Price Data read cutover ACTIVE; native Sheet worker ACTIVE v2; US-market-close cadence ACTIVE.  
+Integration state: PR #52 is already inside the #51 → #50 → #49 stack being integrated toward `main`.
+
+Phase-1 principle remains MVP-first. Supabase is market-data/state infrastructure; Google Sheet `Investment Portfolio Tracker - Chumponphat` remains the portfolio accounting/transaction surface. No automated trading; `auto_trade=false`.
 
 ## Completed in this chat
 
@@ -252,10 +256,10 @@ Current open stocks:
 - Google Sheet remains downstream view/accounting surface, not a second market-data authority.
 - No second transaction ledger in Supabase.
 - No automated trade execution.
-- Never merge PR #52 without explicit owner permission.
+- PR #52 is already merged into the stack; the earlier no-merge instruction in this historical handover is superseded.
 - `Price Data` is now cut over through the controlled `FWIOS_NATIVE` switch; rollback is `AI Integration Config!B21 = LEGACY`.
 
-## New-chat kickoff prompt
+## Historical kickoff prompt — superseded
 
 Continue FWIOS Phase-1 from:
 `docs/implementation/PR7_HANDOVER_TO_NEXT_CHAT_20261017.md`
