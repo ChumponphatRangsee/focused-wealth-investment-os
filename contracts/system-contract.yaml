@@ -39,6 +39,12 @@ architecture_refactor_v3:
     no_second_portfolio_transaction_ledger: true
     no_direct_production_market_provider_calls_from_sheets: true
     consumers_share_canonical_market_observation: true
+    canonical_asset_price_currency_usd: true
+    canonical_asset_price_usd_required_all_assets: true
+    native_usd_crypto_ingestion_required: true
+    historical_raw_non_usd_market_observations_preserved: true
+    fx_reference_is_separate_from_asset_price: true
+    tracker_calculates_thb_conversion: true
     focused_dashboard_cannot_write_trades_or_cost_basis: true
     portfolio_context_read_only_and_summary_only: true
     portfolio_quantity_and_cost_basis_from_transactions_only: true
@@ -94,6 +100,7 @@ api_quota_control_v3:
     - "Current decision reservation permits UNLIMITED_OR_UNCONFIGURED on missing policy; must fail closed."
     - "Daily-close and decision-refresh quotas are separately tracked; verify unified budgets."
     - "Canonical price service, shared single-flight, protected allocations and full consumer coverage require acceptance tests."
+    - "Native USD crypto prices are missing for all six active crypto instruments; current CoinGecko worker requests THB and must not be switched without shadow consumer reconciliation."
   release_sequence: [A_QUOTA_FOUNDATION, B_SHARED_MARKET_AND_TRACKER, C_RESEARCH_SCANNER_LEGACY]
   production_feature_flags_default: OFF
 

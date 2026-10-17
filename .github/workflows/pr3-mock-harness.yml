@@ -1,0 +1,32 @@
+name: PR3 Mock Provider Harness
+
+on:
+  pull_request:
+    paths:
+      - "tests/market/pr3_mock_provider_harness.py"
+      - "tests/market/fixtures/pr3_mock_provider_scenarios_v1.json"
+      - ".github/workflows/pr3-mock-harness.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mock-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify fixture schema and mock provider contracts (no DB or provider keys)
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python -m py_compile tests/market/pr3_mock_provider_harness.py
+          python tests/market/pr3_mock_provider_harness.py
+
+# This workflow intentionally uses NO Supabase URLs, credentials, or vendor API calls.
+# It does not replace the live PostgreSQL concurrency or Edge Function E2E tests.
