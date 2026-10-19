@@ -143,6 +143,8 @@ The next implementation should add:
 
 Do not run expensive AI/research over all ~500 names every day.
 
+Canonical plan: `docs/implementation/SP500_UNIVERSE_EXPANSION_PLAN_20261019.md`
+
 ## Safety Invariants
 
 - no transaction mutation;
