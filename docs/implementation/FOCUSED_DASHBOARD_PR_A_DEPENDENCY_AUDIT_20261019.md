@@ -123,17 +123,28 @@ Validation snapshot:
 - no #REF / #N/A / #VALUE errors in Scanner, Valuation Map, or _Scanner_Data verification ranges
 - live system health still reports `auto_trade=false` and `human_execution_only=true`
 
-## Residual Transition Dependency
+## Transition Dependency — RESOLVED IN PR-B
 
-`_Scanner_Data` intentionally derives the existing Sheet import credential URL from `_Data!V1` and swaps only the endpoint/revision. This avoided creating or exposing a second credential during the cutover.
+On 2026-10-19 the scanner feed was decoupled from legacy `_Data!V1`:
 
-Therefore:
-- keep `_Data` hidden for now;
-- do not delete `dashboard-refresh-csv-v1` or its access record yet;
-- a later cleanup should decouple the scanner credential/config first, verify the scanner feed again, then remove the legacy Sheet tabs/read model if desired.
+- a scanner-specific import credential was created; only its hash is stored in Supabase;
+- the raw import URL is isolated in hidden `_Scanner_Config` and is not stored in GitHub/docs;
+- `_Scanner_Data!A1` imports from `_Scanner_Config` directly;
+- `scanner-refresh-csv-v1` v4 accepts only the scanner-specific access key;
+- `_Scanner_Data` has no remaining dependency on `_Data`.
+
+Post-cutover validation remained:
+- 64 active stock rows;
+- 27 scored rows;
+- 7 STRONG UNDERVALUED / UNDERVALUED rows;
+- market-session range 2026-10-15 through 2026-10-16;
+- no invalid ranks;
+- no `#REF!`, `#N/A`, or `#VALUE!` in Scanner, Valuation Map, or `_Scanner_Data`.
+
+Legacy Sheet tabs/feed are retained hidden as rollback-only compatibility for the stacked cutover. Backend thesis/research/valuation services used by the scanner remain active.
 
 ## Recommended Next Tasks
 
-1. Decouple scanner Sheet import configuration from legacy `_Data!V1`, then retire the legacy Focused Dashboard feed/tabs after verification.
-2. Update `AGENTS.md` and `contracts/system-contract.yaml` dashboard-read-model documentation to the new visible-tab/read-model contract.
-3. Expand canonical stock-universe ingestion from the current 64 active stocks toward true S&P 500 constituent coverage; do not label current coverage as complete until that ingestion exists.
+1. Merge/land the stacked scanner + cleanup contract changes, then close the rollback window before destructive retirement of legacy Sheet/feed components.
+2. Expand canonical stock-universe ingestion from the current 64 active stocks toward true S&P 500 constituent coverage; do not label current coverage as complete until that ingestion exists.
+3. Keep broad-universe pricing cheap/cache-first and perform deeper valuation/research selectively rather than brute-forcing ~500 names daily.
