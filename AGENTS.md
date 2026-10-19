@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.18**  
+Contract version: **FWIOS-CONTRACT-0.87.19**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -112,6 +112,7 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-HUMAN-APPROVAL-V1`
 - `POL-RESEARCH-LIFECYCLE-V1` — contract/gating kernel active; no production read cutover
 - `POL-CONTROLLED-RESEARCH-INGEST-V1` — service-role-only PREVIEW/APPLY research gateway; 15/15 acceptance PASS
+- `POL-RESEARCH-READINESS-V1` — additive deterministic readiness surface; 16/16 acceptance PASS; no scanner read cutover
 - `POL-INSTRUMENT-IDENTITY-V1` — canonical identity active; legacy symbol read paths preserved
 - `POL-METRIC-OBSERVATION-V2` — typed period-aware metric foundation active; no production read cutover
 - `POL-LINEAGE-GRAPH-V1` — append-only evidence→metric→decision lineage active; no production read cutover
@@ -137,6 +138,26 @@ Rules:
 - Risks, guidance context, and research summaries may be retained in the ingest receipt, but do not directly create production scores.
 - The gateway does not mutate lifecycle state, scanner score/rank, valuation, holdings, transactions, cash, approval, or execution.
 - RPC access is service-role only; `auto_trade=false`; human execution only.
+
+
+
+### Research Readiness & Fail-Closed Gates — ACTIVE ADDITIVE
+
+PR4 readiness is exposed by `fwios.v_research_readiness_current_v1` under `POL-RESEARCH-READINESS-V1`.
+
+Rules:
+- Readiness is deterministic and backend-owned. ChatGPT must not subjectively promote a stock.
+- States are hierarchical: `DISCOVERY_READY → RESEARCH_READY → VALUATION_READY → QUALITY_HARDENED → INVESTMENT_REVIEW_READY`.
+- Research readiness requires an explicit research attempt (legacy candidate or controlled-ingest receipt), verified primary/Tier-A evidence, no unresolved conflict, no stale evidence and policy-bounded freshness.
+- Valuation readiness requires the latest production-eligible valuation run to pass readiness/router/valuation/schema gates.
+- Quality Hardened requires `overall_gate=PASS` and the hardening snapshot must reference the latest valuation run; stale hardening lineage fails closed.
+- Price readiness uses only the canonical FWIOS daily-close path with accepted verification/provenance and policy-bounded freshness.
+- `scanner_score_eligible=true` only when `investment_review_ready=true`.
+- PR5 Scanner v2 must emit `scanner_score=NULL` and `scan_rank=NULL` whenever `scanner_score_eligible=false`; PR4 does not modify `v_scanner_current_v1`.
+- The readiness layer does not mutate lifecycle state, evidence, metrics, valuation, hardening snapshots, holdings, transactions, cash, approval or execution.
+- `auto_trade=false`; human execution only.
+
+Live acceptance: **16/16 PASS**. Current active Stock universe: 64; Research Ready: 27; Valuation Ready: 27; Quality Hardened: 1; Investment Review Ready: 1.
 
 
 
