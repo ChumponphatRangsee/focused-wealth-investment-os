@@ -82,7 +82,7 @@ Deno.serve(async (req: Request) => {
     const access = await sql`
       select token_sha256
       from fwios.dashboard_refresh_access
-      where access_key = 'GOOGLE_SHEET_IMPORTDATA'
+      where access_key = 'GOOGLE_SHEET_SCANNER_IMPORTDATA'
         and active = true
       limit 1
     `;
