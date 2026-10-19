@@ -514,27 +514,51 @@ m3_status:
   m3_5_human_approval_cutover: PASS_LIVE
   m3_overall: COMPLETE_CUTOVER_PASS
 
-dashboard_read_model_v1:
+focused_dashboard_scanner_v1:
   status: PASS_LIVE
   source_of_truth: Supabase
   google_sheet_id: 17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8
   google_sheet_title: "Focused Wealth Dashboard - Chumponphat"
-  visible_tabs: [Dashboard]
-  hidden_tabs: [_Data]
-  account_views: [All Accounts, Best, Loan Money, Mom]
-  decision_risk_scope: CONSOLIDATED_PORTFOLIO_ALWAYS
+  visible_tabs: [S&P500 Scanner, Valuation Map]
+  hidden_scanner_tabs: [_Scanner_Data, _Scanner_Config]
+  legacy_rollback_hidden_tabs: [Dashboard, Thesis Tracker, Opportunity Quality, _Data]
+  scanner_read_model: fwios.v_scanner_current_v1
+  edge_function: scanner-refresh-csv-v1
+  current_deployed_edge_version: 4
+  importdata_config_source: _Scanner_Config
+  legacy_data_dependency: false
+  current_active_stock_universe: 64
+  full_sp500_coverage: false
+  scanner_portfolio_independent: true
+  scanner_score_weights:
+    business_thesis: 0.35
+    expected_return_upside: 0.40
+    resilience: 0.25
+  resilience_inputs: [quality_score, downside_risk_score]
+  excludes:
+    [current_holdings, account_ownership, portfolio_weight, portfolio_fit, portfolio_scenario, position_sizing, current_cash, realized_pnl, unrealized_pnl, approval_state, execution_state]
+  portfolio_accounting_owner: "Investment Portfolio Tracker - Chumponphat"
   sheet_contains_production_policy_logic: false
   auto_trade: false
   human_execution_only: true
-  regressions: "17/17 PASS"
   current_surface_refresh_mode: SUPABASE_EDGE_IMPORTDATA_AUTO_PULL
 
+dashboard_read_model_v1:
+  status: DEPRECATED_ROLLBACK_ONLY
+  active_focused_dashboard_authority: false
+  payload_function: fwios.dashboard_refresh_payload_v1
+  legacy_edge_function: dashboard-refresh-csv-v1
+  hidden_tabs: [Dashboard, Thesis Tracker, Opportunity Quality, _Data]
+  retirement_state: KEEP_FOR_ROLLBACK_UNTIL_STACKED_CUTOVER_MERGED
+  auto_trade: false
+  human_execution_only: true
+
 dashboard_auto_refresh_v1:
-  status: PASS_LIVE
+  status: DEPRECATED_ROLLBACK_ONLY
   edge_function: dashboard-refresh-csv-v1
+  active_focused_dashboard_feed: false
   semantics: AUTO_PULL_NOT_GUARANTEED_REALTIME
-  regressions: "14/14 PASS"
-  latest_current_action: NO_ACTIONABLE_OPPORTUNITY
+  retirement_state: KEEP_FOR_ROLLBACK_UNTIL_STACKED_CUTOVER_MERGED
 
 legacy_google_sheets:
   spreadsheet_id: 1Oxp7Vm_F510Idy7JWxOkerz8VGPUgWt7tFGuUjWFLfY
