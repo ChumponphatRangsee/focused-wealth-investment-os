@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.17
+  id: FWIOS-CONTRACT-0.87.18
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -147,6 +147,33 @@ research_lifecycle_v1:
   human_execution_only: true
 
 
+
+
+controlled_research_ingest_v1:
+  policy_version_id: POL-CONTROLLED-RESEARCH-INGEST-V1
+  status: ACTIVE_ADDITIVE_GATEWAY
+  payload_schema: chatgpt_research_payload_v1
+  preview_function: fwios.preview_research_ingest_v1
+  apply_function: fwios.apply_research_ingest_v1
+  receipt_table: fwios.research_ingest_receipts_v1
+  canonical_identity_required: true
+  critical_primary_evidence_required: true
+  metric_primary_evidence_required: true
+  fail_closed_on_unknown_metric: true
+  fail_closed_on_conflicting_verified_metric: true
+  idempotency_keys: [payload_fingerprint, evidence_id, observation_key]
+  existing_rows_overwritten: false
+  research_candidates_mutated: false
+  lifecycle_state_mutated: false
+  scanner_score_mutated: false
+  portfolio_mutation: false
+  approval_mutation: false
+  execution_mutation: false
+  rpc_access: SERVICE_ROLE_ONLY
+  regression_status: "15/15 PASS"
+  real_payload_applied_at_acceptance: false
+  auto_trade: false
+  human_execution_only: true
 
 instrument_identity_v1:
   policy_version_id: POL-INSTRUMENT-IDENTITY-V1
@@ -353,6 +380,7 @@ policy_governance:
     THESIS_MEMORY: POL-THESIS-MEMORY-V1
     INSTRUMENT_IDENTITY: POL-INSTRUMENT-IDENTITY-V1
     RESEARCH_LIFECYCLE: POL-RESEARCH-LIFECYCLE-V1
+    CONTROLLED_RESEARCH_INGEST: POL-CONTROLLED-RESEARCH-INGEST-V1
     DATA_SCORING: POL-DATA-SCORING-V3-DURABILITY
     QUALITY_HARDENING: POL-QUALITY-HARDENING-V1
     REVISION_SCORE: POL-REVISION-SCORE-V1
