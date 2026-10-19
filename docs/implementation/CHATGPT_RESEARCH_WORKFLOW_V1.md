@@ -250,16 +250,19 @@ Metrics must be typed and period-aware:
 ```json
 {
   "metric_code": "REVENUE",
-  "value_type": "NUMERIC",
+  "value_kind": "NUMERIC",
   "value_numeric": 5.41,
   "value_text": null,
   "value_boolean": null,
-  "unit": "USD_B",
+  "canonical_unit": "USD B",
+  "source_unit": "USD B",
   "currency": "USD",
-  "period_kind": "QUARTER",
+  "period_type": "QUARTER",
   "period_start": null,
   "period_end": null,
-  "fiscal_label": "Q3 FY2026",
+  "fiscal_year": 2026,
+  "fiscal_quarter": 3,
+  "period_label": "Q3 FY2026",
   "reported_at": "2026-09-...",
   "evidence_refs": ["ev-local-001"],
   "verification_status": "VERIFIED"
@@ -269,7 +272,7 @@ Metrics must be typed and period-aware:
 Rules:
 
 - exactly one typed value field should be populated;
-- unit must be explicit for numeric values;
+- source unit must be explicit for numeric values and PR2 must resolve/validate the canonical unit against `fwios.metric_definitions`;
 - currency must be explicit for monetary values;
 - reporting period/as-of semantics must be explicit;
 - every critical metric must reference supporting evidence;
@@ -285,7 +288,7 @@ Guidance must remain distinguishable from reported actuals:
   "period": "Q4 FY2026",
   "value_low": null,
   "value_high": null,
-  "unit": "USD_B",
+  "source_unit": "USD B",
   "currency": "USD",
   "statement": "...",
   "evidence_refs": ["ev-local-002"],
