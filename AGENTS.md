@@ -238,10 +238,22 @@ Cutover proof remains 29/29 transactions, 16/16 positions and 9/9 traceability l
 ## 16. M3 boundary
 M3.1–M3.5 remain **COMPLETE / CUTOVER PASS**. Quality hardening changes candidate eligibility, not the human-execution boundary.
 
-## 17. Dashboard + Auto Refresh — PASS / LIVE
+## 17. Focused Wealth Dashboard Scanner — PASS / LIVE
 Monitoring Sheet: **Focused Wealth Dashboard - Chumponphat** (`17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8`).
 
-Supabase private dashboard read models remain the source; Google Sheet is downstream/display-only. Dashboard read-model regressions remain 17/17 PASS and auto-refresh regressions 14/14 PASS. Current Action remains `NO_ACTIONABLE_OPPORTUNITY`.
+Active user-facing surface:
+- `S&P500 Scanner`
+- `Valuation Map`
+
+`fwios.v_scanner_current_v1` is the active portfolio-independent scanner read model. It may use canonical stock market data, thesis/research quality, resilience inputs, valuation and probability-weighted fair value, but it must not use holdings, account ownership, portfolio weight/fit/scenario, position sizing, cash, portfolio P&L, approval state or execution state.
+
+`scanner-refresh-csv-v1` is the active Sheet feed. The hidden `_Scanner_Data` helper imports from a scanner-specific hidden configuration source and has no dependency on legacy `_Data`.
+
+Current backend universe is **64 ACTIVE Stock instruments**, not full S&P 500 coverage. The UI must state actual coverage until full constituent ingestion exists.
+
+Legacy hidden `Dashboard`, `Thesis Tracker`, `Opportunity Quality`, `_Data`, `dashboard-refresh-csv-v1`, and `fwios.dashboard_refresh_payload_v1()` are rollback-only compatibility components and are not the active Focused Dashboard read model. Do not delete shared thesis/research/valuation services that still support the scanner.
+
+Portfolio accounting remains owned by **Investment Portfolio Tracker - Chumponphat**. Focused Wealth Dashboard must never become a second transaction/cost-basis/cash/holdings accounting system. `auto_trade=false`; human execution only.
 
 ## 18. Legacy Google Sheets surface — REDUCED
 `US_Stock_Sector_Business_Model_Screener` is retained for compatibility/audit/research but is no longer a parallel production authority.
