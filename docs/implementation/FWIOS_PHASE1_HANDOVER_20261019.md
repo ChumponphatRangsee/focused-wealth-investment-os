@@ -344,3 +344,25 @@ Important clarification:
 - existing autonomous US-close E2E verification remains a regression guard, but it no longer blocks beginning the approved Daily Performance schema/writer work
 
 Next chat should read the dedicated Daily Performance handover before implementation.
+
+
+---
+
+## Focused Wealth Dashboard scanner addendum — 2026-10-19
+
+A later Phase-1 task separated the Focused Wealth Dashboard from portfolio accounting.
+
+Current Focused Dashboard state:
+- visible tabs: `S&P500 Scanner`, `Valuation Map`;
+- active Supabase read model: `fwios.v_scanner_current_v1`;
+- active feed: `scanner-refresh-csv-v1` v4;
+- hidden helpers: `_Scanner_Data`, `_Scanner_Config`;
+- `_Scanner_Data` no longer depends on legacy `_Data`;
+- current backend stock universe: 64 ACTIVE stocks, not full S&P 500;
+- scanner excludes holdings/account/portfolio-fit/position-sizing/cash/P&L/approval/execution state;
+- legacy `Dashboard`, `Thesis Tracker`, `Opportunity Quality`, `_Data`, legacy feed and payload remain rollback-only for now;
+- portfolio accounting remains owned by `Investment Portfolio Tracker - Chumponphat`;
+- `auto_trade=false`, human execution only.
+
+Canonical cleanup/handover:
+`docs/implementation/FOCUSED_DASHBOARD_PR_B_CLEANUP_HANDOVER_20261019.md`
