@@ -100,3 +100,40 @@ This classification is independent of current portfolio holdings.
 ## Safety
 
 No transaction, cost basis, realized P&L, cash, holdings quantity, portfolio accounting formula, auto-trade flag, or portfolio-mutation path is changed by this PR.
+
+
+## Live Implementation Result
+
+Implemented and validated on 2026-10-19:
+
+- `fwios.v_scanner_current_v1` is live as an additive, portfolio-independent read model.
+- `scanner-refresh-csv-v1` is ACTIVE v2.
+- `_Scanner_Data` is a hidden Sheet helper fed from the scanner endpoint.
+- `S&P500 Scanner` is the first visible Sheet tab.
+- `Valuation Map` was rebuilt from `_Scanner_Data`; GOOGLEFINANCE and portfolio/decision columns are no longer part of the user-facing valuation surface.
+- Legacy `Dashboard`, `Thesis Tracker`, `Opportunity Quality`, and `_Data` are hidden, not deleted.
+- Visible tabs are now only `S&P500 Scanner` and `Valuation Map`.
+
+Validation snapshot:
+- 64 active stock rows
+- 27 scored rows
+- 7 rows classified STRONG UNDERVALUED / UNDERVALUED
+- market-session range 2026-10-15 through 2026-10-16
+- no rank outside the valid scored range
+- no #REF / #N/A / #VALUE errors in Scanner, Valuation Map, or _Scanner_Data verification ranges
+- live system health still reports `auto_trade=false` and `human_execution_only=true`
+
+## Residual Transition Dependency
+
+`_Scanner_Data` intentionally derives the existing Sheet import credential URL from `_Data!V1` and swaps only the endpoint/revision. This avoided creating or exposing a second credential during the cutover.
+
+Therefore:
+- keep `_Data` hidden for now;
+- do not delete `dashboard-refresh-csv-v1` or its access record yet;
+- a later cleanup should decouple the scanner credential/config first, verify the scanner feed again, then remove the legacy Sheet tabs/read model if desired.
+
+## Recommended Next Tasks
+
+1. Decouple scanner Sheet import configuration from legacy `_Data!V1`, then retire the legacy Focused Dashboard feed/tabs after verification.
+2. Update `AGENTS.md` and `contracts/system-contract.yaml` dashboard-read-model documentation to the new visible-tab/read-model contract.
+3. Expand canonical stock-universe ingestion from the current 64 active stocks toward true S&P 500 constituent coverage; do not label current coverage as complete until that ingestion exists.
