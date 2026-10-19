@@ -317,3 +317,30 @@ Observe and verify the next genuine autonomous U.S.-close E2E session. Do not ma
 
 After 1–2 consecutive autonomous sessions pass, declare Pricing Path Stable and then discuss the Focused Dashboard MVP / final legacy K-L cleanup.
 ```
+
+
+---
+
+## Latest approved task after this handover was written
+
+The user has now approved planning/implementation of a new feature:
+
+**Daily Performance Backend v1 + Historical Backfill**
+
+Canonical feature handover:
+`docs/implementation/PHASE1_DAILY_PERFORMANCE_BACKEND_HANDOVER_20261019.md`
+
+This is the latest task directive for the next chat.
+
+Important clarification:
+- the old 15-minute Portfolio/MTM scheduler has already been removed and must not be restored
+- current Portfolio MTM is US-close oriented
+- Supabase should keep canonical DAILY performance history
+- normal Daily Performance must reuse current valuation and add no market-data API calls
+- Google Sheet Transactions remains the accounting source of truth
+- contributions must not be inferred from BUY/SELL
+- historical backfill begins from 2024-06-03 where reconstructable
+- incomplete historical cash-flow periods must be marked PARTIAL/HOLDINGS_ONLY rather than inventing TWR
+- existing autonomous US-close E2E verification remains a regression guard, but it no longer blocks beginning the approved Daily Performance schema/writer work
+
+Next chat should read the dedicated Daily Performance handover before implementation.
