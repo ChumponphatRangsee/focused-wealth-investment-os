@@ -8,6 +8,8 @@ on:
       - 'supabase/functions/portfolio-sheet-shadow-sync-v1/index.ts'
       - 'supabase/functions/portfolio-sheet-shadow-sync-v1/deno.json'
       - 'tests/pr5_coingecko_native_usd_adapter_test.ts'
+      - 'migrations/20261019_phase1_crypto_utc_rollover_freshness_v1.sql'
+      - 'tests/market/test_phase1_crypto_utc_rollover_freshness_v1.sql'
       - '.github/workflows/pr5-native-usd-adapter.yml'
   workflow_dispatch:
 
@@ -25,6 +27,10 @@ jobs:
           deno-version: v2.x
       - name: Test pure CoinGecko native USD adapter (no API/network/DB credentials)
         run: deno test tests/pr5_coingecko_native_usd_adapter_test.ts
+      - name: Verify crypto rollover SQL guardrails
+        run: |
+          grep -F "v_o.observed_at >= v_now-v_max_age" migrations/20261019_phase1_crypto_utc_rollover_freshness_v1.sql
+          ! grep -F "v_o.session_date = (v_now at time zone 'UTC')::date" migrations/20261019_phase1_crypto_utc_rollover_freshness_v1.sql
       - name: Type-check MVP portfolio worker integration
         run: deno check supabase/functions/portfolio-mtm-refresh-v1/index.ts
       - name: Type-check native Google Sheet shadow sync worker
