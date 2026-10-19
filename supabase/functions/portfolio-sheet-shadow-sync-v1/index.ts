@@ -9,6 +9,7 @@ const SPREADSHEET_ID = "1MUZD_nevvmH3yx972Ep6o8pCRmsdd_IgzSzjD6TPCjw";
 const SHEET_NAME = "_Market_Data";
 const SHEET_MAX_ROW = 200;
 const GOOGLE_CREDENTIAL_SECRET = "fwios_google_sheets_service_account_json";
+const PRICE_READ_MODE = "FWIOS_NATIVE";
 
 type ServiceAccount = {
   client_email: string;
@@ -112,6 +113,15 @@ async function googleJson(url: string, token: string, init: RequestInit = {}) {
 }
 
 async function loadShadowPayload() {
+  const modeRows = await sql!`select state_value->>'portfolio_price_read_mode' price_read_mode
+    from fwios.system_state
+    where state_key='architecture_consolidation_v1'
+    limit 1`;
+  const priceReadMode = String(modeRows[0]?.price_read_mode || "");
+  if (priceReadMode !== PRICE_READ_MODE) {
+    throw new Error(`PRICE_READ_MODE_${priceReadMode || "MISSING"}`);
+  }
+
   const healthRows = await sql!`select *
     from fwios.v_portfolio_market_price_health
     limit 1`;
@@ -120,19 +130,24 @@ async function loadShadowPayload() {
     throw new Error(`PRICING_GATE_${String(health.pricing_gate || "MISSING")}`);
   }
 
+  const openRows = await sql!`select distinct upper(asset_symbol) asset_symbol
+    from fwios.v_portfolio_live_positions_current_v1
+    where upper(source_position_status)='OPEN'
+      and coalesce(quantity,0)>0
+    order by asset_symbol`;
+  const openAssets = openRows.map((r: any) => String(r.asset_symbol));
+  if (!openAssets.length) throw new Error("OPEN_HOLDINGS_EMPTY");
+
   const rows = await sql!`
-    with universe as (
-      select distinct id.asset_symbol
-      from fwios.instruments i
-      join fwios.v_instrument_identity_current id on id.instrument_id=i.instrument_id
-      where i.lifecycle_status='ACTIVE'
-        and i.asset_class in ('Stock','Crypto')
-        and i.instrument_type in ('COMMON_STOCK','CRYPTO_ASSET')
-        and not (i.metadata ? 'qa_identity')
+    with open_assets as (
+      select distinct upper(asset_symbol) asset_symbol
+      from fwios.v_portfolio_live_positions_current_v1
+      where upper(source_position_status)='OPEN'
+        and coalesce(quantity,0)>0
     ),
     snap as (
       select u.asset_symbol, fwios.pr7_native_usd_price_read_v1(u.asset_symbol) q
-      from universe u
+      from open_assets u
     )
     select
       asset_symbol,
@@ -156,15 +171,10 @@ async function loadShadowPayload() {
     order by asset_symbol
   `;
 
-  const openRows = await sql!`select distinct upper(asset_symbol) asset_symbol
-    from fwios.v_portfolio_positions_current
-    where upper(source_position_status)='OPEN'
-      and coalesce(quantity,0)>0
-    order by asset_symbol`;
-  const openAssets = openRows.map((r: any) => String(r.asset_symbol));
   const symbols = new Set(rows.map((r: any) => String(r.asset_symbol).toUpperCase()));
   const uncovered = openAssets.filter((s) => !symbols.has(s));
   if (uncovered.length) throw new Error(`OPEN_HOLDING_MARKET_DATA_MISSING_${uncovered.join(",")}`);
+  if (rows.length !== openAssets.length) throw new Error("OPEN_HOLDING_SHADOW_ROW_COUNT_MISMATCH");
 
   const fxRows = await sql!`select
       observation_value::numeric fx_rate,
@@ -183,10 +193,8 @@ async function loadShadowPayload() {
   if (!fxRows.length) throw new Error("USDTHB_FX_MISSING");
   const fx = fxRows[0];
 
-  const openSet = new Set(openAssets.map((s) => s.toUpperCase()));
   const values = rows.map((r: any) => {
     const asset = String(r.asset_symbol).toUpperCase();
-    const isOpen = openSet.has(asset);
     const nativeEligible = r.valuation_eligible === true;
     return [
       asset,
@@ -202,14 +210,15 @@ async function loadShadowPayload() {
       String(r.session_date),
       String(r.valid_until),
       r.source_native_usd === true,
-      !isOpen,
-      isOpen && nativeEligible,
+      false,
+      nativeEligible,
       String(r.checked_at),
     ];
   });
 
   return {
     health,
+    priceReadMode,
     openAssets,
     values,
     fx: [
@@ -490,6 +499,7 @@ Deno.serve(async (req: Request) => {
       open_asset_count: payload.openAssets.length,
       open_assets: payload.openAssets,
       pricing_gate: String(payload.health?.pricing_gate || ""),
+      price_read_mode: payload.priceReadMode,
       fx_rate_thb_per_usd: Number(payload.fx[1]),
       price_data_cutover: true,
       auto_trade: false,
