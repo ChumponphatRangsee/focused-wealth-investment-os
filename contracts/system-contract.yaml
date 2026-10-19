@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.18
+  id: FWIOS-CONTRACT-0.87.19
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -172,6 +172,42 @@ controlled_research_ingest_v1:
   rpc_access: SERVICE_ROLE_ONLY
   regression_status: "15/15 PASS"
   real_payload_applied_at_acceptance: false
+  auto_trade: false
+  human_execution_only: true
+
+research_readiness_v1:
+  policy_version_id: POL-RESEARCH-READINESS-V1
+  status: ACTIVE_ADDITIVE_NO_SCANNER_CUTOVER
+  read_model: fwios.v_research_readiness_current_v1
+  states: [DISCOVERY_READY, RESEARCH_READY, VALUATION_READY, QUALITY_HARDENED, INVESTMENT_REVIEW_READY]
+  blocker_taxonomy:
+    [READINESS_POLICY_NOT_ACTIVE, CONFLICTING_EVIDENCE, MISSING_PRIMARY_EVIDENCE, STALE_RESEARCH, RESEARCH_NOT_READY, VALUATION_BLOCKED, QUALITY_HARDENING_FAIL, PRICE_NOT_VERIFIED]
+  research_max_age_days: 120
+  valuation_max_age_days: 180
+  hardening_max_age_days: 180
+  price_max_age_days: 7
+  primary_source_min_rank: 100
+  accepted_price_verification_statuses: [VERIFIED, PRIMARY_ONLY]
+  accepted_price_provenance_statuses: [PASS]
+  explicit_research_attempt_required: true
+  controlled_ingest_receipt_supported: true
+  quality_hardening_requires_current_valuation_lineage: true
+  scanner_score_requires_investment_review_ready: true
+  blocked_scanner_score: NULL
+  blocked_scan_rank: NULL
+  production_read_cutover: false
+  research_state_mutated: false
+  lifecycle_state_mutated: false
+  valuation_state_mutated: false
+  portfolio_mutation: false
+  approval_mutation: false
+  execution_mutation: false
+  regression_status: "16/16 PASS"
+  current_active_stock_rows: 64
+  current_research_ready: 27
+  current_valuation_ready: 27
+  current_quality_hardened: 1
+  current_investment_review_ready: 1
   auto_trade: false
   human_execution_only: true
 
@@ -381,6 +417,7 @@ policy_governance:
     INSTRUMENT_IDENTITY: POL-INSTRUMENT-IDENTITY-V1
     RESEARCH_LIFECYCLE: POL-RESEARCH-LIFECYCLE-V1
     CONTROLLED_RESEARCH_INGEST: POL-CONTROLLED-RESEARCH-INGEST-V1
+    RESEARCH_READINESS: POL-RESEARCH-READINESS-V1
     DATA_SCORING: POL-DATA-SCORING-V3-DURABILITY
     QUALITY_HARDENING: POL-QUALITY-HARDENING-V1
     REVISION_SCORE: POL-REVISION-SCORE-V1
