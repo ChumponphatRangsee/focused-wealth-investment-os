@@ -56,6 +56,16 @@ function bangkokTime(value: unknown) {
   return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")} Asia/Bangkok`;
 }
 
+function dateOnly(value: unknown) {
+  if (!value) return "";
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+  const raw = String(value);
+  const iso = raw.match(/^\d{4}-\d{2}-\d{2}/);
+  if (iso) return iso[0];
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? raw : parsed.toISOString().slice(0, 10);
+}
+
 function csvCell(value: unknown) {
   const raw = value == null ? "" : String(value);
   return /[",\n\r]/.test(raw) ? `"${raw.replaceAll('"', '""')}"` : raw;
@@ -97,7 +107,7 @@ Deno.serve(async (req: Request) => {
       HEADERS,
       ...rows.map((row: Record<string, unknown>) =>
         HEADERS.map((header) =>
-          header === "refreshed_at" ? bangkokTime(row[header]) : row[header] ?? ""
+          header === "refreshed_at" ? bangkokTime(row[header]) : header === "price_as_of" ? dateOnly(row[header]) : row[header] ?? ""
         )
       ),
     ];
