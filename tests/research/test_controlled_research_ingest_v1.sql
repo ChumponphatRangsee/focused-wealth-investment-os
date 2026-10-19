@@ -19,8 +19,8 @@ declare
   apply_one jsonb;
   apply_two jsonb;
   conflict_preview jsonb;
-  evidence_id text;
-  observation_key text;
+  v_evidence_id text;
+  v_observation_key text;
   receipts_before bigint;
   evidence_before bigint;
   observations_before bigint;
@@ -139,22 +139,21 @@ begin
       and apply_preview_mode->>'production_changes'='NONE');
 
   apply_one := fwios.apply_research_ingest_v1(p);
-  evidence_id := apply_one->'preview'->>'unused'; -- deliberately null; derive below.
   select fwios.research_evidence_id_v1(
     fwios.resolve_instrument_id_v1('ADBE','Stock',null,null),
     (p->'evidence')->0
-  ) into evidence_id;
+  ) into v_evidence_id;
   select fwios.research_observation_key_v1(
     fwios.resolve_instrument_id_v1('ADBE','Stock',null,null),
     (p->'metrics')->0,
-    evidence_id
-  ) into observation_key;
+    v_evidence_id
+  ) into v_observation_key;
 
   insert into pr2_controlled_research_ingest_results values
     ('PR2_11_APPLY_WRITES_GATEWAY_ONLY',
       apply_one->>'status'='APPLIED'
-      and (select count(*) from fwios.evidence_records where evidence_id=evidence_id)=1
-      and (select count(*) from fwios.metric_observations where observation_key=observation_key)=1
+      and (select count(*) from fwios.evidence_records where evidence_id=v_evidence_id)=1
+      and (select count(*) from fwios.metric_observations where observation_key=v_observation_key)=1
       and (select count(*) from fwios.research_ingest_receipts_v1
            where payload_fingerprint=apply_one->>'payload_fingerprint')=1),
     ('PR2_12_RESEARCH_CANDIDATES_UNCHANGED',
@@ -164,8 +163,8 @@ begin
   insert into pr2_controlled_research_ingest_results values
     ('PR2_13_REPEAT_APPLY_IDEMPOTENT',
       apply_two->>'status'='NOOP_ALREADY_APPLIED'
-      and (select count(*) from fwios.evidence_records where evidence_id=evidence_id)=1
-      and (select count(*) from fwios.metric_observations where observation_key=observation_key)=1
+      and (select count(*) from fwios.evidence_records where evidence_id=v_evidence_id)=1
+      and (select count(*) from fwios.metric_observations where observation_key=v_observation_key)=1
       and (select count(*) from fwios.research_ingest_receipts_v1
            where payload_fingerprint=apply_one->>'payload_fingerprint')=1);
 
