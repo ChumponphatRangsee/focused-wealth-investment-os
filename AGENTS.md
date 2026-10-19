@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.17**  
+Contract version: **FWIOS-CONTRACT-0.87.18**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -111,6 +111,7 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-REBALANCE-V1`
 - `POL-HUMAN-APPROVAL-V1`
 - `POL-RESEARCH-LIFECYCLE-V1` — contract/gating kernel active; no production read cutover
+- `POL-CONTROLLED-RESEARCH-INGEST-V1` — service-role-only PREVIEW/APPLY research gateway; 15/15 acceptance PASS
 - `POL-INSTRUMENT-IDENTITY-V1` — canonical identity active; legacy symbol read paths preserved
 - `POL-METRIC-OBSERVATION-V2` — typed period-aware metric foundation active; no production read cutover
 - `POL-LINEAGE-GRAPH-V1` — append-only evidence→metric→decision lineage active; no production read cutover
@@ -118,6 +119,26 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-THESIS-MEMORY-V1` — normalized thesis conditions/KPI bindings + append-only decision/reactivation memory; no production read cutover
 
 AI must never retune deterministic gates ad hoc to make a name pass.
+
+### Controlled ChatGPT Research Ingestion — ACTIVE
+
+All ChatGPT-originated production research ingestion must use:
+
+`Research Payload → fwios.preview_research_ingest_v1() → validation → fwios.apply_research_ingest_v1()`.
+
+Rules:
+- PREVIEW is non-mutating.
+- APPLY requires explicit user write intent and `mode=APPLY`.
+- ChatGPT must not bypass the gateway with direct writes to `evidence_records`, `metric_observations`, or `research_candidates`.
+- Critical reported facts must satisfy existing primary/Tier-A source-routing rules.
+- Unknown metric codes, invalid unit/currency/period context, unresolved evidence conflicts, and conflicting VERIFIED observations fail closed.
+- Deterministic `evidence_id`, `observation_key`, and payload fingerprints enforce idempotency.
+- Existing evidence/metric rows are never overwritten by the gateway.
+- Risks, guidance context, and research summaries may be retained in the ingest receipt, but do not directly create production scores.
+- The gateway does not mutate lifecycle state, scanner score/rank, valuation, holdings, transactions, cash, approval, or execution.
+- RPC access is service-role only; `auto_trade=false`; human execution only.
+
+
 
 ## 9. Current Communication Services decision state — REVALIDATED
 Base Quality-Hardening suite remains **20/20 PASS**; downstream production verification remains **11/11 PASS**; Communication Services quality-filter acceptance is **8/8 PASS**.
