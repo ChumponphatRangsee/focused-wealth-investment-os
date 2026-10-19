@@ -1,5 +1,13 @@
 # FWIOS Phase-1 — Handover to next chat (2026-10-19, Asia/Bangkok)
 
+## Update — crypto UTC rollover P0 fixed and deployed (2026-10-19)
+- Applied Supabase migration `phase1_crypto_utc_rollover_freshness_v1` to project `ysjbmeukwbfnxnwqchuq`.
+- `fwios.pr5_native_usd_price_shadow_v1` no longer requires crypto `session_date = current UTC date` for `FRESH`; it still requires CoinGecko native USD provenance, positive price, non-future observation and age <= 30 hours.
+- Post-deploy regression: 10/10 PASS. BTC/DOGE/ETH/HBAR/SOL/XRP are `FRESH` + valuation-eligible; MSFT/NVDA/TLN/TTWO remain `LAST_CLOSE`; all have `trading_eligible=false`.
+- Live `fwios.v_portfolio_live_account_valuation_v1` recovered to `PASS` with 0 unpriced positions for ALL/Best/Loan Money/Mom; numerical values and projection batch were unchanged by the DDL-only fix.
+- `auto_trade=false` and `portfolio_mutation=false` confirmed. Function remains SECURITY INVOKER with EXECUTE only for postgres/service_role.
+- The next priorities are now: distinguish live gate vs last-written Sheet status, verify 1–2 autonomous US-close E2E sessions, confirm legacy CoinGecko Apps Script does not overwrite formulas, then proceed to Focused Dashboard MVP.
+
 ## User-authorized scope and decisions
 - Continue the **MVP-first** approach; avoid speculative refactoring or over-engineering.
 - The user independently disabled/deleted the legacy CoinGecko direct Google Apps Script function and trigger; the six crypto `Price Data` G/H/M native formulas were restored and inspected immediately afterward.
@@ -48,7 +56,7 @@
 - This is a **crypto daily-snapshot UTC rollover bug**, independent of the deferred exact-US-stock-session price gate.
 
 ## Priority next steps for new chat
-1. **P0 FIX crypto UTC rollover false-STALE bug** with a small reversible SQL migration; respect source-native USD, CoinGecko provenance, 30h max age, positivity, observed_at<=now, and 17:10 ET daily snapshot. Do not silently extend unlimited stale validity. Test before/after UTC midnight, on weekends, after failed snapshots and around ET DST. Confirm all six crypto `valuation_eligible=true` when recent, `fwios.v_portfolio_live_account_valuation_v1` gate PASS and 10/10 coverage. This is **not** the user-deferred stock exact-session check.
+1. **P0 FIX crypto UTC rollover false-STALE bug — COMPLETE / DEPLOYED 2026-10-19.** The minimal SQL fix removes only the crypto current-UTC-date equality from freshness; 30h max age and all provenance/positivity/future guards remain. Post-deploy regression 10/10 PASS; six crypto valuation-eligible, live account valuation PASS with zero unpriced positions. This is **not** the user-deferred stock exact-session check.
 2. **P0 RECONCILE displayed snapshot vs live gate**: the Sheet retains last successful Gate PASS after a later live gate becomes BLOCKED; consider a simple truthful `as of` / stale display flag, without prematurely hiding last validated values or rewriting accounting.
 3. **P1 OBSERVE 1–2 autonomous US-close equity sessions**: check EOD enqueue/worker real cron receipts, stock and crypto MTM, Native Sheet sync, four-account valuation rows, USDTHB, 15 Holdings positions, no source accounting edits. Report exact timestamps and PASS/FAIL; a successful pg_cron invocation with `0 rows` is a guard-suppressed run, not proof of completed E2E.
 4. **P2 REGRESSION**: Confirm that after user removed legacy Apps Script trigger, `Price Data` crypto G/H/M native formulas have not been overwritten again; keep L rollback untouched.
