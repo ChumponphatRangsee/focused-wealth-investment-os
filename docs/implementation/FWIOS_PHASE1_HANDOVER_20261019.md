@@ -1,5 +1,14 @@
 # FWIOS Phase-1 — Handover to next chat (2026-10-19, Asia/Bangkok)
 
+## Update — Performance daily snapshots restored (2026-10-19)
+- Root cause: `portfolio-sheet-shadow-sync-v1` published native market data and live valuation but never wrote the `Performance` history table, so snapshots stopped at 2026-09-03.
+- Worker v7 now publishes verified daily frozen snapshots for ALL / Best / Loan Money / Mom after the live valuation gate passes.
+- Production write/readback PASS on 2026-10-19; `Performance!A21:I24` populated and Snapshot Status reports `FRESH · 2026-10-19`.
+- Contributions are explicit-only: the worker never infers deposits/withdrawals from BUY/SELL. New rows default to zero and preserve an explicit same-day contribution when present.
+- Benchmark remains intentionally deferred in Phase 1; no extra market-data universe/API usage was added.
+- No Transactions, Cost Basis, realized P&L, quantities, or Holdings formulas were mutated.
+- Details: `docs/implementation/PHASE1_PERFORMANCE_SNAPSHOT_FIX_20261019.md`.
+
 ## Update — Portfolio Tracker cleanup deployed (2026-10-19)
 - Google Sheet is now focused on accounting + portfolio display: visible tabs are Dashboard, Transactions, Price Data, Holdings and Performance.
 - Hidden helpers are Checks, Lists, _Market_Data and FWIOS Live Valuation.

@@ -453,6 +453,163 @@ async function publishLiveValuation(token: string, currentBatchId: string) {
     source_batch_id:currentBatchId,verified:true};
 }
 
+
+const PERFORMANCE_SHEET_NAME = "Performance";
+const PERFORMANCE_FIRST_DATA_ROW = 9;
+const PERFORMANCE_LAST_DATA_ROW = 200;
+
+function bangkokDateIso() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values: Record<string, string> = {};
+  for (const p of parts) values[p.type] = p.value;
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function normalizeSheetDate(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return new Date(Date.UTC(1899, 11, 30) + value * 86400000)
+      .toISOString().slice(0, 10);
+  }
+  return String(value || "").trim().slice(0, 10);
+}
+
+function numberOrZero(value: unknown) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+async function readPerformanceHistory(token: string) {
+  const range = `${PERFORMANCE_SHEET_NAME}!A${PERFORMANCE_FIRST_DATA_ROW}:I${PERFORMANCE_LAST_DATA_ROW}`;
+  const url = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID +
+    "/values/" + encodeURIComponent(range) +
+    "?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE";
+  const data = await googleJson(url, token);
+  return Array.isArray(data?.values) ? data.values as unknown[][] : [];
+}
+
+async function publishPerformanceSnapshot(token: string, currentBatchId: string) {
+  const accounts = await sql!`select account_view_key, portfolio_value_thb,
+      unpriced_positions, valuation_gate, source_batch_id
+    from fwios.v_portfolio_live_account_valuation_v1
+    order by case account_view_key
+      when 'ALL' then 0 when 'best' then 1 when 'loan_money' then 2 when 'mom' then 3 else 9 end`;
+  const labels: Record<string, string> = {
+    "ALL": "ALL", "best": "Best", "loan_money": "Loan Money", "mom": "Mom"
+  };
+  if (accounts.length !== 4 ||
+      accounts.some((r: any) => !labels[String(r.account_view_key)] ||
+        String(r.valuation_gate) !== "PASS" || Number(r.unpriced_positions) !== 0 ||
+        String(r.source_batch_id) !== currentBatchId ||
+        !Number.isFinite(Number(r.portfolio_value_thb)))) {
+    throw new Error("PERFORMANCE_VALUATION_VIEW_NOT_READY");
+  }
+
+  const rawHistory = await readPerformanceHistory(token);
+  const history = rawHistory.map((raw: unknown[], i: number) => ({
+    row: PERFORMANCE_FIRST_DATA_ROW + i,
+    raw,
+    date: normalizeSheetDate(raw?.[0]),
+    account: String(raw?.[1] || "").trim(),
+    value: Number(raw?.[2]),
+  })).filter((r: any) =>
+    /^\d{4}-\d{2}-\d{2}$/.test(r.date) &&
+    Object.values(labels).includes(r.account) &&
+    Number.isFinite(r.value));
+
+  const today = bangkokDateIso();
+  let lastUsedRow = history.reduce((m: number, r: any) => Math.max(m, r.row),
+    PERFORMANCE_FIRST_DATA_ROW - 1);
+  const writes: any[] = [];
+  const summary: any[] = [];
+
+  for (const account of accounts) {
+    const key = String(account.account_view_key);
+    const label = labels[key];
+    const currentValue = Number(account.portfolio_value_thb);
+    const accountHistory = history
+      .filter((r: any) => r.account === label)
+      .sort((a: any, b: any) => a.date.localeCompare(b.date) || a.row - b.row);
+    if (!accountHistory.length) throw new Error("PERFORMANCE_BASELINE_MISSING_" + label);
+
+    const baseline = accountHistory[0];
+    const existingToday = [...accountHistory].reverse()
+      .find((r: any) => r.date === today);
+    const previous = [...accountHistory].reverse()
+      .find((r: any) => r.date < today);
+    const netContribution = existingToday ? numberOrZero(existingToday.raw?.[3]) : 0;
+    const cumulativeContribution = accountHistory
+      .filter((r: any) => r.date < today)
+      .reduce((sum: number, r: any) => sum + numberOrZero(r.raw?.[3]), 0) +
+      netContribution;
+    const gainLoss = currentValue - baseline.value - cumulativeContribution;
+    const periodReturn = previous && previous.value > 0
+      ? (currentValue - previous.value - netContribution) / previous.value
+      : "";
+
+    const targetRow = existingToday ? existingToday.row : ++lastUsedRow;
+    const values = [
+      today, label, currentValue, netContribution, cumulativeContribution,
+      gainLoss, periodReturn, "", ""
+    ];
+    writes.push({
+      range: `${PERFORMANCE_SHEET_NAME}!A${targetRow}:I${targetRow}`,
+      majorDimension: "ROWS",
+      values: [values],
+    });
+    summary.push({
+      account: label,
+      row: targetRow,
+      portfolio_value_thb: currentValue,
+      net_contribution_thb: netContribution,
+      cumulative_contribution_thb: cumulativeContribution,
+      gain_loss_vs_baseline_thb: gainLoss,
+      period_return: periodReturn,
+    });
+  }
+
+  await googleJson(
+    `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchUpdate`,
+    token,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        valueInputOption: "USER_ENTERED",
+        data: writes,
+      }),
+    },
+  );
+
+  const verifyRows = await readPerformanceHistory(token);
+  for (const expected of summary) {
+    const raw = verifyRows[expected.row - PERFORMANCE_FIRST_DATA_ROW] || [];
+    if (normalizeSheetDate(raw?.[0]) !== today ||
+        String(raw?.[1] || "") !== expected.account ||
+        !Number.isFinite(Number(raw?.[2])) ||
+        Math.abs(Number(raw?.[2]) - expected.portfolio_value_thb) > 0.02 ||
+        Math.abs(numberOrZero(raw?.[3]) - expected.net_contribution_thb) > 0.02 ||
+        Math.abs(numberOrZero(raw?.[4]) - expected.cumulative_contribution_thb) > 0.02 ||
+        Math.abs(numberOrZero(raw?.[5]) - expected.gain_loss_vs_baseline_thb) > 0.02) {
+      throw new Error("PERFORMANCE_SNAPSHOT_READBACK_FAILED_" + expected.account);
+    }
+  }
+
+  return {
+    sheet: PERFORMANCE_SHEET_NAME,
+    snapshot_date: today,
+    rows: 4,
+    contribution_mode: "EXPLICIT_ONLY",
+    benchmark_mode: "DEFERRED_PHASE1",
+    accounts: summary,
+    source_batch_id: currentBatchId,
+    verified: true,
+  };
+}
+
 async function recordState(status: string, detail: Record<string, unknown>) {
   try {
     await sql!`update fwios.system_state
@@ -532,6 +689,7 @@ Deno.serve(async (req: Request) => {
     const receipt = await writeShadow(payload, googleToken);
     const projection = await saveLiveHoldings(accountingRows);
     const valuation = await publishLiveValuation(googleToken, projection.batch_id);
+    const performance = await publishPerformanceSnapshot(googleToken, projection.batch_id);
     await recordState("PASS", {
       ...base,
       sheet: SHEET_NAME,
@@ -540,6 +698,7 @@ Deno.serve(async (req: Request) => {
       live_projection_batch_id: projection.batch_id,
       live_position_count: projection.rows,
       account_valuation_sync: valuation,
+      performance_snapshot_sync: performance,
       read_only_accounting: true,
       service_account_email: sa.client_email,
     });
@@ -554,6 +713,7 @@ Deno.serve(async (req: Request) => {
       live_projection_batch_id: projection.batch_id,
       live_position_count: projection.rows,
       account_valuation_sync: valuation,
+      performance_snapshot_sync: performance,
       read_only_accounting: true,
       service_account_email: sa.client_email,
     });
