@@ -1,5 +1,17 @@
 # FWIOS Phase-1 — Handover to next chat (2026-10-19, Asia/Bangkok)
 
+## Update — Portfolio Tracker cleanup deployed (2026-10-19)
+- Google Sheet is now focused on accounting + portfolio display: visible tabs are Dashboard, Transactions, Price Data, Holdings and Performance.
+- Hidden helpers are Checks, Lists, _Market_Data and FWIOS Live Valuation.
+- Portfolio Guardrails, Risk Dashboard, Thesis Tracker, Thesis History, Thesis Evidence and AI Integration Config were removed after dependency checks and backups.
+- Supabase system state owns `portfolio_price_read_mode=FWIOS_NATIVE`; Price Data no longer depends on a Sheet config switch.
+- `portfolio-sheet-shadow-sync-v1` deployed as v6 and now publishes OPEN holdings only from `fwios.v_portfolio_live_positions_current_v1`.
+- `_Market_Data` was reduced from ~70 active-instrument rows to exactly 10 open-held assets + USDTHB FX.
+- Transactions and Holdings matched the pre-slim backup after cleanup; operational checks all OK; live valuation remains PASS with 0 unpriced and 0.00 reconciliation deltas.
+- Legacy Price Data K/L remain only as rollback reference until autonomous US-close E2E confidence is complete.
+- Details: `docs/implementation/PHASE1_PORTFOLIO_SHEET_CLEANUP_20261019.md`.
+
+
 ## Update — crypto UTC rollover P0 fixed and deployed (2026-10-19)
 - Applied Supabase migration `phase1_crypto_utc_rollover_freshness_v1` to project `ysjbmeukwbfnxnwqchuq`.
 - `fwios.pr5_native_usd_price_shadow_v1` no longer requires crypto `session_date = current UTC date` for `FRESH`; it still requires CoinGecko native USD provenance, positive price, non-future observation and age <= 30 hours.
@@ -20,9 +32,9 @@
 - Canonical branch: `main`.
 - Supabase production-as-test project ID: `ysjbmeukwbfnxnwqchuq`.
 - Google Sheet source-of-truth for accounting: `Investment Portfolio Tracker - Chumponphat`, ID `1MUZD_nevvmH3yx972Ep6o8pCRmsdd_IgzSzjD6TPCjw`.
-- Native Price Data mode: `AI Integration Config!B21=FWIOS_NATIVE`.
-- Deployed `portfolio-mtm-refresh-v1` ACTIVE v7; `portfolio-sheet-shadow-sync-v1` ACTIVE v5; `market-daily-close-worker-v1` ACTIVE v3.
-- Current Price Data refresh path: `Supabase -> _Market_Data -> Price Data -> Holdings`.
+- Native Price Data mode: Supabase `fwios.system_state` key `architecture_consolidation_v1.state_value.portfolio_price_read_mode=FWIOS_NATIVE`; the former `AI Integration Config` Sheet tab has been removed.
+- Deployed `portfolio-mtm-refresh-v1` ACTIVE v7; `portfolio-sheet-shadow-sync-v1` ACTIVE v6; `market-daily-close-worker-v1` ACTIVE v3.
+- Current Price Data refresh path: `Supabase open-held assets only -> _Market_Data (10 assets + FX) -> Price Data -> Holdings`.
 - Current valuation-display path: `Holdings (READ ONLY) -> fwios.portfolio_live_holdings_*_v1 -> fwios.v_portfolio_live_account_valuation_v1 -> FWIOS Live Valuation!A5:I8 -> Dashboard!A7`.
 - `Dashboard!J5` selects account; `Dashboard!J6` displays `FWIOS SNAPSHOT` or `SHEET FALLBACK`. The fallback uses the original Holdings summation without changing its records.
 
