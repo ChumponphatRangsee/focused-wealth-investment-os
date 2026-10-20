@@ -191,6 +191,14 @@ research_readiness_v1:
   accepted_price_provenance_statuses: [PASS]
   explicit_research_attempt_required: true
   controlled_ingest_receipt_supported: true
+  controlled_receipt_requires_evidence: true
+  controlled_receipt_requires_metric: true
+  controlled_receipt_requires_fresh_metric: true
+  controlled_research_freshness_source: METRIC_REPORTED_AS_OF_OR_PERIOD_END
+  legacy_research_freshness_source: RESEARCH_CANDIDATE_AS_OF_DATE
+  latest_production_eligible_valuation_only: true
+  lifecycle_gate_enforced: false
+  lifecycle_gate_reason: POL-RESEARCH-LIFECYCLE-V1_NO_PRODUCTION_READ_CUTOVER
   quality_hardening_requires_current_valuation_lineage: true
   scanner_score_requires_investment_review_ready: true
   blocked_scanner_score: NULL
@@ -202,7 +210,7 @@ research_readiness_v1:
   portfolio_mutation: false
   approval_mutation: false
   execution_mutation: false
-  regression_status: "16/16 PASS"
+  regression_status: "21/21 PASS"
   current_active_stock_rows: 64
   current_research_ready: 27
   current_valuation_ready: 27
