@@ -37,7 +37,7 @@
 
 ## Documentation hygiene — audited 2026-10-20
 
-- Latest merged contract as of this GitHub inspection: `FWIOS-CONTRACT-0.87.19` in AGENTS and system-contract YAML. `VERSION` and README are reconciled by the **separate documentation cleanup branch**; do not assume this change is on `main` until its PR merges.
+- Latest merged contract as of this GitHub inspection: `FWIOS-CONTRACT-0.87.19` in AGENTS and system-contract YAML. `VERSION` and README reconciliation is proposed in the documentation audit's PR. Recheck merged `main` before relying on that change.
 - [Documentation audit and classification](DOCUMENTATION_AUDIT_20261020.md): in-place legacy banners, historical evidence archives, files retained due to active dependencies and explicit deferred code retirement.
 - The old Dashboard CSV function is still deployed as a rollback-only path in prior checked Supabase evidence; repository docs must not authorize deleting its deployed endpoint or shared valuation/thesis views.
 

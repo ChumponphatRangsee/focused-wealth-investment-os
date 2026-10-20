@@ -1,4 +1,4 @@
-> **ARCHIVED HISTORICAL EVIDENCE — 2026-09 origin; archived 2026-10-20.** This is a preserved record, not a current system state, policy, or next-step instruction. Start at [CURRENT_STATUS](../../CURRENT_STATUS.md), verify merged contracts and live services before acting.
+> **ARCHIVED HISTORICAL EVIDENCE — 2026-09 origin; archived 2026-10-20.** This is a preserved record, not a current system state, policy, or next-step instruction. Start at [CURRENT_STATUS](../../../CURRENT_STATUS.md), verify merged contracts and live services before acting.
 
 # Research closeout — 2026-09-05
 

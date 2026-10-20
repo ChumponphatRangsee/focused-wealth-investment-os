@@ -16,7 +16,7 @@
 
 ## 2026-10-13 to 2026-10-19 — Shared market-price infrastructure and Phase-1 portfolio integration
 
-- Implementation records document merged PRs [#49–#52](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pulls?q=is%3Apr+is%3Amerged+49+50+51+52): provider quota, atomic reservations, single-flight scheduler and native USD market-data shadow. Review individual merged PR/commit for exact scope.
+- Implementation records document merged PRs [#49](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/49), [#50](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/50), [#51](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/51) and [#52](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/52): provider quota, atomic reservations, single-flight scheduler and native USD market-data shadow. Review individual merged PR/commit for exact scope.
 - Phase-1 implementation records document PRs #53–#57: live holdings/valuation reconciliation, Sheet read-only price cutover, crypto freshness correction, Portfolio Tracker cleanup and daily Performance snapshot repair. [Dated acceptance / handover](docs/implementation/FWIOS_PHASE1_HANDOVER_20261019.md).
 - The existence of integration code and handover receipts **does not** establish autonomous U.S.-close E2E success on future trading sessions; verify current cron and Sheet/Supabase reconciliation.
 
