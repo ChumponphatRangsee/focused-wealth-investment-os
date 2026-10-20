@@ -1,5 +1,7 @@
 # 06 — Change Management
 
+> **Original versioning-policy reference, authored for FWIOS-CONTRACT-0.87.0.** Do not use the document's historical version value to overwrite current metadata. Align new edits with the merged [system contract](../contracts/system-contract.yaml), [AGENTS](../AGENTS.md) and [documentation lifecycle](DOCUMENTATION_LIFECYCLE.md); keep deterministic regressions and human-only execution.
+
 Contract version: **FWIOS-CONTRACT-0.87.0**
 
 This system is intentionally fail-closed. Changes to formulas, metric definitions, normalization, valuation routing or scoring can silently alter investment decisions, so documentation and live-system changes must move together.

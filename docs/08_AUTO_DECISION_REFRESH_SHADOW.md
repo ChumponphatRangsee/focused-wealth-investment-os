@@ -1,5 +1,7 @@
 # 08 — Auto Decision Refresh v1 — Shadow Automation
 
+> **Shadow-system design and 2026-09 implementation evidence.** Some Decision Refresh cron/worker paths were still active at the 2026-10-20 read-only inspection; do **not** remove them because this document is old. Original provider account/entitlement and approval assertions below are **dated snapshots**, not verified current flags. Recheck deployed worker, cron, quota and provider readiness before any change.
+
 Status: **SHADOW ACTIVE / FAIL-CLOSED**  
 Activation date: **2026-09-11 Asia/Bangkok**  
 Contract: **FWIOS-CONTRACT-0.87.11**  

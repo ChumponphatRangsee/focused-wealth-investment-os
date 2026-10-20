@@ -1,5 +1,7 @@
 # 03 — Valuation Contracts
 
+> **Historical configured valuation registry.** The version below describes the original documentation baseline; a configured model is not necessarily implemented or production-eligible. Recheck [system-contract.yaml](../contracts/system-contract.yaml), latest model implementations and live valuation readiness before reuse.
+
 Contract version: **FWIOS-CONTRACT-0.87.0**
 
 `Sector_Criteria` is the canonical registry for business-model-specific valuation contracts.
