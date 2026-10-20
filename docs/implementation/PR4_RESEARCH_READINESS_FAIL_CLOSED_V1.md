@@ -51,27 +51,37 @@ A downstream state cannot be ready when its upstream state is blocked.
 
 ## Research Ready
 
-Research is ready only when:
+Research readiness uses two deterministic compatibility routes.
 
-- the readiness policy is active;
-- the stock has an explicit research attempt, represented by either an existing `research_candidates` row or a controlled-ingest receipt;
-- evidence exists;
-- at least one verified primary/Tier-A evidence row exists;
-- no unresolved evidence conflict exists;
-- no evidence row carries a fail/stale status;
-- research is within the 120-day policy window;
-- if legacy `research_candidates` state exists, `evidence_gate=PASS`.
+**Legacy candidate route**
 
-This preserves compatibility with the legacy research path while allowing a future PR2-controlled APPLY to qualify without directly mutating `research_candidates`.
+- an existing `research_candidates` row must exist;
+- `evidence_gate=PASS`;
+- evidence and verified primary/Tier-A evidence must exist;
+- unresolved conflict / explicit stale evidence fails closed;
+- `research_candidates.as_of_date` must be within the 120-day policy window.
+
+**Controlled PR2 route**
+
+- an APPLIED controlled-ingest receipt must exist;
+- the receipt must contain evidence;
+- the receipt must contain at least one validated canonical metric;
+- the receipt must contain verified primary/Tier-A evidence;
+- at least one metric must have a `reported_at`, `as_of_date`, or `period_end` date within the 120-day research window.
+
+For the controlled route, `research_as_of` comes from the metric's source-period date, not the receipt/ingest timestamp. A filing from 2024 ingested in 2026 therefore remains stale. A receipt with `metrics=[]` remains `RESEARCH_NOT_READY`.
+
+This preserves legacy compatibility while allowing PR2-controlled APPLY to qualify without mutating `research_candidates`, and closes the review finding where ingest time could incorrectly make old/incomplete research look fresh.
 
 ## Valuation Ready
 
-Valuation is ready only when Research Ready is true and the latest valuation run:
+Valuation is ready only when Research Ready is true and the latest `production_eligible=true` valuation run:
 
 - has `valuation_readiness` of PASS/READY;
 - passes router, valuation and schema gates;
-- is `production_eligible=true`;
 - is within the 180-day policy window.
+
+The production-eligible filter is applied before choosing the latest run, so a newer shadow/experimental run cannot displace a still-valid production valuation.
 
 No new valuation model is introduced.
 
@@ -87,6 +97,17 @@ Quality Hardened is true only when:
 The lineage rule is intentionally strict. A previously passing hardening snapshot becomes stale after a new valuation run until hardening is rerun against that valuation.
 
 At rollout this correctly identified ADBE as `QUALITY_HARDENING=STALE`: the latest hardening snapshot still referenced the older valuation run.
+
+## Lifecycle gate status
+
+`POL-RESEARCH-LIFECYCLE-V1` remains `production_read_cutover=false`.
+
+PR4 therefore does **not** invent a second lifecycle or pretend that a canonical per-stock lifecycle read gate is active. The readiness view exposes:
+
+- `lifecycle_gate_enforced=false`;
+- `lifecycle_gate_status=DEFERRED_NO_PRODUCTION_READ_CUTOVER`.
+
+Lifecycle state remains preserved and reusable, but enforcing it as a PR4 production gate is deferred until the existing lifecycle policy has an authoritative production read cutover.
 
 ## Price Ready
 
@@ -137,10 +158,11 @@ The bounded PR4 blocker taxonomy is:
 Migration:
 
 - `research_readiness_fail_closed_v1`
+- `research_readiness_fail_closed_v1_hardening`
 
 Acceptance:
 
-- **16/16 PASS**
+- **21/21 PASS**
 
 Current live snapshot immediately after rollout:
 
@@ -163,7 +185,7 @@ Examples:
 
 ## Acceptance coverage
 
-The 16 checks cover:
+The 21 checks cover:
 
 1. policy active and human-only/no-cutover config;
 2. security-invoker view;
@@ -180,13 +202,18 @@ The 16 checks cover:
 13. blocked rows always expose a reason;
 14. scanner-score eligibility equals Investment Review readiness;
 15. blocker taxonomy remains bounded;
-16. no portfolio/accounting/approval/execution dependency in the view.
+16. no portfolio/accounting/approval/execution dependency in the view;
+17. controlled receipt with `metrics=[]` remains blocked;
+18. old source-period metric ingested today remains stale;
+19. fresh controlled evidence + canonical metric can become Research Ready;
+20. newer non-production/shadow valuation cannot displace the latest production valuation;
+21. lifecycle gating is explicitly deferred while the lifecycle policy has no production read cutover.
 
 ## Security / advisor result
 
 The new view is `security_invoker=true`, SELECT is revoked from PUBLIC/anon/authenticated and granted to `service_role`.
 
-Post-DDL Supabase security/performance advisors returned no finding that references the PR4 readiness view. Existing project-wide advisor findings predate this PR and are outside PR4 scope.
+Post-hardening Supabase security/performance advisors returned no finding that references the PR4 readiness view. Existing project-wide advisor findings predate this PR and are outside PR4 scope.
 
 ## Safety boundary
 
