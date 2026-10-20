@@ -149,6 +149,139 @@ insert into pr4_research_readiness_results values
     where n.nspname='fwios' and c.relname='v_research_readiness_current_v1'
   ) !~ '(portfolio_assets|portfolio_transactions|portfolio_positions|holdings|approval|execution|cash_balance|cost_basis)');
 
+-- Review hardening regressions.
+
+do $test$
+declare
+  p_empty jsonb;
+  p_old jsonb;
+  p_fresh jsonb;
+  a jsonb;
+begin
+  p_empty := jsonb_build_object(
+    'schema_version','chatgpt_research_payload_v1','mode','APPLY','command','PR4 hardening empty metrics',
+    'ticker','ALL','research_as_of',now(),
+    'evidence',jsonb_build_array(jsonb_build_object(
+      'evidence_ref','pr4-empty-ev','fact_class','REPORTED_FINANCIALS','claim','Old primary evidence only',
+      'source_name','Fixture','source_url','https://example.com/pr4-empty','source_type','WEB_PRIMARY','source_tier','A',
+      'retrieved_at',now(),'reported_at','2024-01-01T00:00:00Z','reporting_period','FY2023',
+      'verification_status','VERIFIED','conflict_group',null
+    )),
+    'metrics','[]'::jsonb,'guidance','[]'::jsonb,'risks','[]'::jsonb,'research_summary','{}'::jsonb
+  );
+  a := fwios.apply_research_ingest_v1(p_empty);
+  insert into pr4_research_readiness_results values (
+    'PR4_17_CONTROLLED_EMPTY_METRICS_BLOCKED',
+    a->>'status'='APPLIED'
+    and not (select research_ready from fwios.v_research_readiness_current_v1 where ticker='ALL')
+    and (select controlled_receipt_metric_count=0 from fwios.v_research_readiness_current_v1 where ticker='ALL')
+  );
+
+  p_old := jsonb_build_object(
+    'schema_version','chatgpt_research_payload_v1','mode','APPLY','command','PR4 hardening stale metric',
+    'ticker','APO','research_as_of',now(),
+    'evidence',jsonb_build_array(jsonb_build_object(
+      'evidence_ref','pr4-old-ev','fact_class','REPORTED_FINANCIALS','claim','Old reported revenue',
+      'source_name','Fixture','source_url','https://example.com/pr4-old','source_type','WEB_PRIMARY','source_tier','A',
+      'retrieved_at',now(),'reported_at','2024-01-01T00:00:00Z','reporting_period','FY2023',
+      'verification_status','VERIFIED','conflict_group',null
+    )),
+    'metrics',jsonb_build_array(jsonb_build_object(
+      'metric_code','REVENUE','value_kind','NUMERIC','value_numeric',1.0,'canonical_unit','USD B','source_unit','USD B',
+      'currency','USD','period_type','YEAR','fiscal_year',2023,'fiscal_quarter',null,
+      'period_start','2023-01-01','period_end','2023-12-31','as_of_date','2023-12-31',
+      'period_label','FY2023','reported_at','2024-01-01T00:00:00Z',
+      'evidence_refs',jsonb_build_array('pr4-old-ev'),'verification_status','VERIFIED'
+    )),
+    'guidance','[]'::jsonb,'risks','[]'::jsonb,'research_summary','{}'::jsonb
+  );
+  a := fwios.apply_research_ingest_v1(p_old);
+  insert into pr4_research_readiness_results values (
+    'PR4_18_OLD_CONTROLLED_METRIC_STALE',
+    a->>'status'='APPLIED'
+    and not (select research_ready from fwios.v_research_readiness_current_v1 where ticker='APO')
+    and (select blocking_reasons @> array['STALE_RESEARCH']::text[]
+         from fwios.v_research_readiness_current_v1 where ticker='APO')
+    and (select controlled_receipt_fresh_metric_count=0
+         from fwios.v_research_readiness_current_v1 where ticker='APO')
+  );
+
+  p_fresh := jsonb_build_object(
+    'schema_version','chatgpt_research_payload_v1','mode','APPLY','command','PR4 hardening fresh metric',
+    'ticker','AXP','research_as_of',now(),
+    'evidence',jsonb_build_array(jsonb_build_object(
+      'evidence_ref','pr4-fresh-ev','fact_class','REPORTED_FINANCIALS','claim','Fresh reported revenue',
+      'source_name','Fixture','source_url','https://example.com/pr4-fresh','source_type','WEB_PRIMARY','source_tier','A',
+      'retrieved_at',now(),'reported_at',now()-interval '30 days','reporting_period','Q3 FY2026',
+      'verification_status','VERIFIED','conflict_group',null
+    )),
+    'metrics',jsonb_build_array(jsonb_build_object(
+      'metric_code','REVENUE','value_kind','NUMERIC','value_numeric',1.0,'canonical_unit','USD B','source_unit','USD B',
+      'currency','USD','period_type','QUARTER','fiscal_year',2026,'fiscal_quarter',3,
+      'period_start',(current_date-interval '120 days')::date,'period_end',(current_date-interval '45 days')::date,
+      'as_of_date',(current_date-interval '45 days')::date,'period_label','Q3 FY2026',
+      'reported_at',now()-interval '30 days','evidence_refs',jsonb_build_array('pr4-fresh-ev'),
+      'verification_status','VERIFIED'
+    )),
+    'guidance','[]'::jsonb,'risks','[]'::jsonb,'research_summary','{}'::jsonb
+  );
+  a := fwios.apply_research_ingest_v1(p_fresh);
+  insert into pr4_research_readiness_results values (
+    'PR4_19_FRESH_CONTROLLED_METRIC_READY',
+    a->>'status'='APPLIED'
+    and (select research_ready from fwios.v_research_readiness_current_v1 where ticker='AXP')
+    and (select research_route='CONTROLLED_GATEWAY' from fwios.v_research_readiness_current_v1 where ticker='AXP')
+    and (select controlled_receipt_metric_count>0 and controlled_receipt_fresh_metric_count>0
+         from fwios.v_research_readiness_current_v1 where ticker='AXP')
+  );
+end
+$test$;
+
+create temporary table pr4_prod_val_anchor as
+select valuation_run_id as run_id
+from fwios.v_research_readiness_current_v1
+where ticker='ADBE';
+
+with src as (
+  select *
+  from fwios.valuation_runs
+  where ticker='ADBE' and production_eligible=true
+  order by created_at desc,run_id desc
+  limit 1
+)
+insert into fwios.valuation_runs
+select (jsonb_populate_record(
+  null::fwios.valuation_runs,
+  to_jsonb(src) || jsonb_build_object(
+    'run_id','PR4-HARDENING-NONPROD-ADBE',
+    'production_eligible',false,
+    'created_at',(now()+interval '1 day')::text
+  )
+)).*
+from src;
+
+insert into pr4_research_readiness_results values (
+  'PR4_20_LATEST_PRODUCTION_VALUATION_ONLY',
+  (select valuation_run_id from fwios.v_research_readiness_current_v1 where ticker='ADBE')
+  =
+  (select run_id from pr4_prod_val_anchor)
+);
+
+insert into pr4_research_readiness_results values (
+  'PR4_21_LIFECYCLE_DEFERRED_EXPLICIT',
+  exists(
+    select 1 from fwios.policy_versions
+    where policy_version_id='POL-RESEARCH-READINESS-V1'
+      and config->>'lifecycle_gate_enforced'='false'
+      and config->>'lifecycle_gate_reason'='POL-RESEARCH-LIFECYCLE-V1_NO_PRODUCTION_READ_CUTOVER'
+  )
+  and not exists(
+    select 1 from fwios.v_research_readiness_current_v1
+    where lifecycle_gate_enforced
+       or lifecycle_gate_status<>'DEFERRED_NO_PRODUCTION_READ_CUTOVER'
+  )
+);
+
 select test_id, case when passed then 'PASS' else 'FAIL' end as status
 from pr4_research_readiness_results
 order by test_id;
