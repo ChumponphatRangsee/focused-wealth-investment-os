@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** GitHub checked **2026-10-20 (Asia/Bangkok)** against `main` commit `ff59bf7c16ad5f24b204831dcd1490ea8e75c423`. The underlying Supabase, Google Sheet, cron and Edge Function state were **not re-verified** as part of this documentation-only cleanup. Re-check those systems before taking action. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
+> **Navigation index, not operational authority.** GitHub checked **2026-10-20 (Asia/Bangkok)** against `main` commit `b04ac30a9b3f14141247ed48b28c0c9692466d58`. The underlying Supabase, Google Sheet, cron and Edge Function state were **not re-verified** as part of this documentation-only cleanup. Re-check those systems before taking action. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
 
 ## Mandatory read / execution order
 
@@ -13,7 +13,7 @@
 ## Repository / source precedence
 
 - Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
-- GitHub snapshot at this index revision: `ff59bf7c16ad5f24b204831dcd1490ea8e75c423` (re-check on each new session).
+- GitHub snapshot at this index revision: `b04ac30a9b3f14141247ed48b28c0c9692466d58` (re-check on each new session).
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
 
@@ -34,6 +34,12 @@
 - For Phase 1, `Investment Portfolio Tracker - Chumponphat` remains the accounting/transaction authority as recorded in the relevant Phase-1 implementation decisions. Do not create a duplicate transaction ledger.
 - Scanner presentation remains portfolio-independent. Preserve quota-aware shared market-data infrastructure and avoid expensive all-constituent deep research.
 - A successful GitHub merge **does not prove** production deployment or autonomous E2E success. Confirm receipts, timestamps and current backend state.
+
+## Documentation hygiene — audited 2026-10-20
+
+- Latest merged contract as of this GitHub inspection: `FWIOS-CONTRACT-0.87.19` in AGENTS and system-contract YAML. `VERSION` and README are reconciled by the **separate documentation cleanup branch**; do not assume this change is on `main` until its PR merges.
+- [Documentation audit and classification](DOCUMENTATION_AUDIT_20261020.md): in-place legacy banners, historical evidence archives, files retained due to active dependencies and explicit deferred code retirement.
+- The old Dashboard CSV function is still deployed as a rollback-only path in prior checked Supabase evidence; repository docs must not authorize deleting its deployed endpoint or shared valuation/thesis views.
 
 ## Documentation map
 

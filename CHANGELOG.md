@@ -1,5 +1,26 @@
 # Changelog
 
+> Changelog entries record **merged GitHub changes and dated project evidence**, not independently verified current deployments. Use [Current Status](docs/CURRENT_STATUS.md) and fresh live-system inspection for operational assertions.
+
+## 2026-10-20 — Contract alignment and documentation lifecycle
+
+- Research readiness / fail-closed gates [PR #63](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/63) merged; current tracked contract is `FWIOS-CONTRACT-0.87.19` in `AGENTS.md` and `contracts/system-contract.yaml`.
+- Documentation lifecycle, living status index, archived chat handovers and source-path compatibility links merged via [PR #64](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/64).
+- Documentation cleanup reconciles the `VERSION` and README displays with the merged contract; preserves `VERSION` snapshot date as historical metadata, not proof of a new environment cutover.
+
+## 2026-10-19 — Scanner separation and controlled research foundations
+
+- Portfolio-independent Scanner read model and Dashboard decoupling merged through [PR #59](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/59) and [PR #60](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/60).
+- Controlled ChatGPT research workflow and fail-closed ingestion gateway merged through [PR #61](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/61) and [PR #62](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/62).
+- S&P 500 universe expansion is planned separately; prior 64-stock source snapshot is **not** full S&P 500 membership.
+
+## 2026-10-13 to 2026-10-19 — Shared market-price infrastructure and Phase-1 portfolio integration
+
+- Implementation records document merged PRs [#49–#52](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pulls?q=is%3Apr+is%3Amerged+49+50+51+52): provider quota, atomic reservations, single-flight scheduler and native USD market-data shadow. Review individual merged PR/commit for exact scope.
+- Phase-1 implementation records document PRs #53–#57: live holdings/valuation reconciliation, Sheet read-only price cutover, crypto freshness correction, Portfolio Tracker cleanup and daily Performance snapshot repair. [Dated acceptance / handover](docs/implementation/FWIOS_PHASE1_HANDOVER_20261019.md).
+- The existence of integration code and handover receipts **does not** establish autonomous U.S.-close E2E success on future trading sessions; verify current cron and Sheet/Supabase reconciliation.
+
+
 ## FWIOS-CONTRACT-0.87.0 — 2026-09-04
 
 Initial standalone documentation contract synchronized to live **AI Data Foundation — Phase 0.87**.
