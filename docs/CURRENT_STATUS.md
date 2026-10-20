@@ -1,0 +1,49 @@
+# FWIOS — Current Status / New-Chat Entry Point
+
+> **Navigation index, not operational authority.** GitHub checked **2026-10-20 (Asia/Bangkok)** against `main` commit `ff59bf7c16ad5f24b204831dcd1490ea8e75c423`. The underlying Supabase, Google Sheet, cron and Edge Function state were **not re-verified** as part of this documentation-only cleanup. Re-check those systems before taking action. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
+
+## Mandatory read / execution order
+
+1. Read [AGENTS.md](../AGENTS.md) and [system-contract.yaml](../contracts/system-contract.yaml); preserve human-execution-only and financial-accounting guardrails.
+2. Read this index to find the **one** relevant feature plan, current PR, and any known blockers.
+3. Check the current `main`, head/base of open PRs, and latest CI; inspect **actual live** Supabase/Sheets/cron/worker state whenever work would touch production.
+4. Read the feature's implementation plan/runbook and current GitHub issue/PR before edits. Treat dated handover observations as historical evidence.
+5. Make scoped changes in a separate PR; update this index after merging or accepted cutover. Reconcile any discrepancy before action.
+
+## Repository / source precedence
+
+- Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
+- GitHub snapshot at this index revision: `ff59bf7c16ad5f24b204831dcd1490ea8e75c423` (re-check on each new session).
+- **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
+- The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
+
+## Workstreams (verified GitHub status versus older feature snapshots)
+
+| Stream | GitHub state at index creation | Next source to read / validation |
+| --- | --- | --- |
+| **Portfolio native pricing / Phase 1** | PRs #49–#57 documented as merged by the 2026-10-19 receipt; current live pricing and autonomous E2E acceptance **not checked here** | [Phase-1 snapshot](implementation/FWIOS_PHASE1_HANDOVER_20261019.md), [acceptance](implementation/PHASE1_P3_P4_P5_ACCEPTANCE_20261017.md). Check current scheduled US-close outcomes first. |
+| **Daily Performance Backend / historical backfill** | Dedicated plan/handover exists; **do not infer feature is deployed** without live verification | [Feature plan](implementation/PHASE1_DAILY_PERFORMANCE_BACKEND_HANDOVER_20261019.md); start schema/writer/reconciliation only after checking actual Supabase/Sheets state and relevant PRs. |
+| **Focused Dashboard / S&P 500 expansion** | Scanner separation PR [#59](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/59) and cleanup PR [#60](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/60) merged. Prior 2026-10-19 evidence listed **64 stock instruments**, not full S&P 500; not independently checked today. | [Universe expansion plan](implementation/SP500_UNIVERSE_EXPANSION_PLAN_20261019.md); check membership/source-of-truth design and live row counts before U1 implementation. |
+| **Controlled Research / Scanner v2** | PR [#61](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/61), [#62](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/62), and research-readiness PR [#63](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/63) are merged. PR #63 completed **21/21** readiness acceptance before merge; Scanner v2 is not part of this cleanup. | [Research workflow](implementation/CHATGPT_RESEARCH_WORKFLOW_V1.md), [controlled ingest](implementation/PR2_CONTROLLED_RESEARCH_INGEST_V1.md), [PR4 readiness](implementation/PR4_RESEARCH_READINESS_FAIL_CLOSED_V1.md). Next feature step after documentation cleanup: Scanner v2; keep U1/full S&P 500 expansion paused unless explicitly resumed. |
+| **External API inventory / security** | Audit PR [#48](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/48) **open**, not merged (checked 2026-10-20). | Review PR #48 before asserting audit closure or changing vendor credentials. |
+
+## Non-negotiable guardrails
+
+- `auto_trade=false`, human execution only. No autonomous order placement.
+- Do not mutate Transactions, quantity, cost basis, realized P&L, cash, accounting formulas or portfolio holdings during documentation or scanner work.
+- For Phase 1, `Investment Portfolio Tracker - Chumponphat` remains the accounting/transaction authority as recorded in the relevant Phase-1 implementation decisions. Do not create a duplicate transaction ledger.
+- Scanner presentation remains portfolio-independent. Preserve quota-aware shared market-data infrastructure and avoid expensive all-constituent deep research.
+- A successful GitHub merge **does not prove** production deployment or autonomous E2E success. Confirm receipts, timestamps and current backend state.
+
+## Documentation map
+
+- **Current index:** this file, kept concise; update on meaningful workflow changes, not every Chat.
+- **Contracts:** [AGENTS](../AGENTS.md) and [system contract](../contracts/system-contract.yaml).
+- **Architecture:** [FWIOS v3](architecture/FWIOS_ARCHITECTURE_V3.md) (verify approved vs proposed decisions), and durable feature implementation plans.
+- **Active handoff details:** [Phase-1 dated snapshot](implementation/FWIOS_PHASE1_HANDOVER_20261019.md) and [Daily Performance feature handover](implementation/PHASE1_DAILY_PERFORMANCE_BACKEND_HANDOVER_20261019.md); these are **dated evidence**, not live state.
+- **Historical handovers:** [archive index](archive/handovers/README.md); old paths remain short compatibility pointers only.
+- **Rules for upkeep:** [Documentation lifecycle](DOCUMENTATION_LIFECYCLE.md).
+
+## On next material change
+
+Record: date/timezone; checked GitHub commit and relevant PR state; verified or unverified live environment; completed scope; open blockers; exact next action; links to source evidence. Avoid numerical pricing or account-value snapshots in this index unless they are necessary and time-stamped.

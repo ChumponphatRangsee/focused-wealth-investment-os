@@ -1,3 +1,5 @@
+> **DATED SNAPSHOT (2026-10-19), not current operational authority.** For new work start at [Current Status](../CURRENT_STATUS.md), inspect merged GitHub code and current Supabase/Sheets. Historical values, automation dates and 'next chat' instructions below must be revalidated.
+
 # FWIOS Phase-1 — Handover to next chat (2026-10-19, Asia/Bangkok)
 
 ## Current production state — authoritative as of 2026-10-19 ~10:03 Bangkok

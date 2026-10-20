@@ -376,6 +376,15 @@ Issue #37 is complete at the additive thesis-memory foundation layer. #38 should
 ## 22. Documentation handshake
 Before material work read live `System_Foundation`, this file, `contracts/system-contract.yaml`, `VERSION`, roadmap, architecture and relevant live Supabase/Sheet state. Resolve drift first. After material changes synchronize roadmap/architecture/live foundation.
 
+### 22.1 Documentation lifecycle and new-chat handoff
+- Start with [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) to locate the relevant active feature, PR, runbook and blockers. This index is a **dated navigation snapshot**, never a replacement for current GitHub/Supabase/Sheet inspection.
+- Use `AGENTS.md` and `contracts/system-contract.yaml` for execution constraints; current live state and merged source override stale snapshot claims.
+- Track implementation progress and outstanding work in the relevant GitHub PR/Issue plus its feature specification. Update the Current Status index after a material PR merge, production cutover, or workstream change.
+- Create a new dated handover only when an actual interruption needs extra non-reconstructible operational details; prefer updating the living status index and feature docs when only changing Chat.
+- Keep historical evidence and decisions in durable implementation docs, runbooks, ADRs, PRs and Git history. Archive superseded chat handovers with a non-authoritative banner, retaining short compatibility pointers if old links are used.
+- Archived handovers are audit/history ONLY. Never execute their outdated 'next-chat' instructions without checking live state; do not blindly delete referenced files or rewrite historical verification receipts.
+- See `docs/DOCUMENTATION_LIFECYCLE.md` for classification, archival and review procedure. Documentation-only cleanup never authorizes database, worker, trading or portfolio-accounting changes.
+
 ## 23. Regression discipline
 Changes to normalization, valuation, hardening, scoring, Decision Snapshots, ranking, allocation, scenario, rebalancing, approval or dashboard semantics require deterministic regressions. Reference names include ISRG, EOG, BKR, CAVA, TPR, RDDT, PINS, JPM, V, CB and NVDA.
 

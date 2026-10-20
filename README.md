@@ -12,11 +12,13 @@ Operating contract and reconciliation tools for the Portfolio investment system.
 
 ## Start here
 
-1. [AGENTS.md](AGENTS.md)
-2. [Master roadmap](docs/00_SYSTEM_ROADMAP.md)
-3. [System contract](contracts/system-contract.yaml) and [VERSION](VERSION)
-4. Live `System_Foundation`, `Sector_Run_Control`, and Supabase controller views
-5. [Research closeout and recovery](docs/07_RESEARCH_CLOSEOUT.md)
+1. [AGENTS.md](AGENTS.md) — mandatory agent guardrails.
+2. [Current status and new-chat entrypoint](docs/CURRENT_STATUS.md) — active workstreams, PRs and next checks (**dated index, not live truth**).
+3. [System contract](contracts/system-contract.yaml) and [VERSION](VERSION).
+4. Verify current GitHub, Supabase, relevant Sheet and live controller state before changes.
+5. [Master roadmap](docs/00_SYSTEM_ROADMAP.md) and [Research closeout](docs/07_RESEARCH_CLOSEOUT.md).
+
+Documentation maintenance: [Documentation lifecycle policy](docs/DOCUMENTATION_LIFECYCLE.md); [archived chat handovers](docs/archive/handovers/README.md).
 
 Current live data overrides documentation. The portfolio tracker remains the authority for holdings and transactions. Supabase owns migrated research evidence and valuation compute records; Sheets remains the operational control room and downstream decision compatibility layer. This is not yet a standalone application.
 
