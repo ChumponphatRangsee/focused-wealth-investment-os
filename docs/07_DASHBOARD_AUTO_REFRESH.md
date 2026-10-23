@@ -2,6 +2,8 @@
 
 > **DEPRECATED_ROLLBACK_ONLY — legacy Dashboard CSV/Sheet `_Data` feed.** The active Focused Wealth Dashboard scanner is separated under PRs [#59](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/59) and [#60](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/60). The legacy `dashboard-refresh-csv-v1` Edge Function was still deployed at the 2026-10-20 read-only inspection; **this document does not approve removal**. Check external Sheet/URL consumers and rollback dependencies before retirement. Preserve shared `v_dashboard_valuation_map` and `v_thesis_tracking_current` views used by the scanner.
 
+> **2026-10-23 retirement recheck:** [Live dependency audit and approval gates](implementation/LEGACY_DASHBOARD_RETIREMENT_AUDIT_20261023.md). The old Edge endpoint and legacy access row remain active; no matching cron calls or observed request traffic in the sampled log window. Three hidden workbook tabs still depend on the legacy `_Data` cache; current scanner views/auth share some backend objects. **Not approved for deletion.**
+
 Status: **PASS / LIVE**  
 Global investment-policy contract: **FWIOS-CONTRACT-0.87.10**  
 Implemented: **2026-09-06 Asia/Bangkok**

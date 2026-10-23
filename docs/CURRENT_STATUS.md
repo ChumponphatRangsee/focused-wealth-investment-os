@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** GitHub checked **2026-10-20 (Asia/Bangkok)** against `main` commit `b04ac30a9b3f14141247ed48b28c0c9692466d58`. The underlying Supabase, Google Sheet, cron and Edge Function state were **not re-verified** as part of this documentation-only cleanup. Re-check those systems before taking action. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
+> **Navigation index, not operational authority.** GitHub checked **2026-10-23 (Asia/Bangkok)** against `main` commit `51eb5bcaf7e7904de190e43a0ebd34966a199e7d`. The legacy Dashboard subset of Supabase/Google Sheets/cron/Edge state was re-checked on 2026-10-23 (see retirement audit). **Other workstreams and current performance were not comprehensively re-verified**; re-check relevant systems before acting. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
 
 ## Mandatory read / execution order
 
@@ -13,7 +13,7 @@
 ## Repository / source precedence
 
 - Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
-- GitHub snapshot at this index revision: `b04ac30a9b3f14141247ed48b28c0c9692466d58` (re-check on each new session).
+- GitHub snapshot at this index revision: `51eb5bcaf7e7904de190e43a0ebd34966a199e7d` (re-check on each new session).
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
 
@@ -37,9 +37,16 @@
 
 ## Documentation hygiene — audited 2026-10-20
 
-- Latest merged contract as of this GitHub inspection: `FWIOS-CONTRACT-0.87.19` in AGENTS and system-contract YAML. `VERSION` and README reconciliation is proposed in the documentation audit's PR. Recheck merged `main` before relying on that change.
+- Latest merged contract as of this GitHub inspection: `FWIOS-CONTRACT-0.87.19` in AGENTS and system-contract YAML. PR #65 is **merged** as of 2026-10-23; README and VERSION align with `FWIOS-CONTRACT-0.87.19` on the inspected `main`. Re-check `main` on future sessions.
 - [Documentation audit and classification](DOCUMENTATION_AUDIT_20261020.md): in-place legacy banners, historical evidence archives, files retained due to active dependencies and explicit deferred code retirement.
 - The old Dashboard CSV function is still deployed as a rollback-only path in prior checked Supabase evidence; repository docs must not authorize deleting its deployed endpoint or shared valuation/thesis views.
+
+## Legacy Dashboard retirement (audit — 2026-10-23)
+
+- [Live dependency audit and gated retirement plan](implementation/LEGACY_DASHBOARD_RETIREMENT_AUDIT_20261023.md). This is an **audit, not a cutover authorization**. No retirement code or database changes made.
+- Current S&P500 Scanner and Valuation Map source `_Scanner_Data` without direct formulas to `_Data`, but three hidden tabs still contain **61 `_Data`-dependent formulas**.
+- `dashboard-refresh-csv-v1` and its legacy access key are still active despite no observed cron invocation or legacy function request in the 2026-10-16..23 sampled logs. External consumer inventory and rollback approval remain **OPEN**.
+- **DO NOT DROP:** `fwios.dashboard_refresh_access` (shared by scanner), `v_dashboard_valuation_map`, `v_thesis_tracking_current`, scanner Edge Function, or any historical migrations.
 
 ## Documentation map
 
