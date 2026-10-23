@@ -2,6 +2,32 @@
 
 **Inspection:** 2026-10-23 (Asia/Bangkok). **GitHub baseline:** `main` at `51eb5bcaf7e7904de190e43a0ebd34966a199e7d` (merged PR #65). **Supabase project:** `ysjbmeukwbfnxnwqchuq`. **Google Sheet:** `Focused Wealth Dashboard - Chumponphat`.
 
+> **POST-AUDIT EXECUTION RECEIPT — 2026-10-23 (Asia/Bangkok).** The original dependency matrix and HOLD decision below describe the state *before* the user's external-consumer confirmation and the controlled cleanup. The retirement of the **Google Sheets legacy tabs and the legacy auth row** was carried out and verified. **The legacy Edge Function is still deployed**, and shared Supabase objects must remain. This is a partial, reversible cutover — **not** permission to drop SQL objects or delete deployed functions.
+
+## Post-audit execution — 2026-10-23
+
+**Operator confirmation:** the user confirmed no additional apps or external consumers; the Dashboard's Apps Script had been deleted; the maintained Dashboard receives market/scanner data from Supabase. This is an owner statement, not proof that no historic token URLs have ever circulated.
+
+**Backup and safety proof:** a private native Google Sheets backup created 2026-10-23 was verified against the live source: **8 tabs** retained with matching hidden states/grid dimensions, and **2,656 non-empty user-entered cells matched**, including formulas. The backup remains distinct and owner-only. Its ID, token-bearing hidden URLs, and raw credential values are intentionally not stored in public GitHub. The copy can recalculate imported values and is not a frozen market-price export.
+
+**Actions applied to the original `Focused Wealth Dashboard - Chumponphat`:**
+
+1. After re-reading live tab IDs and verifying no direct dependencies from the surviving scanner tabs, deleted the three hidden legacy display tabs `Dashboard`, `Thesis Tracker`, and `Opportunity Quality`; the scanner data/output still loaded with no observed visible formula errors.
+2. Re-read all remaining user-entered formulas, confirmed **zero** references to legacy `_Data` or deleted tabs, and deleted the hidden `_Data` tab.
+3. Verified the original now has **four tabs only**: visible `S&P500 Scanner` and `Valuation Map`, hidden `_Scanner_Data` and `_Scanner_Config`. Fresh targeted reads of both visible tabs and scanner helper were error-free.
+4. Used a guarded SQL **data-only UPDATE** to set `active=false` **only** for `fwios.dashboard_refresh_access.access_key='GOOGLE_SHEET_IMPORTDATA'`. Verified `GOOGLE_SHEET_SCANNER_IMPORTDATA` remains `active=true`. No secret, token hash, row, table or function was deleted.
+5. Rechecked `fwios.v_scanner_current_v1` still returns **64 rows**. Rechecked both legacy and scanner Edge Functions remain deployed ACTIVE; the legacy endpoint is **not retired at the platform level**.
+
+**Rollback:** the private backup retains the old tabs and entered formulas. Recreating removed tabs requires owner-approved restore/copy (do not replace the current scanner tabs blindly). The legacy access flag can be enabled only through a separately authorized, audited action after validating secret handling, consumer needs and current security. Never reuse leaked or public URL tokens.
+
+**Left open:**
+
+- Deployed `dashboard-refresh-csv-v1` (**ACTIVE v7**) and its GitHub source remain: API callers should be rejected through inactive legacy access-row gating, but **this response behavior was not probed using a token**.
+- Five older `dashboard-refresh-*-probe-v1` endpoints also remain deployed and require a separate exposure/consumer audit and platform deletion process.
+- `fwios.dashboard_refresh_payload_v1()` and `dashboard_refresh_cache` persist as legacy-only candidates. **Keep** shared `dashboard_refresh_access`, `v_dashboard_valuation_map`, `v_thesis_tracking_current` and all migrations/tests until dependency-proven separate cleanup.
+- A full trading-session fresh-data/E2E check and platform-level function retirement are still outstanding. PR merged status does not prove this.
+
+---
 > **Decision: HOLD — NO PRODUCTION RETIREMENT AUTHORIZED.** This is a read-only dependency inventory, not approval to delete the legacy `_Data` tab, Edge Function, database objects, credentials or deploys. Do not equate an absence of recent requests with proven absence of external consumers. No private access tokens, authenticated feed URLs or portfolio account data are recorded here.
 
 ## Scope and evidence
