@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** GitHub checked **2026-10-23 (Asia/Bangkok)** against `main` commit `2800842c610d67ed4b51333696ffe670e5a5d16d`. The legacy Dashboard subset of Supabase/Google Sheets/cron/Edge state was re-checked and partially retired on 2026-10-23 (see execution receipt). **Other workstreams and current performance were not comprehensively re-verified**; re-check relevant systems before acting. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
+> **Navigation index, not operational authority.** GitHub checked **2026-10-23 (Asia/Bangkok)** against `main` commit `06613640d5eb9d1f1668b363c7011806974fdd4e`. The legacy Dashboard subset of Supabase/Google Sheets/cron/Edge state was re-checked and partially retired on 2026-10-23 (see execution receipt). **Other workstreams and current performance were not comprehensively re-verified**; re-check relevant systems before acting. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
 
 ## Mandatory read / execution order
 
@@ -41,13 +41,14 @@
 - [Documentation audit and classification](DOCUMENTATION_AUDIT_20261020.md): in-place legacy banners, historical evidence archives, files retained due to active dependencies and explicit deferred code retirement.
 - The old Dashboard CSV function is still deployed as a rollback-only path in prior checked Supabase evidence; repository docs must not authorize deleting its deployed endpoint or shared valuation/thesis views.
 
-## Legacy Dashboard — Sheet cutover completed, Edge retirement pending (2026-10-23)
+## Legacy Dashboard — fail-closed runtime retired, physical undeploy pending (2026-10-23)
 
-- [Post-audit execution receipt](implementation/LEGACY_DASHBOARD_RETIREMENT_AUDIT_20261023.md): owner confirmed no external apps or retained Apps Script; private **8-tab, 2,656 populated-cell** backup verified before deletion. The backup ID and credentials are intentionally not recorded in Git.
-- The live Dashboard now has only `S&P500 Scanner`, `Valuation Map`, hidden `_Scanner_Data` and `_Scanner_Config`. Four legacy tabs (`Dashboard`, `Thesis Tracker`, `Opportunity Quality`, `_Data`) were removed after source isolation and backup; spot-checks returned no formula errors.
-- Live Supabase access row `GOOGLE_SHEET_IMPORTDATA` was set **inactive**. Separate scanner access `GOOGLE_SHEET_SCANNER_IMPORTDATA` remains **active**. `fwios.v_scanner_current_v1` continued to return 64 rows.
-- **PENDING:** old `dashboard-refresh-csv-v1` Edge Function is still deployed; five legacy dashboard probe functions remain ACTIVE. Platform retirement / exposure review needs its own authorized changes and regression validation. Do not assume an inactive credential physically undeploys the endpoint.
-- **DO NOT DROP** shared `fwios.dashboard_refresh_access`, `v_dashboard_valuation_map`, `v_thesis_tracking_current`, scanner Edge Function, or schema migrations. Do not restart legacy components merely because an old document calls them LIVE.
+- [Execution receipt and live Edge verification](implementation/LEGACY_DASHBOARD_RETIREMENT_AUDIT_20261023.md). User confirmed no external clients / old Apps Script; private complete Google Sheet backup remains owner-only.
+- Current Focused Wealth Dashboard retains only `S&P500 Scanner`, `Valuation Map`, hidden `_Scanner_Data` and `_Scanner_Config`; old `Dashboard`, `Thesis Tracker`, `Opportunity Quality`, `_Data` removed.
+- Legacy access `GOOGLE_SHEET_IMPORTDATA` is **inactive**; scanner access `GOOGLE_SHEET_SCANNER_IMPORTDATA` remains **active**; `fwios.v_scanner_current_v1` returned **64 rows** after the runtime change.
+- **Legacy CSV endpoint replaced with inert 410 tombstone:** deployed `dashboard-refresh-csv-v1` `ACTIVE v8`, `verify_jwt=true`, no database/portfolio reads. Five dashboard diagnostic probes already deploy inert 410 handlers with JWT verification. **All six slugs still exist on Supabase**.
+- **Physical undeploy pending:** [Issue #68](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/68). Connected Supabase tools cannot undeploy functions; use a separate authorized platform action and verify inventory. Live HTTP invocation and full-trading-session E2E acceptance are not proven by a source/readback check.
+- **Never drop:** shared `fwios.dashboard_refresh_access` table, `v_dashboard_valuation_map`, `v_thesis_tracking_current`, scanner Edge Function, or historical migrations.
 
 ## Documentation map
 

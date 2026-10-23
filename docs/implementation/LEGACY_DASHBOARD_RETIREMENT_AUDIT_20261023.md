@@ -2,6 +2,18 @@
 
 **Inspection:** 2026-10-23 (Asia/Bangkok). **GitHub baseline:** `main` at `51eb5bcaf7e7904de190e43a0ebd34966a199e7d` (merged PR #65). **Supabase project:** `ysjbmeukwbfnxnwqchuq`. **Google Sheet:** `Focused Wealth Dashboard - Chumponphat`.
 
+> **RUNTIME EDGE RETIREMENT UPDATE — 2026-10-23 (Asia/Bangkok).** Supabase `dashboard-refresh-csv-v1` was updated from v7 to **ACTIVE v8** with `verify_jwt=true` and an intentionally inert source that returns **410 Gone** without accessing the database, cache, credentials or portfolio data. All five existing `dashboard-refresh-*-probe-v1` Functions were read back and already contain **410 Gone** inert handlers with `verify_jwt=true`. **All six function slugs remain deployed**; *no actual platform deletion / undeploy has happened*. See [GitHub issue #68](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/68) for the operator-only physical undeploy requirement. The source tombstone and a static regression test are included in the accompanying PR. The original historical audit below is retained unchanged as point-in-time evidence.
+
+## 2026-10-23 Edge Function tombstone deployment evidence
+
+- Read live `dashboard-refresh-csv-v1` after deployment: `version=8`, `status=ACTIVE`, `verify_jwt=true`, `index.ts` implements `status: 410`, no Postgres import or `SUPABASE_DB_URL` access. **Live HTTP execution was not independently exercised**, and `verify_jwt=true` may block unauthenticated requests at the gateway before they reach the 410 body.
+- Read all five separate diagnostics: `dashboard-refresh-probe-v1`, `dashboard-refresh-env-probe-v1`, `dashboard-refresh-db-probe-v1`, `dashboard-refresh-query-probe-v1`, and `dashboard-refresh-role-probe-v1` each still show `status=ACTIVE`, `verify_jwt=true`, a 410 handler, and no DB imports.
+- Scanner `scanner-refresh-csv-v1` remained `ACTIVE v4` with its original authentication model. `GOOGLE_SHEET_SCANNER_IMPORTDATA` remained `active=true`, old `GOOGLE_SHEET_IMPORTDATA` remained `active=false`, and `fwios.v_scanner_current_v1` still returned **64 rows**. The original Google Sheet retained exactly its four scanner and valuation tabs and a spot-check showed populated rows without formula errors.
+- A first attempted deployment failed because the legacy version's import map used an obsolete temporary path. **No production version changed on that failed attempt**. The successful second deployment explicitly supplied `deno.json` and `import_map_path="deno.json"`.
+- The platform deletion capability is **not available through the connected Supabase actions**. Keep [issue #68](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/68) open until an authorized operator undeploys the exact six obsolete names using Supabase Dashboard/CLI and verifies they no longer appear in inventory. Do not conflate returning 410 with undeployment.
+- **No SQL, schema, access key, scanner view, cron, portfolio or trade mutation** was made during this deployment. Preserve `fwios.dashboard_refresh_access`, `fwios.v_dashboard_valuation_map`, and `fwios.v_thesis_tracking_current`.
+
+---
 > **POST-AUDIT EXECUTION RECEIPT — 2026-10-23 (Asia/Bangkok).** The original dependency matrix and HOLD decision below describe the state *before* the user's external-consumer confirmation and the controlled cleanup. The retirement of the **Google Sheets legacy tabs and the legacy auth row** was carried out and verified. **The legacy Edge Function is still deployed**, and shared Supabase objects must remain. This is a partial, reversible cutover — **not** permission to drop SQL objects or delete deployed functions.
 
 ## Post-audit execution — 2026-10-23
