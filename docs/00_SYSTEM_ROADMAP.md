@@ -4,14 +4,16 @@
 
 Status: **ACTIVE**  
 Live foundation: **0.87**  
-Execution contract: **FWIOS-CONTRACT-0.87.17**  
-Last updated: **2026-09-30 Asia/Bangkok**  
+Execution contract (GitHub docs review): **FWIOS-CONTRACT-0.87.19**  
+Last strategy / navigation review: **2026-10-23 Asia/Bangkok** (September operational snapshots retained as historical)  
 Execution mode: **HUMAN EXECUTION ONLY**
 
 ## Authority model
 Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrations. Google Sheets = View / Compatibility / Reconciliation / Audit / Export. Live state overrides stale docs.
 
-## Current system state
+## Historical system snapshot — September 2026 (not a live-state readback)
+
+The table below preserves the originally recorded operational snapshot, including the **0.87.17 contract at that snapshot date**. For current decisions, use the active **0.87.19** contract, [CURRENT_STATUS.md](CURRENT_STATUS.md), live runtime verification, and the latest merged PR state. A documentation review is not a production validation.
 | Item | Current state |
 |---|---|
 | Foundation | 0.87 |
@@ -96,6 +98,37 @@ Portfolio Engine
 - archetype models are created/reused on demand;
 - no force-fill and no auto-trading;
 - compatibility views remain until downstream consumers migrate.
+
+## 2026-10-23 Strategy overlay — Value + Entry Timing + Portfolio Rotation (PROPOSED ONLY)
+
+**Status: DOCUMENTATION / ANALYSIS ONLY — NOT IMPLEMENTED OR PRODUCTION APPROVED.** See [Value, Entry & Rotation Strategy Roadmap](implementation/VALUE_ENTRY_ROTATION_STRATEGY_ROADMAP_20261023.md) for the complete proposal, dependency chain, acceptance criteria and open decisions.
+
+### Investment objective
+
+Focus on verified **intrinsic-value discounts**, defensible entry conditions, and disciplined **hold/add/trim/exit/rotate/cash** comparisons. A fair-value estimate is not a guaranteed market price within a trading horizon. Optimizing for expected after-cost, risk-adjusted capital allocation matters more than mechanical profit-taking.
+
+### Reuse before building
+
+- Keep Redesign [Epic #31](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/31) as the canonical operating loop; finish [Issue #38](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/38) attention/promotion/demotion design before scheduling deep research work. [Issue #39](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/39) remains gated on proven compatibility parity.
+- Reuse existing evidence, controlled ChatGPT ingestion, typed metrics, thesis memory, valuation models, hardening/scoring, market-data observations, Decision Snapshot, opportunity ranking, portfolio scenario, rebalancing and human approval.
+- Do not introduce parallel AI-generated production scores, unconstrained price targets, a duplicate trading ledger, or high-frequency deep research across the S&P 500.
+- Preserve current 30/30/25/15 production core score, valuation/quality hard gates, human execution only, and timing as a bounded non-core modifier. Any replacement thresholds require an explicitly reviewed policy version.
+- Keep U1 S&P 500 membership expansion paused unless the owner reactivates it separately; the current instrument subset must not be described as full-index coverage.
+- Existing Research Workflow defaults to PREVIEW. A future automatic research-to-database APPLY pipeline requires separate explicit authority, controlled gateway permissions and audit acceptance; **no ChatGPT Task, Supabase Cron, schema change, trade or portfolio write is authorized by this roadmap update**.
+
+### Planned delivery order (not started)
+
+| Planning track | Scope | Major dependency |
+| --- | --- | --- |
+| **D0 — Roadmap / feature gap analysis** | Reconcile current production policies and feature inventory; document constraints and evaluation criteria | This documentation review |
+| **D1 — Research attention design** | Priority queue, lifecycle promotion/demotion, resource budget and refresh policy | Existing Redesign #38 |
+| **D2 — Institutional research / valuation** | Canonical sourced financial facts, valuation sensitivity/confidence, selective archetype coverage | D1 + controlled ingest/readiness |
+| **D3 — Entry and opportunity comparison** | Risk-aware entry timing, fair-value discount context and deterministic reason codes | D2 + canonical market observations |
+| **D4 — Portfolio rotation advisory** | Compare retain/add/trim/exit/rotate/cash, costs, portfolio impact and human approval | D3 + reconciled holdings |
+| **D5 — Strategy evaluation and shadow cadence** | Point-in-time backtest, benchmark, walk-forward, paper/shadow evaluation and scheduling governance | D1–D4; no cutover |
+| **D6 — Separate production authorization** | Versioned requirements, phased release plan and rollback (only if validated and approved) | Explicit owner approval and #39 parity where relevant |
+
+**Near-term priority remains Issue #38**. This strategy overlay adds requirements, not a new competing initiative or an instruction to execute the next issue now.
 
 ## M1 — Research Pipeline v2
 **CORE HARDENING PASS / PERFORMANCE VALIDATION OPEN.** Research/model coverage debt remains fail-closed for affected names.
