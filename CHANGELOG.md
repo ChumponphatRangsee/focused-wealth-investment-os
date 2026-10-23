@@ -4,6 +4,10 @@
 
 ## 2026-10-23 — Legacy Dashboard staged retirement (operational change)
 
+- Live Supabase legacy endpoint `dashboard-refresh-csv-v1` redeployed as **inert 410 Gone** stub v8 with JWT verification; source is kept in GitHub to prevent redeploy of the former DB-querying version. Five legacy diagnostic probe Functions were verified to already run 410 handlers with JWT. **All six slugs remain deployed**, physical deletion tracked in [issue #68](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/68).
+- Static source regression tests protect the 410 response and absence of DB/portfolio access. Confirmed scanner source/credential and 64-row read model remain available; no broader end-to-end or direct HTTP assertion made.
+
+
 - [PR #66](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/66) merged the dependency audit and safe-retirement gates before any environment mutation.
 - Owner confirmed legacy consumers / Apps Script are no longer required. An owner-only native Sheet backup was verified: all 8 tabs and 2,656 populated user-entered cells matched.
 - Removed only the four hidden, legacy Google Sheet tabs after verifying the current scanner/valuation surface was independent; rechecked that the two visible tabs and scanner import retained data without observed errors.
