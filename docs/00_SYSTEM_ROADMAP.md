@@ -14,7 +14,7 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 ## Historical system snapshot — September 2026 (not a live-state readback)
 
 The table below preserves the originally recorded operational snapshot, including the **0.87.17 contract at that snapshot date**. For current decisions, use the active **0.87.19** contract, [CURRENT_STATUS.md](CURRENT_STATUS.md), live runtime verification, and the latest merged PR state. A documentation review is not a production validation.
-| Item | Current state |
+| Item | State recorded in historical snapshot |
 |---|---|
 | Foundation | 0.87 |
 | Research Lifecycle v1 | **ACTIVE CONTRACT / NO READ CUTOVER / 17/17 PASS** |
@@ -128,7 +128,7 @@ Focus on verified **intrinsic-value discounts**, defensible entry conditions, an
 | **D5 — Strategy evaluation and shadow cadence** | Point-in-time backtest, benchmark, walk-forward, paper/shadow evaluation and scheduling governance | D1–D4; no cutover |
 | **D6 — Separate production authorization** | Versioned requirements, phased release plan and rollback (only if validated and approved) | Explicit owner approval and #39 parity where relevant |
 
-**Near-term priority remains Issue #38**. This strategy overlay adds requirements, not a new competing initiative or an instruction to execute the next issue now.
+**Redesign planning priority remains Issue #38**, while Scanner v2 is a separate scanner-specific backlog item (see [CURRENT_STATUS.md](CURRENT_STATUS.md)). Neither workstream is authorized to begin implementing by this documentation-only strategy overlay. D0 captures this roadmap alignment; live feature inventory, data-provider feasibility, cost assumptions and implementation readiness remain open checks.
 
 ## M1 — Research Pipeline v2
 **CORE HARDENING PASS / PERFORMANCE VALIDATION OPEN.** Research/model coverage debt remains fail-closed for affected names.
