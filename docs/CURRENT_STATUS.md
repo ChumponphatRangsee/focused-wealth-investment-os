@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** GitHub checked **2026-10-23 (Asia/Bangkok)** against `main` commit `06613640d5eb9d1f1668b363c7011806974fdd4e`. The legacy Dashboard subset of Supabase/Google Sheets/cron/Edge state was re-checked and partially retired on 2026-10-23 (see execution receipt). **Other workstreams and current performance were not comprehensively re-verified**; re-check relevant systems before acting. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
+> **Navigation index, not operational authority.** GitHub docs-only strategy review **2026-10-23 (Asia/Bangkok)** based on `main` commit `be59ab3348b3955be1f6584ff6c8aa8ebc1d9e85`. The legacy Dashboard runtime receipts below reflect their own earlier verification times; this review did **not** repeat Supabase or Sheet verification. The legacy Dashboard subset of Supabase/Google Sheets/cron/Edge state was re-checked and partially retired on 2026-10-23 (see execution receipt). **Other workstreams and current performance were not comprehensively re-verified**; re-check relevant systems before acting. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
 
 ## Mandatory read / execution order
 
@@ -13,7 +13,7 @@
 ## Repository / source precedence
 
 - Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
-- GitHub snapshot at this index revision: `2800842c610d67ed4b51333696ffe670e5a5d16d` (re-check on each new session).
+- GitHub main baseline used for the 2026-10-23 strategy-documentation change: `be59ab3348b3955be1f6584ff6c8aa8ebc1d9e85` (re-check on each new session).
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
 
@@ -25,6 +25,7 @@
 | **Daily Performance Backend / historical backfill** | Dedicated plan/handover exists; **do not infer feature is deployed** without live verification | [Feature plan](implementation/PHASE1_DAILY_PERFORMANCE_BACKEND_HANDOVER_20261019.md); start schema/writer/reconciliation only after checking actual Supabase/Sheets state and relevant PRs. |
 | **Focused Dashboard / S&P 500 expansion** | Scanner separation PR [#59](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/59) and cleanup PR [#60](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/60) merged. Prior 2026-10-19 evidence listed **64 stock instruments**, not full S&P 500; not independently checked today. | [Universe expansion plan](implementation/SP500_UNIVERSE_EXPANSION_PLAN_20261019.md); check membership/source-of-truth design and live row counts before U1 implementation. |
 | **Controlled Research / Scanner v2** | PR [#61](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/61), [#62](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/62), and research-readiness PR [#63](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/63) are merged. PR #63 completed **21/21** readiness acceptance before merge; Scanner v2 is not part of this cleanup. | [Research workflow](implementation/CHATGPT_RESEARCH_WORKFLOW_V1.md), [controlled ingest](implementation/PR2_CONTROLLED_RESEARCH_INGEST_V1.md), [PR4 readiness](implementation/PR4_RESEARCH_READINESS_FAIL_CLOSED_V1.md). Next feature step after documentation cleanup: Scanner v2; keep U1/full S&P 500 expansion paused unless explicitly resumed. |
+| **Value / Entry Timing / Portfolio Rotation strategy — PROPOSED** | **Documentation only; no code, policy, schedule or production behavior change.** Target objective: find evidence-backed undervaluation, enter only after price/risk review, and compare holding with risk-adjusted rotation opportunities. The plan reuses current hard gates and human approval; it is not a new automated investment engine. | [Strategy roadmap](implementation/VALUE_ENTRY_ROTATION_STRATEGY_ROADMAP_20261023.md), [Master roadmap](00_SYSTEM_ROADMAP.md). Design dependencies: [#31](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/31) / [#38](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/38); do not activate schedules or implement until separately approved. |
 | **External API inventory / security** | Audit PR [#48](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/48) **open**, not merged (checked 2026-10-20). | Review PR #48 before asserting audit closure or changing vendor credentials. |
 
 ## Non-negotiable guardrails
@@ -54,7 +55,7 @@
 
 - **Current index:** this file, kept concise; update on meaningful workflow changes, not every Chat.
 - **Contracts:** [AGENTS](../AGENTS.md) and [system contract](../contracts/system-contract.yaml).
-- **Architecture:** [FWIOS v3](architecture/FWIOS_ARCHITECTURE_V3.md) (verify approved vs proposed decisions), and durable feature implementation plans.
+- **Architecture:** [FWIOS v3](architecture/FWIOS_ARCHITECTURE_V3.md) (verify approved vs proposed decisions), [Master System Roadmap](00_SYSTEM_ROADMAP.md), and the **proposed, not implemented** [Value / Entry / Rotation strategy plan](implementation/VALUE_ENTRY_ROTATION_STRATEGY_ROADMAP_20261023.md).
 - **Active handoff details:** [Phase-1 dated snapshot](implementation/FWIOS_PHASE1_HANDOVER_20261019.md) and [Daily Performance feature handover](implementation/PHASE1_DAILY_PERFORMANCE_BACKEND_HANDOVER_20261019.md); these are **dated evidence**, not live state.
 - **Historical handovers:** [archive index](archive/handovers/README.md); old paths remain short compatibility pointers only.
 - **Rules for upkeep:** [Documentation lifecycle](DOCUMENTATION_LIFECYCLE.md).
