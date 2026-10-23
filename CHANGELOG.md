@@ -2,6 +2,15 @@
 
 > Changelog entries record **merged GitHub changes and dated project evidence**, not independently verified current deployments. Use [Current Status](docs/CURRENT_STATUS.md) and fresh live-system inspection for operational assertions.
 
+## 2026-10-23 — Legacy Dashboard staged retirement (operational change)
+
+- [PR #66](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/66) merged the dependency audit and safe-retirement gates before any environment mutation.
+- Owner confirmed legacy consumers / Apps Script are no longer required. An owner-only native Sheet backup was verified: all 8 tabs and 2,656 populated user-entered cells matched.
+- Removed only the four hidden, legacy Google Sheet tabs after verifying the current scanner/valuation surface was independent; rechecked that the two visible tabs and scanner import retained data without observed errors.
+- Deactivated only the legacy `GOOGLE_SHEET_IMPORTDATA` auth row in live Supabase. Scanner auth remained active and current scanner view still returned 64 rows.
+- **Still pending:** platform undeploy of old legacy CSV and dashboard diagnostic Edge Functions, their separate dependency/security review, and any eventual cleanup of legacy-only database objects. Shared scanner views and auth table remain protected.
+- [Read-only audit and post-cutover receipt](docs/implementation/LEGACY_DASHBOARD_RETIREMENT_AUDIT_20261023.md).
+
 ## 2026-10-20 — Contract alignment and documentation lifecycle
 
 - Research readiness / fail-closed gates [PR #63](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/63) merged; current tracked contract is `FWIOS-CONTRACT-0.87.19` in `AGENTS.md` and `contracts/system-contract.yaml`.

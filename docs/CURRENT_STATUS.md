@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** GitHub checked **2026-10-23 (Asia/Bangkok)** against `main` commit `51eb5bcaf7e7904de190e43a0ebd34966a199e7d`. The legacy Dashboard subset of Supabase/Google Sheets/cron/Edge state was re-checked on 2026-10-23 (see retirement audit). **Other workstreams and current performance were not comprehensively re-verified**; re-check relevant systems before acting. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
+> **Navigation index, not operational authority.** GitHub checked **2026-10-23 (Asia/Bangkok)** against `main` commit `2800842c610d67ed4b51333696ffe670e5a5d16d`. The legacy Dashboard subset of Supabase/Google Sheets/cron/Edge state was re-checked and partially retired on 2026-10-23 (see execution receipt). **Other workstreams and current performance were not comprehensively re-verified**; re-check relevant systems before acting. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
 
 ## Mandatory read / execution order
 
@@ -13,7 +13,7 @@
 ## Repository / source precedence
 
 - Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
-- GitHub snapshot at this index revision: `51eb5bcaf7e7904de190e43a0ebd34966a199e7d` (re-check on each new session).
+- GitHub snapshot at this index revision: `2800842c610d67ed4b51333696ffe670e5a5d16d` (re-check on each new session).
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
 
@@ -41,12 +41,13 @@
 - [Documentation audit and classification](DOCUMENTATION_AUDIT_20261020.md): in-place legacy banners, historical evidence archives, files retained due to active dependencies and explicit deferred code retirement.
 - The old Dashboard CSV function is still deployed as a rollback-only path in prior checked Supabase evidence; repository docs must not authorize deleting its deployed endpoint or shared valuation/thesis views.
 
-## Legacy Dashboard retirement (audit — 2026-10-23)
+## Legacy Dashboard — Sheet cutover completed, Edge retirement pending (2026-10-23)
 
-- [Live dependency audit and gated retirement plan](implementation/LEGACY_DASHBOARD_RETIREMENT_AUDIT_20261023.md). This is an **audit, not a cutover authorization**. No retirement code or database changes made.
-- Current S&P500 Scanner and Valuation Map source `_Scanner_Data` without direct formulas to `_Data`, but three hidden tabs still contain **61 `_Data`-dependent formulas**.
-- `dashboard-refresh-csv-v1` and its legacy access key are still active despite no observed cron invocation or legacy function request in the 2026-10-16..23 sampled logs. External consumer inventory and rollback approval remain **OPEN**.
-- **DO NOT DROP:** `fwios.dashboard_refresh_access` (shared by scanner), `v_dashboard_valuation_map`, `v_thesis_tracking_current`, scanner Edge Function, or any historical migrations.
+- [Post-audit execution receipt](implementation/LEGACY_DASHBOARD_RETIREMENT_AUDIT_20261023.md): owner confirmed no external apps or retained Apps Script; private **8-tab, 2,656 populated-cell** backup verified before deletion. The backup ID and credentials are intentionally not recorded in Git.
+- The live Dashboard now has only `S&P500 Scanner`, `Valuation Map`, hidden `_Scanner_Data` and `_Scanner_Config`. Four legacy tabs (`Dashboard`, `Thesis Tracker`, `Opportunity Quality`, `_Data`) were removed after source isolation and backup; spot-checks returned no formula errors.
+- Live Supabase access row `GOOGLE_SHEET_IMPORTDATA` was set **inactive**. Separate scanner access `GOOGLE_SHEET_SCANNER_IMPORTDATA` remains **active**. `fwios.v_scanner_current_v1` continued to return 64 rows.
+- **PENDING:** old `dashboard-refresh-csv-v1` Edge Function is still deployed; five legacy dashboard probe functions remain ACTIVE. Platform retirement / exposure review needs its own authorized changes and regression validation. Do not assume an inactive credential physically undeploys the endpoint.
+- **DO NOT DROP** shared `fwios.dashboard_refresh_access`, `v_dashboard_valuation_map`, `v_thesis_tracking_current`, scanner Edge Function, or schema migrations. Do not restart legacy components merely because an old document calls them LIVE.
 
 ## Documentation map
 
