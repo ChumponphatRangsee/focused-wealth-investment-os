@@ -24,6 +24,8 @@ Repository for deterministic investment research/decision contracts, Supabase-ba
 
 The architecture has evolved beyond the original September 2026 sector-first baseline. Research readiness, S&P 500 expansion, pricing and performance features have their own scoped documents; use the [current index](docs/CURRENT_STATUS.md) to find them rather than a dated chat handover.
 
+**Strategy planning (not implemented):** [Value, Entry Timing & Portfolio Rotation](docs/implementation/VALUE_ENTRY_ROTATION_STRATEGY_ROADMAP_20261023.md) extends the [master roadmap](docs/00_SYSTEM_ROADMAP.md) with source-backed intrinsic valuation, price-entry context, candidate research attention, portfolio opportunity-cost comparison, and point-in-time evaluation. This is **documentation only**: no scheduled research task, API/database mutation, new scoring policy, broker execution or accounting changes are activated.
+
 ## Tests and historical evidence
 
 A limited legacy read-only closeout checker remains:
