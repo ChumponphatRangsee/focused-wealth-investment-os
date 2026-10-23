@@ -1,5 +1,7 @@
 # 05 — Autonomous Sector Research Loop
 
+> **Historical sector-first research procedure.** This describes the 2026-09 phase and its past sector queues; it is **not** a current mandate to run one full sector per schedule. Later FWIOS architecture prefers portfolio-native, selective research. Follow [CURRENT_STATUS.md](CURRENT_STATUS.md), current research policy and live controllers before any run; historical records below remain preserved.
+
 Contract version: **FWIOS-CONTRACT-0.87.0**
 
 Live state controller: `Sector_Run_Control`.

@@ -1,5 +1,7 @@
 # 01 — System Architecture
 
+> **Architecture reference with historical operational evidence.** This describes successive implementation layers; its "current" screenshots/counts and cutover descriptions are point-in-time. Use [CURRENT_STATUS.md](CURRENT_STATUS.md) and [AGENTS.md](../AGENTS.md) plus live deployed state for current behavior. An architecture plan does not by itself authorize a production migration.
+
 Contract version: **FWIOS-CONTRACT-0.87.17**  
 Foundation compatibility: **0.87**  
 Architecture state: **CONSOLIDATION V1 LIVE / M3 COMPLETE / QUALITY FILTER REVALIDATED / FINANCIALS RESEARCH COMPLETE / MODEL DEBT FAIL-CLOSED / DASHBOARD AUTO REFRESH LIVE**

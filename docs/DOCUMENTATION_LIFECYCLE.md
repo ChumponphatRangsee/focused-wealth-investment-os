@@ -30,6 +30,14 @@ Status: **ACTIVE — docs-only governance** (introduced 2026-10-20). This is a p
 6. Confirm the PR diff contains **only Markdown/documentation files**; no database, Edge Function, cron, Sheets, trade or accounting changes.
 7. Do not auto-merge; inspect CI, required reviews and merge conflicts first. Resolve conflicting AGENTS edits by reconciling the newer live contract rather than overwriting it.
 
+## Additional historical documentation review
+
+Earlier monthly architecture and migration receipts can be kept in `docs/archive/legacy/` with old-path compatibility pointers. Dated historical research results should stay within `docs/runs/` if that location already communicates their status. Avoid moving or renumbering live contracts and policies merely to make the root folder look smaller.
+
+Any version display in `README.md` or `VERSION` must follow the merged `AGENTS.md` and `contracts/system-contract.yaml` pair; never increment policy/contract IDs from age or automatically claim deployment acceptance. Review exact PR state before updating this information.
+
+See [2026-10-20 documentation audit](DOCUMENTATION_AUDIT_20261020.md) for disposition and explicit retirement exclusions.
+
 ## Scope of the 2026-10-20 cleanup
 
 - Archived **six** completed/superseded chat handovers, with full historical text retained and minimal pointers at the old paths.

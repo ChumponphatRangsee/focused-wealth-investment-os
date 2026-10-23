@@ -1,5 +1,7 @@
 # 09 — Decision Refresh Provider Auto-Validation
 
+> **Provider-validation design plus dated 2026-09 initial state.** The validator Edge Function and its cron schedule were still active at the 2026-10-20 read-only inspection. The historical statement below that Vault keys were missing is **not a current secrets/entitlements audit**; recheck provider registry and live validation evidence before acting. Do not expose secrets in documentation.
+
 Status: **SHADOW ACTIVE / FAIL-CLOSED**  
 Activation: **2026-09-11 Asia/Bangkok**  
 Execution boundary: **HUMAN EXECUTION ONLY**

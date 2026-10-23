@@ -1,5 +1,7 @@
 # Focused Wealth Investment OS — Master System Roadmap
 
+> **Roadmap with dated operational snapshots, not live controller authority.** Market, portfolio, phase and queue counts inside this document describe the verification dates recorded there. Start from [CURRENT_STATUS.md](CURRENT_STATUS.md), the merged contract and current Supabase/Sheet readback before selecting a task.
+
 Status: **ACTIVE**  
 Live foundation: **0.87**  
 Execution contract: **FWIOS-CONTRACT-0.87.17**  

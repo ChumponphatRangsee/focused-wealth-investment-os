@@ -1,5 +1,7 @@
 # 04 — Blocked Resolution Orchestrator
 
+> **Historical operational design / snapshots.** The original 'central queue' and 'current snapshot' sections are not guaranteed to reflect the newer research/portfolio architecture. Do not schedule autonomous remediation from this document without [CURRENT_STATUS.md](CURRENT_STATUS.md), approved current contracts and live blocker state.
+
 Contract version: **FWIOS-CONTRACT-0.87.0**
 
 The central blocker queue is the only durable mechanism for root-cause remediation.

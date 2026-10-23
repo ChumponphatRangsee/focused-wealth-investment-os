@@ -1,50 +1,42 @@
-# Focused Wealth Investment OS
+# Focused Wealth Investment OS (FWIOS)
 
-Operating contract and reconciliation tools for the Portfolio investment system.
+Repository for deterministic investment research/decision contracts, Supabase-backed state and integration services, migrations and regression tests.
 
-**Foundation:** 0.87
+- **Contract:** `FWIOS-CONTRACT-0.87.19` (see [system contract](contracts/system-contract.yaml) and [VERSION](VERSION); version is not a deployment receipt).
+- **Compatible foundation:** `0.87`.
+- **Safety:** Human execution only; no auto-buy/sell. Portfolio transactions/accounting remain under the designated Investment Portfolio Tracker; scanner research does not change holdings, quantities or cash.
+- **Current operational truth:** Verify live Supabase, Google Sheets, GitHub PR/commit and relevant scheduled functions independently. Historical snapshots in this repository must never be assumed to describe today's production state.
 
-**Contract:** FWIOS-CONTRACT-0.87.1
+## Start here — one living entrypoint
 
-**Project:** ACTIVE — research is operational; decision and allocation cutovers remain incomplete.
+1. [AGENTS.md](AGENTS.md) — mandatory execution guardrails.
+2. [Current project status](docs/CURRENT_STATUS.md) — dated navigation index to active workstreams, next steps and blockers; **not** a replacement for live verification.
+3. [System contract](contracts/system-contract.yaml), [VERSION](VERSION), and [master roadmap](docs/00_SYSTEM_ROADMAP.md).
+4. Read only the relevant [implementation plan/runbook](docs/implementation/) or [architecture reference](docs/01_SYSTEM_ARCHITECTURE.md); check the associated PR/Issue and production state before executing.
+5. [Documentation lifecycle](docs/DOCUMENTATION_LIFECYCLE.md) governs archival and when to create a new chat handover.
 
-> Focus creates upside. Position sizing creates survival. Valuation creates margin of safety.
+## Scope and ownership
 
-## Start here
+- **Supabase:** FWIOS state, deterministic pricing/research foundations, market data, orchestration and related read models.
+- **GitHub:** contracts, logic, migrations, tests, source code, decision history.
+- **Investment Portfolio Tracker (Google Sheets):** transaction and accounting source of truth for the current Phase-1 workflow; do not create a duplicate transaction ledger.
+- **Focused Wealth Dashboard:** portfolio-independent scanner/research presentation; coverage and scoring eligibility must be verified from the live scanner backend.
 
-1. [AGENTS.md](AGENTS.md) — mandatory agent guardrails.
-2. [Current status and new-chat entrypoint](docs/CURRENT_STATUS.md) — active workstreams, PRs and next checks (**dated index, not live truth**).
-3. [System contract](contracts/system-contract.yaml) and [VERSION](VERSION).
-4. Verify current GitHub, Supabase, relevant Sheet and live controller state before changes.
-5. [Master roadmap](docs/00_SYSTEM_ROADMAP.md) and [Research closeout](docs/07_RESEARCH_CLOSEOUT.md).
+The architecture has evolved beyond the original September 2026 sector-first baseline. Research readiness, S&P 500 expansion, pricing and performance features have their own scoped documents; use the [current index](docs/CURRENT_STATUS.md) to find them rather than a dated chat handover.
 
-Documentation maintenance: [Documentation lifecycle policy](docs/DOCUMENTATION_LIFECYCLE.md); [archived chat handovers](docs/archive/handovers/README.md).
+## Tests and historical evidence
 
-Current live data overrides documentation. The portfolio tracker remains the authority for holdings and transactions. Supabase owns migrated research evidence and valuation compute records; Sheets remains the operational control room and downstream decision compatibility layer. This is not yet a standalone application.
-
-## Latest reconciled run — 2026-09-05
-
-Communication Services `SECTOR-CS-FULL-20260905-01` has completed research:
-
-- Fast Discovery: 20 → 8; Light Research: 8 → 5; Deep Research: 5 → 3.
-- RDDT, PINS and NFLX have 25 persisted Tier-A evidence records in total.
-- TMUS and WMG remain deferred after light research.
-- Measured stage time: 863.729 seconds (14.4 minutes), one run only.
-- No new production promotion or immediate-buy candidate.
-- Valuation coverage: 11 / 18 evidence-ready candidates (61.1%); seven root model blockers.
-- Controller: `MODEL_FACTORY_AFTER_CURRENT_SECTOR`. Finish reconciliation, then model sprint; do not start Financials automatically.
-
-Read [closeout findings](docs/07_RESEARCH_CLOSEOUT.md) for the remaining M1 hardening issues. M2–M4 are still pending. A completed research run does not mean the whole project is complete.
-
-## Verification
-
-Python 3 standard library only:
+A limited legacy read-only closeout checker remains:
 
 ```bash
 python -m unittest discover -s tests -v
 python scripts/check_closeout.py /absolute/path/to/private-snapshot.json
 ```
 
-The checker is read-only and designed for a run with **zero new promotions**. It blocks when evidence, run lineage, history, locks or controller handoff disagree. It does not independently verify financial disclosures, current prices, or investment eligibility. Do not commit live snapshots or private portfolio data.
+These commands do **not** constitute a full production acceptance or current trading signal. Never commit private portfolio snapshots, service credentials or tokens.
 
-Human execution only. No automatic buys, sells or portfolio transaction writes.
+Historical evidence: [September research closeout](docs/07_RESEARCH_CLOSEOUT.md), [Financials sector run](docs/runs/20260906_financials_sector_run.md), and [archived chat handovers](docs/archive/handovers/README.md).
+
+## Change history
+
+See [CHANGELOG.md](CHANGELOG.md), the exact merged GitHub PRs and [documentation audit](docs/DOCUMENTATION_AUDIT_20261020.md). A merged PR does not prove that corresponding Supabase/Sheet deployment checks passed.

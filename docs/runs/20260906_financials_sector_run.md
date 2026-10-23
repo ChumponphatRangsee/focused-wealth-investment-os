@@ -1,5 +1,7 @@
 # Financials Sector Run — 2026-09-06
 
+> **COMPLETED HISTORICAL RESEARCH RUN — 2026-09-06.** Preserve this run's evidence, scoring/gates and then-current model blockers as audit receipts only. It does not establish current valuation availability, holdings, ranking or the next autonomous task. See [CURRENT_STATUS.md](../CURRENT_STATUS.md) for a workstream entrypoint.
+
 Run ID: `SECTOR-FIN-FULL-20260906-01`  
 Foundation: `0.87`  
 Contract: `FWIOS-CONTRACT-0.87.11`  

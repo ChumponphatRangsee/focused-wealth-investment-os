@@ -1,5 +1,7 @@
 # 02 — Scoring and Gates
 
+> **Original Phase-0.87 scoring design reference.** The contract version below is the document's *authored* version, not the active GitHub contract ID. For current policies and eligibility use [AGENTS.md](../AGENTS.md), [system-contract.yaml](../contracts/system-contract.yaml) and live deterministic read models. Do not treat any example score as current.
+
 Contract version: **FWIOS-CONTRACT-0.87.0**
 
 ## Production scoring core
