@@ -17,6 +17,13 @@
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
 
+## Strategy documentation merge receipt — 2026-10-23
+
+- [PR #70](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/70) **MERGED** into `main` at GitHub merge commit `f752f5c53441b0443e6d1660cfe31f6d733ea6f0`. The change is exclusively 4 Markdown files: an updated [master roadmap](00_SYSTEM_ROADMAP.md), new [Value / Entry / Rotation plan](implementation/VALUE_ENTRY_ROTATION_STRATEGY_ROADMAP_20261023.md), README navigation and this index. At review, 50 local links checked with 0 broken.
+- The strategy remains **PROPOSED**, not implemented/approved for production. It does **not** authorize ChatGPT scheduling, research APPLY automation, database writes, valuation policy changes, trading, scanner cutover or portfolio mutation. No CI check run was reported for PR #70; do not claim CI PASS.
+- [Epic #31](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/31) checklist reconciled: #35/#36/#37 closed and foundation-complete; **production read cutover remains separately gated**. [Issue #38](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/38) now contains **design-only** attention/selection/promotion/demotion requirements and remains OPEN, with no implementation authorized. Issue #39 also remains OPEN.
+- **Next design review:** audit actual existing research-attention surfaces and complete #38's versioned ranking/queue specification. **Distinct scanner backlog:** Scanner v2; **U1 S&P 500 expansion remains paused**. Never resume either solely because roadmap docs merged.
+
 ## Workstreams (verified GitHub status versus older feature snapshots)
 
 | Stream | GitHub state at index creation | Next source to read / validation |
