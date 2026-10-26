@@ -33,6 +33,16 @@
 - **Regression:** `tests/valuation/test_valuation_input_resolver_v1.sql` returned **7/7 PASS (READ-ONLY)** against live Supabase. No canonical metrics, model rows, version state, valuation runs or portfolio state were written.
 - **Next exact action:** review PR #77, then resolve version-governance ambiguity and define approved generic semantic mappings/contracts for the three period-RED models. Production metric migration, model-version changes, resolver cutover and new valuation runs remain separately authorized future steps.
 
+## Valuation period semantics v2 — PR #78 / LIVE foundation migration (2026-10-26)
+
+- **Draft stacked PR [#78](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/78)** implements the approved follow-up to PR #77. Live Supabase migration `20261026101318 valuation_period_semantics_v2` has been applied after a rollback dry-run.
+- **Version authority fixed:** SEMIS 1.0 is retired and 1.1 is the sole production version. SAAS legacy `1.1-EXPERIMENTAL` is retired and canonical `1.1` is now the sole production version as an exact contract/policy/assumption clone. Historical valuation runs remain unchanged.
+- **Period-aware semantics live:** generic `BOOK_TO_BILL`, `REVENUE_GROWTH_GUIDANCE_LC_MID` and `FREE_CASH_FLOW_GUIDANCE` definitions plus `METRIC_PERIOD_AWARE_V1` mappings are live. Four lineage-linked semantic alias observations cover ACN/EOG/NFLX without rewriting legacy observations.
+- **ACN v2 contract:** `IT_SERVICES_FCF_COMPOUNDER_V1::2.0` is registered as `EXPERIMENTAL` with relative-period selectors and `production_read_cutover=false`. Reported FCF guidance values are no longer copied into v2 assumptions.
+- **Verification:** migration dry-run PASS; post-apply valuation semantics regression **12/12 PASS**. ACN/EOG/NFLX Valuation Map values and valuation run IDs remained unchanged before/after migration.
+- **Current ACN v2 state:** required inputs remain 0/7 PASS because FY2027 guidance is absent and FY2026 year-end FCF/net-cash/share-count canonical inputs are not yet complete. This is intentional fail-closed behavior.
+- **Next exact action:** close ACN current-period primary evidence (FY2026 actual FCF, year-end debt/net-cash, period-end shares, FY2027 FCF guidance and FY2027 revenue-growth guidance), rerun v2 resolver, then consider a shadow/new immutable valuation run. Production v2 cutover remains separate.
+
 ## MVP-1 scope correction — existing Valuation Map + Data Reliability, no new UI (2026-10-26)
 
 - **Owner clarified goal:** do **not** build a separate dashboard/tab/report. Use the existing [Focused Wealth Dashboard / Valuation Map](https://docs.google.com/spreadsheets/d/17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8/edit) for display. MVP-1 measures **data capture completeness, correctness and freshness** for tracked stock prices, issuer financial facts, model inputs and revaluations. [Revised audit and acceptance checklist](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md).
