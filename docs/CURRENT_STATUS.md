@@ -40,8 +40,9 @@
 - **Period-aware semantics live:** generic `BOOK_TO_BILL`, `REVENUE_GROWTH_GUIDANCE_LC_MID` and `FREE_CASH_FLOW_GUIDANCE` definitions plus `METRIC_PERIOD_AWARE_V1` mappings are live. Four lineage-linked semantic alias observations cover ACN/EOG/NFLX without rewriting legacy observations.
 - **ACN v2 contract:** `IT_SERVICES_FCF_COMPOUNDER_V1::2.0` is registered as `EXPERIMENTAL` with relative-period selectors and `production_read_cutover=false`. Reported FCF guidance values are no longer copied into v2 assumptions.
 - **Verification:** migration dry-run PASS; post-apply valuation semantics regression **12/12 PASS**. ACN/EOG/NFLX Valuation Map values and valuation run IDs remained unchanged before/after migration.
-- **Current ACN v2 state:** required inputs remain 0/7 PASS because FY2027 guidance is absent and FY2026 year-end FCF/net-cash/share-count canonical inputs are not yet complete. This is intentional fail-closed behavior.
-- **Next exact action:** close ACN current-period primary evidence (FY2026 actual FCF, year-end debt/net-cash, period-end shares, FY2027 FCF guidance and FY2027 revenue-growth guidance), rerun v2 resolver, then consider a shadow/new immutable valuation run. Production v2 cutover remains separate.
+- **ACN current-period PREVIEW now complete:** primary-source payload contains FY2026 FCF 11.620598B, year-end net cash 2.726011B, 596.1M shares, FY2027 FCF guidance 11.0/11.4/11.8B and FY2027 LC revenue-growth guidance midpoint 4.5%. Controlled PREVIEW returned **7/7 metrics PASS, 2/2 Tier-A evidence PASS, 0 blockers, production_changes=NONE**; canonical APPLY has not been executed.
+- **Read-only shadow v2:** Bear 171.9854, Base 232.6516, Bull 325.5685, probability-weighted 240.7143 versus production v1 PW 233.0596 (+3.28%). At dashboard price 249.415, shadow PW upside is about -3.49%. Regression **8/8 PASS (READ-ONLY)** and no v2 valuation run exists.
+- **Next exact action:** controlled research APPLY of the exact reviewed payload requires separate authorization. After APPLY, verify receipt/idempotency, rerun the canonical v2 resolver for 7/7 required PASS, then create only a shadow/non-production v2 valuation run before any production cutover.
 
 ## MVP-1 scope correction — existing Valuation Map + Data Reliability, no new UI (2026-10-26)
 
