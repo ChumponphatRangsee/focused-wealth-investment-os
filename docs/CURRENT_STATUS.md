@@ -31,7 +31,7 @@
 - **Version-governance findings from #77 were subsequently fixed by #78:** SEMIS now has one authoritative production version (1.1), and SAAS has canonical production version 1.1.
 - **ACN resolver PREVIEW:** with FY2026 treated as closed on 2026-08-31, the current canonical set correctly blocks old FY2026 FCF guidance, pre-year-end FCF/net-cash/shares, and undefined generic `BOOK_TO_BILL` / `REVENUE_GROWTH_GUIDANCE_LC_MID` identities. Current Q3 margin metrics are diagnostics and are stale relative to the closed year.
 - **Regression:** `tests/valuation/test_valuation_input_resolver_v1.sql` returned **7/7 PASS (READ-ONLY)** against live Supabase. No canonical metrics, model rows, version state, valuation runs or portfolio state were written.
-- **Status:** superseded operationally by merged PR #78 and the ACN v2 APPLY/shadow receipt below. EOG/NFLX period-semantic follow-up remains future work.
+- **Status:** superseded operationally by merged PR #78 and the ACN v2 APPLY/shadow receipt below. EOG/NFLX period-semantic follow-up is now completed through non-production shadow validation; see the live section below.
 
 ## Valuation period semantics v2 — PR #78 MERGED / LIVE (2026-10-26)
 
@@ -44,7 +44,18 @@
 - **Canonical resolver now 7/7 required PASS** (plus 3/3 optional diagnostics PASS).
 - **Immutable shadow v2 run created:** `VAL-SHADOW-ACN-ITSERV-V2-20261026`, `production_eligible=false`, 10/10 inputs PASS, 10 resolved metric-input lineage edges. Bear 171.9854, Base 232.6516, Bull 325.5685, PW 240.7143 (+3.28% vs v1). At price 249.415, shadow PW upside is about -3.49%.
 - **Production boundary preserved:** Valuation Map still reads `VAL-SUPA-ACN-ITSERV-20260905` (v1 PW 233.0596473725). No production cutover and no trading action occurred.
-- **Next exact action:** review the ACN v1/v2 lineage/policy delta and decide separately whether to promote v2. EOG/NFLX remain the next period-semantic routes after ACN.
+- **Next exact action:** ACN/EOG/NFLX all now have validated period-aware shadow routes. Review the three v1/v2 deltas together and define promotion acceptance/rollback criteria before any production cutover.
+
+## EOG + NFLX period-aware v2 — LIVE shadow validation (2026-10-26)
+
+- **Live migration:** `20261026114938 eog_nflx_period_aware_v2`; Git migration filename is aligned to the live history version.
+- **EOG v2:** `E&P_NORMALIZED_FCF_YIELD_V1::2.0` is `EXPERIMENTAL` with `production_read_cutover=false`. The period-aware resolver returns **8/8 required PASS** using current Q2/filing observations. Shadow run `VAL-SHADOW-EOG-EP-V2-20261026` is semantic-parity only and matches production Fair Value within rounding (PW 169.5415048).
+- **NFLX v2:** `STREAMING_FCF_DCF_V1::2.0` is `EXPERIMENTAL` with `production_read_cutover=false`. New semantic `DILUTED_SHARES` separates the diluted weighted-average valuation denominator from economic period-end `SHARES_OUTSTANDING`.
+- **NFLX Q3 controlled APPLY:** SEC Exhibit 99.1 payload fingerprint `1660dc6c3ba9a084e26194f41d89f48d`, receipt `d442ba44-c090-4d14-aec7-c7bc38c31c75`; 1 Tier-A evidence + 7 canonical observations inserted. Repeated APPLY returned `NOOP_ALREADY_APPLIED`.
+- **NFLX resolver/shadow:** canonical resolver now **6/6 required PASS** (9/9 total selectors PASS). Shadow run `VAL-SHADOW-NFLX-STREAM-V2-20261026` gives Bear 38.3421, Base 73.1427, Bull 121.1811, PW 76.4521 versus v1 PW 78.9148 (-3.12%). At dashboard price 65.87, shadow PW upside is ~16.07%.
+- **Verification:** EOG/NFLX shadow lineage edges are 8/9 respectively. Live regression: **10/10 PASS (SHADOW/NON-PRODUCTION)**.
+- **Production boundary preserved:** EOG Dashboard still uses `VAL-EOG-20260904-P087`; NFLX still uses `VAL-NFLX-STREAM-20260911`. No model promotion, dashboard cutover, trading, or portfolio/accounting mutation occurred.
+- **Next exact action:** perform one cross-model promotion review for ACN/EOG/NFLX and define shared acceptance/rollback criteria. Any production promotion remains separately authorized.
 
 ## MVP-1 scope correction — existing Valuation Map + Data Reliability, no new UI (2026-10-26)
 
