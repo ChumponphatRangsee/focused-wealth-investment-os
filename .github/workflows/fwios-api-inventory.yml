@@ -1,0 +1,32 @@
+name: FWIOS External API Inventory Guard
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/**'
+      - 'config/external_api_inventory.json'
+      - 'scripts/check_external_api_inventory.py'
+      - 'tests/test_external_api_inventory.py'
+      - '.github/workflows/fwios-api-inventory.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - 'config/external_api_inventory.json'
+      - 'scripts/check_external_api_inventory.py'
+      - 'tests/test_external_api_inventory.py'
+      - '.github/workflows/fwios-api-inventory.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inventory-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check declared external callers
+        run: python3 scripts/check_external_api_inventory.py
+      - name: Run inventory regression tests
+        run: python3 -m unittest discover -s tests -p 'test_external_api_inventory.py'
