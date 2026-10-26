@@ -17,6 +17,13 @@
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
 
+## Next-chat handover — SEC Shadow → Financial Metrics (2026-10-26)
+
+- **Start with:** [FWIOS MVP-1 SEC-to-Metrics Handover](implementation/FWIOS_MVP1_SEC_TO_METRICS_HANDOVER_20261026.md). This is the current work-item handoff; older plans must be read in its context.
+- **Latest read-only diagnosis:** Existing weekday SEC schedule successfully stores `SEC_SUBMISSIONS` and `SEC_COMPANY_FACTS` in `fwios.decision_refresh_shadow_evidence`. The Worker intentionally runs in `SHADOW` with `authoritative_write=false`, does **not** persist normalized canonical `metric_observations` or trigger a new valuation. `research_ingest_receipts_v1` still had 0 entries on 2026-10-26.
+- **Immediate task:** Audit ACN Oct 16 10-K vs canonical metrics/model requirements; propose/implement a minimal deterministic SHADOW-to-controlled-PREVIEW normalized payload bridge, with read-only testing and a scoped PR. Then handle JPM and NFLX. **No new SEC Cron, new Dashboard, schema redesign or auto-trading.**
+- **Authority:** This handover/docs PR does not approve controlled `APPLY`, production writes, production revaluation, worker deployment, scheduling changes or cutover. Preserve existing Contract and read-only-first workflow.
+
 ## MVP-1 scope correction — existing Valuation Map + Data Reliability, no new UI (2026-10-26)
 
 - **Owner clarified goal:** do **not** build a separate dashboard/tab/report. Use the existing [Focused Wealth Dashboard / Valuation Map](https://docs.google.com/spreadsheets/d/17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8/edit) for display. MVP-1 measures **data capture completeness, correctness and freshness** for tracked stock prices, issuer financial facts, model inputs and revaluations. [Revised audit and acceptance checklist](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md).
