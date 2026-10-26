@@ -98,27 +98,63 @@ ACN v2 does not copy those reported facts into assumptions. Starting FCF must co
 - discount rate
 - terminal growth
 
-## Current ACN resolver result
+## ACN current-period primary evidence PREVIEW
 
-With FY2026 closed on 2026-08-31, ACN v2 correctly remains **BLOCKED**.
+The remaining required current-period inputs were closed from primary sources and submitted to the existing controlled research PREVIEW. No APPLY was executed.
 
-Required inputs currently blocked:
+Reviewed input set:
 
-| Input | Current result |
-|---|---|
-| FCF guidance low | old FY2026 guidance |
-| FCF guidance midpoint | old FY2026 guidance |
-| FCF guidance high | old FY2026 guidance |
-| Revenue-growth guidance midpoint | old FY2026 guidance |
-| FCF LTM | latest canonical row ends 2026-05-31 |
-| Net cash | latest canonical row is 2026-05-31 |
-| Shares outstanding | latest canonical row is Q3 FY2026 / 2026-05-31 |
+| Input | PREVIEW value | Period |
+|---|---:|---|
+| FREE_CASH_FLOW | 11.620598 USD B | FY2026 / LTM ended 2026-08-31 |
+| NET_CASH | 2.726011 USD B | 2026-08-31 |
+| SHARES_OUTSTANDING | 596.1 M shares | 2026-08-31 |
+| FCF_GUIDANCE_LOW | 11.0 USD B | FY2027 guidance |
+| FCF_GUIDANCE_MIDPOINT | 11.4 USD B | FY2027 guidance |
+| FCF_GUIDANCE_HIGH | 11.8 USD B | FY2027 guidance |
+| REVENUE_GROWTH_GUIDANCE_LC_MID | 4.5% | FY2027 guidance |
 
-Required inputs passing: **0/7**.
+Net cash is derived consistently with the existing model convention:
 
-Optional generic `BOOK_TO_BILL`, `OPERATING_MARGIN` and `GROSS_MARGIN` resolve successfully to the latest available quarter, but they cannot bypass missing required inputs.
+`cash + short-term investments - current debt/bank borrowings - long-term debt`
 
-This is the intended fail-closed behavior.
+= `12.831471 + 0.006298 - 0.113069 - 9.998689 = 2.726011 USD B`.
+
+Primary sources:
+
+- Accenture Q4/FY2026 earnings release/presentation dated 2026-10-01;
+- Accenture FY2026 Form 10-K, accession `0001467373-26-000049`.
+
+Controlled PREVIEW result:
+
+- overall status: **PASS**;
+- evidence: **2/2 PASS**, Tier A;
+- metrics: **7/7 PASS**;
+- blockers: **0**;
+- warnings: **0**;
+- production changes: **NONE**;
+- payload fingerprint: `d7f54abe68b06e654f6ce58b20910c19`.
+
+The production canonical store still contains the older ACN rows because APPLY has not been authorized/executed. Therefore the production resolver remains fail-closed; the complete current set exists only in the reviewed PREVIEW payload.
+
+## Read-only ACN v2 shadow valuation
+
+Using the reviewed PREVIEW values, ACN v2 model assumptions, and the same 10-year FCF DCF kernel behavior as production v1:
+
+| Scenario | Production v1 FV | Shadow v2 FV | Change |
+|---|---:|---:|---:|
+| Bear | 168.31587961 | 171.98535827 | +2.18% |
+| Base | 225.49896206 | 232.65156828 | +3.17% |
+| Bull | 312.92478576 | 325.56851356 | +4.04% |
+| Probability-weighted | 233.05964737 | 240.71425210 | +3.28% |
+
+Using the current dashboard price of 249.415, shadow v2 probability-weighted upside is approximately **-3.49%**. This is a valuation comparison only, not a BUY/SELL recommendation.
+
+Regression `tests/valuation/test_acn_current_inputs_shadow_v2.sql` returned:
+
+`FWIOS ACN CURRENT INPUTS + SHADOW V2: PASS (8/8, READ-ONLY)`
+
+It verifies deterministic PREVIEW, no research-state mutation, exact shadow outputs, unchanged production v1 and absence of any v2 valuation run.
 
 ## Live verification
 
@@ -150,12 +186,15 @@ It does not:
 
 ## Next exact step
 
-Close ACN's remaining required current-period inputs using primary evidence:
+The evidence/metric payload and shadow valuation are now review-complete.
 
-1. FY2026 actual FCF canonical observation from the already-tested SEC PREVIEW;
-2. FY2026 year-end net-cash/debt bridge;
-3. FY2026 period-end shares outstanding;
-4. FY2027 FCF guidance low/mid/high;
-5. FY2027 revenue-growth guidance midpoint.
+The next state-changing step is **controlled research APPLY of the exact PREVIEW payload**. That step would create canonical evidence/metric observations and must remain separately authorized under the current production boundary.
 
-Then rerun the v2 resolver. Only when all required selectors pass should a **shadow/new immutable valuation run** be considered. Production cutover remains a separate decision.
+After an authorized APPLY:
+
+1. verify receipt/idempotency and exact observation keys;
+2. rerun the contract-driven v2 resolver against canonical observations;
+3. require all 7 required selectors to PASS;
+4. create a new immutable **shadow/non-production** v2 valuation run first;
+5. compare v1/v2 lineage and Fair Value;
+6. consider production model/read cutover only as a later separate decision.
