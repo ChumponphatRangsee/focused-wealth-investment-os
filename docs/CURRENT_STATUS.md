@@ -24,6 +24,15 @@
 - **Immediate task:** Audit ACN Oct 16 10-K vs canonical metrics/model requirements; propose/implement a minimal deterministic SHADOW-to-controlled-PREVIEW normalized payload bridge, with read-only testing and a scoped PR. Then handle JPM and NFLX. **No new SEC Cron, new Dashboard, schema redesign or auto-trading.**
 - **Authority:** This handover/docs PR does not approve controlled `APPLY`, production writes, production revaluation, worker deployment, scheduling changes or cutover. Preserve existing Contract and read-only-first workflow.
 
+## Valuation input resolver / model-period audit — PR #77 (2026-10-26)
+
+- **Draft PR [#77](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/77)** is a separate read-only valuation-contract workstream from SEC PREVIEW PR #76. It adds a model period/version audit, an ACN period-aware resolver PREVIEW and regression coverage; it does not alter production valuation reads.
+- **Live period audit:** 20 implemented models. Required-input period identity is RED for three routes: `IT_SERVICES_FCF_COMPOUNDER_V1` (ACN), `E&P_NORMALIZED_FCF_YIELD_V1` (EOG), and `STREAMING_FCF_DCF_V1` (NFLX). These encode FY/quarter identity inside required metric names and must not roll forward silently.
+- **Version governance:** `SEMIS_MIDCYCLE_DCF_V1` currently has two version rows marked `PRODUCTION` (1.0 and 1.1). `SAAS_EV_FCF_REVERSE_DCF_V1` registry says model version 1.1 while the production-status row is `1.1-EXPERIMENTAL`. Resolver/cutover must fail closed rather than guess.
+- **ACN resolver PREVIEW:** with FY2026 treated as closed on 2026-08-31, the current canonical set correctly blocks old FY2026 FCF guidance, pre-year-end FCF/net-cash/shares, and undefined generic `BOOK_TO_BILL` / `REVENUE_GROWTH_GUIDANCE_LC_MID` identities. Current Q3 margin metrics are diagnostics and are stale relative to the closed year.
+- **Regression:** `tests/valuation/test_valuation_input_resolver_v1.sql` returned **7/7 PASS (READ-ONLY)** against live Supabase. No canonical metrics, model rows, version state, valuation runs or portfolio state were written.
+- **Next exact action:** review PR #77, then resolve version-governance ambiguity and define approved generic semantic mappings/contracts for the three period-RED models. Production metric migration, model-version changes, resolver cutover and new valuation runs remain separately authorized future steps.
+
 ## MVP-1 scope correction — existing Valuation Map + Data Reliability, no new UI (2026-10-26)
 
 - **Owner clarified goal:** do **not** build a separate dashboard/tab/report. Use the existing [Focused Wealth Dashboard / Valuation Map](https://docs.google.com/spreadsheets/d/17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8/edit) for display. MVP-1 measures **data capture completeness, correctness and freshness** for tracked stock prices, issuer financial facts, model inputs and revaluations. [Revised audit and acceptance checklist](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md).
