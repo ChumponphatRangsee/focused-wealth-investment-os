@@ -24,25 +24,27 @@
 - **Immediate task:** Audit ACN Oct 16 10-K vs canonical metrics/model requirements; propose/implement a minimal deterministic SHADOW-to-controlled-PREVIEW normalized payload bridge, with read-only testing and a scoped PR. Then handle JPM and NFLX. **No new SEC Cron, new Dashboard, schema redesign or auto-trading.**
 - **Authority:** This handover/docs PR does not approve controlled `APPLY`, production writes, production revaluation, worker deployment, scheduling changes or cutover. Preserve existing Contract and read-only-first workflow.
 
-## Valuation input resolver / model-period audit — PR #77 (2026-10-26)
+## Valuation input resolver / model-period audit — PR #77 MERGED (2026-10-26)
 
-- **Draft PR [#77](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/77)** is a separate read-only valuation-contract workstream from SEC PREVIEW PR #76. It adds a model period/version audit, an ACN period-aware resolver PREVIEW and regression coverage; it does not alter production valuation reads.
+- **PR [#77](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/77) is MERGED to main.** It added the read-only valuation-contract/model-period audit and resolver foundation.
 - **Live period audit:** 20 implemented models. Required-input period identity is RED for three routes: `IT_SERVICES_FCF_COMPOUNDER_V1` (ACN), `E&P_NORMALIZED_FCF_YIELD_V1` (EOG), and `STREAMING_FCF_DCF_V1` (NFLX). These encode FY/quarter identity inside required metric names and must not roll forward silently.
-- **Version governance:** `SEMIS_MIDCYCLE_DCF_V1` currently has two version rows marked `PRODUCTION` (1.0 and 1.1). `SAAS_EV_FCF_REVERSE_DCF_V1` registry says model version 1.1 while the production-status row is `1.1-EXPERIMENTAL`. Resolver/cutover must fail closed rather than guess.
+- **Version-governance findings from #77 were subsequently fixed by #78:** SEMIS now has one authoritative production version (1.1), and SAAS has canonical production version 1.1.
 - **ACN resolver PREVIEW:** with FY2026 treated as closed on 2026-08-31, the current canonical set correctly blocks old FY2026 FCF guidance, pre-year-end FCF/net-cash/shares, and undefined generic `BOOK_TO_BILL` / `REVENUE_GROWTH_GUIDANCE_LC_MID` identities. Current Q3 margin metrics are diagnostics and are stale relative to the closed year.
 - **Regression:** `tests/valuation/test_valuation_input_resolver_v1.sql` returned **7/7 PASS (READ-ONLY)** against live Supabase. No canonical metrics, model rows, version state, valuation runs or portfolio state were written.
-- **Next exact action:** review PR #77, then resolve version-governance ambiguity and define approved generic semantic mappings/contracts for the three period-RED models. Production metric migration, model-version changes, resolver cutover and new valuation runs remain separately authorized future steps.
+- **Status:** superseded operationally by merged PR #78 and the ACN v2 APPLY/shadow receipt below. EOG/NFLX period-semantic follow-up remains future work.
 
-## Valuation period semantics v2 — PR #78 / LIVE foundation migration (2026-10-26)
+## Valuation period semantics v2 — PR #78 MERGED / LIVE (2026-10-26)
 
-- **Draft stacked PR [#78](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/78)** implements the approved follow-up to PR #77. Live Supabase migration `20261026101318 valuation_period_semantics_v2` has been applied after a rollback dry-run.
+- **PR [#78](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/78) is MERGED to main.** Live Supabase migration `20261026101318 valuation_period_semantics_v2` was applied after a rollback dry-run.
 - **Version authority fixed:** SEMIS 1.0 is retired and 1.1 is the sole production version. SAAS legacy `1.1-EXPERIMENTAL` is retired and canonical `1.1` is now the sole production version as an exact contract/policy/assumption clone. Historical valuation runs remain unchanged.
 - **Period-aware semantics live:** generic `BOOK_TO_BILL`, `REVENUE_GROWTH_GUIDANCE_LC_MID` and `FREE_CASH_FLOW_GUIDANCE` definitions plus `METRIC_PERIOD_AWARE_V1` mappings are live. Four lineage-linked semantic alias observations cover ACN/EOG/NFLX without rewriting legacy observations.
 - **ACN v2 contract:** `IT_SERVICES_FCF_COMPOUNDER_V1::2.0` is registered as `EXPERIMENTAL` with relative-period selectors and `production_read_cutover=false`. Reported FCF guidance values are no longer copied into v2 assumptions.
 - **Verification:** migration dry-run PASS; post-apply valuation semantics regression **12/12 PASS**. ACN/EOG/NFLX Valuation Map values and valuation run IDs remained unchanged before/after migration.
-- **ACN current-period PREVIEW now complete:** primary-source payload contains FY2026 FCF 11.620598B, year-end net cash 2.726011B, 596.1M shares, FY2027 FCF guidance 11.0/11.4/11.8B and FY2027 LC revenue-growth guidance midpoint 4.5%. Controlled PREVIEW returned **7/7 metrics PASS, 2/2 Tier-A evidence PASS, 0 blockers, production_changes=NONE**; canonical APPLY has not been executed.
-- **Read-only shadow v2:** Bear 171.9854, Base 232.6516, Bull 325.5685, probability-weighted 240.7143 versus production v1 PW 233.0596 (+3.28%). At dashboard price 249.415, shadow PW upside is about -3.49%. Regression **8/8 PASS (READ-ONLY)** and no v2 valuation run exists.
-- **Next exact action:** controlled research APPLY of the exact reviewed payload requires separate authorization. After APPLY, verify receipt/idempotency, rerun the canonical v2 resolver for 7/7 required PASS, then create only a shadow/non-production v2 valuation run before any production cutover.
+- **ACN controlled APPLY completed:** payload fingerprint `451a19fcd56e8487161a173ed8ecc340`, receipt `df7bbf48-a141-429c-9b02-f488767eb3e2`; 2 Tier-A evidence rows + 7 canonical observations inserted. Repeating the same APPLY returned `NOOP_ALREADY_APPLIED`.
+- **Canonical resolver now 7/7 required PASS** (plus 3/3 optional diagnostics PASS).
+- **Immutable shadow v2 run created:** `VAL-SHADOW-ACN-ITSERV-V2-20261026`, `production_eligible=false`, 10/10 inputs PASS, 10 resolved metric-input lineage edges. Bear 171.9854, Base 232.6516, Bull 325.5685, PW 240.7143 (+3.28% vs v1). At price 249.415, shadow PW upside is about -3.49%.
+- **Production boundary preserved:** Valuation Map still reads `VAL-SUPA-ACN-ITSERV-20260905` (v1 PW 233.0596473725). No production cutover and no trading action occurred.
+- **Next exact action:** review the ACN v1/v2 lineage/policy delta and decide separately whether to promote v2. EOG/NFLX remain the next period-semantic routes after ACN.
 
 ## MVP-1 scope correction — existing Valuation Map + Data Reliability, no new UI (2026-10-26)
 
