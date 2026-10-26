@@ -5,11 +5,28 @@
 Status: **ACTIVE**  
 Live foundation: **0.87**  
 Execution contract (GitHub docs review): **FWIOS-CONTRACT-0.87.19**  
-Last strategy / navigation review: **2026-10-23 Asia/Bangkok** (September operational snapshots retained as historical)  
+Last delivery-priority review: **2026-10-26 Asia/Bangkok** (September operational snapshots and 2026-10-23 strategy overlay retained as historical/proposed)  
 Execution mode: **HUMAN EXECUTION ONLY**
 
 ## Authority model
 Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrations. Google Sheets = View / Compatibility / Reconciliation / Audit / Export. Live state overrides stale docs.
+
+## 2026-10-26 owner decision — MVP FIRST / active delivery priority
+
+**Approved now: simplify the roadmap and audit the existing end-to-end workflow. NOT authorized by this documentation PR: production schema changes, production research APPLY, changes to scoring/gates, market-data cutover, portfolio writes, cron/tasks, or trading.**
+
+**Immediate priority: Phase 1 — Working MVP**, using the existing `Data → Research → Valuation → Decision/Readiness → Read-only Report` path for 1–3 stock examples. See the [MVP-first working-slice plan and live audit](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md) for the acceptance checklist and observed blockers.
+
+| Delivery phase | Priority / scope | Gate before advancing |
+| --- | --- | --- |
+| **1 — Working MVP (NOW)** | Reuse existing Supabase read models and current scanner/report surface. Show verified price, source/model-backed Fair Value, quality, readiness, blockers and timestamps on ACN/ADBE/PINS. Fix only reproduced E2E mismatches; manual PREVIEW by default. | One trustworthy human-readable, fail-closed report with positive and negative test cases; no new tables or workers. |
+| **2 — Basic automation (LATER)** | Reuse existing EOD price data and a limited alert/report refresh only when manual workflow succeeds and quota/permissions are proven. | Manual acceptance, reliability and quota budgets verified; separate authorization. |
+| **3 — Research selection/attention (DEFERRED)** | Issue #38 policy/priority/work queue and any new Research Attention schema only after observed volume/cost justifies it. | Measured need, minimal design, regression, separate authorization. |
+| **4 — Rotation/backtesting (FUTURE)** | Portfolio advisory and point-in-time evaluation, with #39 compatibility cutover only after approved parity. | Tested data/decision path, portfolio accounting boundary preserved. |
+
+**Do not mistake scanner ranking for investment eligibility:** live read-only checks on 2026-10-26 found 64 instruments, 27 research/valuation-ready and only 1 investment-review-ready. Scanner v1 currently scores 27 and must not be presented as BUY eligibility. ACN is the positive readiness regression; ADBE and PINS expose real blocked paths.
+
+The older Epic #31 migration sequence and D0–D6 strategy tracks below are **future architecture/backlog references**, not the next execution sequence. No big-bang rewrite; retain all existing contracts and safety gates.
 
 ## Historical system snapshot — September 2026 (not a live-state readback)
 
@@ -43,7 +60,7 @@ The table below preserves the originally recorded operational snapshot, includin
 | Legacy Screener surface | **6 visible tabs / no data deleted** |
 | Sector automation | **PAUSED — FINANCIALS_MODEL_DEBT_REVIEW** |
 | Next queued sector | Industrials |
-| Immediate next action | **Issue #38 — Research Attention + Promotion/Demotion Engine** |
+| Immediate next action (superseded by 2026-10-26 MVP-first decision) | **Phase 1 MVP read-only report + E2E blocker repair** |
 
 ## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #37 COMPLETE
 
@@ -85,7 +102,7 @@ Portfolio Engine
 4. **#35 COMPLETE** Evidence → Metric → Decision Lineage — append-only graph, 1,156 artifacts / 1,423 edges, 16/16 PASS, no read cutover
 5. **#36 COMPLETE** Unified Market Observation Layer — canonical provider/session-aware observations, dual-write compatibility, 14/14 PASS, no read cutover
 6. **#37 COMPLETE** Thesis Memory + Reactivation Rules — 6 complete baselines normalized, 73 conditions / 37 KPI bindings / 8 metric links, 15/15 PASS, no read cutover
-7. **#38 NEXT** Research Attention + Promotion/Demotion Engine
+7. **#38 DEFERRED — future backlog** Research Attention + Promotion/Demotion Engine (retains its original dependency order; not the immediate MVP priority)
 8. **#39** Compatibility Cutover / Index / Retention / Legacy Cleanup
 
 #35 and #36 may proceed in parallel after their foundations are stable.
@@ -109,14 +126,14 @@ Focus on verified **intrinsic-value discounts**, defensible entry conditions, an
 
 ### Reuse before building
 
-- Keep Redesign [Epic #31](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/31) as the canonical operating loop; finish [Issue #38](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/38) attention/promotion/demotion design before scheduling deep research work. [Issue #39](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/39) remains gated on proven compatibility parity.
+- Keep Redesign [Epic #31](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/31) as the future operating loop; [Issue #38](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/38) attention design is now **deferred** while Phase 1 proves manual, read-only research/valuation/report usage. No new research scheduling is authorized. [Issue #39](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/39) remains gated on proven compatibility parity.
 - Reuse existing evidence, controlled ChatGPT ingestion, typed metrics, thesis memory, valuation models, hardening/scoring, market-data observations, Decision Snapshot, opportunity ranking, portfolio scenario, rebalancing and human approval.
 - Do not introduce parallel AI-generated production scores, unconstrained price targets, a duplicate trading ledger, or high-frequency deep research across the S&P 500.
 - Preserve current 30/30/25/15 production core score, valuation/quality hard gates, human execution only, and timing as a bounded non-core modifier. Any replacement thresholds require an explicitly reviewed policy version.
 - Keep U1 S&P 500 membership expansion paused unless the owner reactivates it separately; the current instrument subset must not be described as full-index coverage.
 - Existing Research Workflow defaults to PREVIEW. A future automatic research-to-database APPLY pipeline requires separate explicit authority, controlled gateway permissions and audit acceptance; **no ChatGPT Task, Supabase Cron, schema change, trade or portfolio write is authorized by this roadmap update**.
 
-### Planned delivery order (not started)
+### Historical 2026-10-23 D0–D6 strategy proposal (superseded for near-term delivery by MVP-first)
 
 | Planning track | Scope | Major dependency |
 | --- | --- | --- |
@@ -128,7 +145,7 @@ Focus on verified **intrinsic-value discounts**, defensible entry conditions, an
 | **D5 — Strategy evaluation and shadow cadence** | Point-in-time backtest, benchmark, walk-forward, paper/shadow evaluation and scheduling governance | D1–D4; no cutover |
 | **D6 — Separate production authorization** | Versioned requirements, phased release plan and rollback (only if validated and approved) | Explicit owner approval and #39 parity where relevant |
 
-**Redesign planning priority remains Issue #38**, while Scanner v2 is a separate scanner-specific backlog item (see [CURRENT_STATUS.md](CURRENT_STATUS.md)). Neither workstream is authorized to begin implementing by this documentation-only strategy overlay. D0 captures this roadmap alignment; live feature inventory, data-provider feasibility, cost assumptions and implementation readiness remain open checks.
+**Current delivery priority is the Phase 1 MVP**, not Issue #38 or an all-new Scanner v2. The D0–D6 table above remains historical proposal/backlog context. Scanner v2 and U1 full-universe expansion are separately deferred; consult [CURRENT_STATUS.md](CURRENT_STATUS.md).
 
 ## M1 — Research Pipeline v2
 **CORE HARDENING PASS / PERFORMANCE VALIDATION OPEN.** Research/model coverage debt remains fail-closed for affected names.
@@ -268,7 +285,7 @@ Under Core Architecture Redesign v1.0:
 - the system must not require complete model coverage across every sector before progressing;
 - unsupported archetypes fail closed for deep decision use rather than forcing generic valuation confidence.
 
-Research Lifecycle #32, Canonical Instrument Identity #33, Metric Observation Model #34, Evidence → Metric → Decision Lineage #35, Unified Market Observation #36 and Thesis Memory + Reactivation #37 are complete at their migration-foundation layers. The immediate architecture priority is **Issue #38 — Research Attention + Promotion/Demotion Engine**. Existing production research/decision consumers remain authoritative until explicit later cutover.
+Research Lifecycle #32, Canonical Instrument Identity #33, Metric Observation Model #34, Evidence → Metric → Decision Lineage #35, Unified Market Observation #36 and Thesis Memory + Reactivation #37 are complete at their migration-foundation layers. After the 2026-10-26 owner reprioritization, **Issue #38 is future backlog**, not the immediate execution item. Phase 1 MVP audit and report acceptance are first. Existing production research/decision consumers remain authoritative until explicit later cutover.
 
 ## M4 — Autonomous Investment OS
 Future priority remains event/delta research refresh, thesis monitoring, opportunity refresh, concentration alerts and blocker recovery. Autonomous monitoring must never bypass Quality Hardening, model readiness or human execution.

@@ -5,6 +5,17 @@
 **Scope:** Strategy design and future sequencing; **no** implementation, live scheduler activation, automated investment recommendation, trade, portfolio/accounting write, Supabase migration, policy change, or cutover is authorized by this document.  
 **Reference:** [Master Roadmap](../00_SYSTEM_ROADMAP.md) · [Current Status](../CURRENT_STATUS.md) · [AGENTS](../../AGENTS.md) · [System Contract](../../contracts/system-contract.yaml)
 
+## 2026-10-26 update — MVP-first supersedes the near-term D0–D6 order
+
+The owner approved **incremental delivery with existing infrastructure first**. [Phase 1 Working MVP + read-only live audit](FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md) is now the active execution plan. This strategy document remains a **longer-horizon feature catalogue**, not the next implementation queue.
+
+- **Phase 1 NOW:** make one coherent, fail-closed, existing-view research/valuation/readiness/report path work for 1–3 examples (ACN, ADBE, PINS), and fix only observed blockers.
+- **Phase 2 LATER:** basic derived/report automation after manual acceptance, reusing existing market-data jobs and quota protection.
+- **Phase 3 FUTURE:** Research Attention/Promotion/Demotion (#38), policy ranking, extra queue/schema only if observed workload/cost requires them. The proposed five-table attention schema is not approved.
+- **Phase 4 FUTURE:** portfolio rotation advisory and rigorous point-in-time evaluation/backtesting, subject to separate scope/approval and #39 parity for any cutover.
+
+The D0–D6 dependency table below preserves the **original 2026-10-23 proposed advanced strategy** for future reference; it is **not** a requirement to complete #38 before delivering Phase 1's manual read-only report. No change to `auto_trade=false`, production 30/30/25/15 scoring, research PREVIEW/APPLY permissions, valuation/quality gates, canonical pricing or accounting ownership.
+
 ## 1. Investor objective and decision model
 
 The owner wants to (1) discover businesses trading materially below well-supported intrinsic value, (2) wait for attractive entry conditions, (3) take profits or rebalance as the expected reward/risk and portfolio opportunity set changes, and (4) redeploy capital into more compelling qualified ideas. This is a value-led, risk-aware **position / swing rotation** approach, *not* short-horizon price prediction or guaranteed price-target realization.
@@ -126,4 +137,4 @@ This is an **overlay** on the ongoing Redesign #31/Issue #38/#39 and Phase-1 fun
 - Cost/tax treatment, benchmark base currency and acceptable drawdown.
 - Definition of a qualified rotation versus retaining a concentrated high-quality winner.
 
-**Owner decision required before implementation:** review this strategy overlay, decide priorities and authorize a specifically scoped next feature. Until then, research and trading remain governed by existing production contracts.
+**Current owner decision (2026-10-26):** authorization is limited to MVP-first roadmap/docs and read-only E2E audit; the new advanced D1–D6 features, new schema, autonomous scheduling, production ingestion, cutover and trading remain separately gated. Research and trading remain governed by existing production contracts.
