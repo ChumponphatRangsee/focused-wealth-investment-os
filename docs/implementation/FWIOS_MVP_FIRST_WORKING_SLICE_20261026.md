@@ -6,6 +6,45 @@ Contract: `FWIOS-CONTRACT-0.87.19` (unchanged)
 Supabase project: `focused-wealth-investment-os` (`ysjbmeukwbfnxnwqchuq`)  
 Baseline inspected: GitHub `main` `298fbb8e7aa09126c049cf218036e811f40444cd`. Live Supabase was read-only inspected on 2026-10-26.
 
+## MVP-1 scope correction — DATA RELIABILITY, no new Dashboard (2026-10-26)
+
+**LATEST OWNER DECISION: the existing Google Sheet `Valuation Map` is the user-facing surface.** Do not build a new report, tab, dashboard, new research-attention schema or an autonomous research engine for MVP-1. Historical report/UI instructions further down are superseded wherever they suggest developing another user-facing view. The previous SQL pilot remains a **diagnostic** only.
+
+**MVP-1 goal:** verify, repair and prove the *existing* data pipeline:
+
+1. **Availability/completeness:** every in-scope tracked stock has the required latest canonical market close, verified source/provenance and a persisted record. For the **selected 1–3 valuation pilot names**, inventory model-required financial facts (revenue, margins, shares/SBC, FCF/debt/cash, guidance as applicable), filing date/period/currency, evidence and explicit missing fields. Do not assume every stock needs identical metrics or a valuation model.
+2. **Correctness:** cross-check prices with an independent authorized provider when possible; reconcile key financial facts to primary issuer IR/SEC releases, accounting period, unit/currency and normalization. Reject contradictory observations; no guessed metric, silent overwrite or unversioned change to valuation assumptions.
+3. **Freshness:** after the last completed US trading session, accepted EOD prices should be present for 100% of the **current 64-stock tracked universe** by the next Bangkok morning (respect market holidays). Fundamental freshness is based on the **most recent published company filing or earnings release**, not a price timestamp or ingestion timestamp. Set a narrowly approved refresh expectation (proposal: review/ingest material primary financial updates within two business days after release, then revalue if model inputs changed); do not imply that a 2026-09 valuation became fresh when the price updated in October.
+4. **Valuation:** an immutable production-eligible valuation run is tied to source-backed current-period metrics, versioned assumptions and as-of date; revaluation after materially new validated metrics must be explicit, with lineage/quality gates preserved. `Valuation Map` may remain unchanged but must not describe an old model as up-to-date. No forced `BUY`.
+5. **Presentation parity:** the **existing** `Valuation Map` values must match `fwios.v_dashboard_valuation_map` (price/session, bear/base/bull/PW fair value and upside within display rounding). The existing `Entry View=Attractive` is a price classification **only**, not an investable decision; do not silently promote a blocked name.
+
+### Verified read-only diagnostic snapshot (2026-10-26)
+
+| Area | Result and qualification |
+| --- | --- |
+| Price fetch/store | Scheduled `TWELVE_DATA` EOD close runs **PASS 64/64** for each US trading session **Oct 19–23, 2026**; market observations show `source_tier=A`, `provenance_status=PASS`, non-null URLs and positive values for all 64 on Oct 23. This establishes **tracked-universe** coverage, not the full S&P 500. |
+| Latest completed session | Valuation Map's session is **2026-10-23**, expected on Monday Oct 26 before the US close. |
+| Independent price check | 13 of 64 stocks also had `ALPHA_VANTAGE_PRICE` EOD observations on Oct 23; differences vs Twelve Data ranged **0–0.0261%**. Remaining 51 lack this particular independent comparison; correctness of every price has **not** been proven. |
+| Google Sheet vs database | `Valuation Map` 28 rows matched all 28 `v_dashboard_valuation_map` rows on ticker, session, current price, Bear/Base/Bull/PW Fair Value and upside within display precision. No user-facing Sheet edit necessary. |
+| Financial metric coverage | `fwios.metric_observations`: **453 rows, 28/64 instruments**, 131 distinct metric codes; latest metric insertion **2026-09-30**, newest metric `reported_at` **2026-09-10**. A stored observation is **not** proof it is the issuer's latest filing. |
+| Existing valuation age | The 28 Valuation Map rows all have model dates in the **2026-09-04 to 2026-09-11** range, despite fresh Oct 23 stock prices. |
+| Confirmed material release gaps | ACN latest stored metric report **Jun 18**, but issuer announced **Q4 FY26 Oct 1**: https://newsroom.accenture.com/news/2026/accenture-reports-fourth-quarter-and-full-year-fiscal-2026-results ; JPM latest stored **Jul 14**, issuer announced **Q3 Oct 13**: https://jpmorganchaseco.gcs-web.com/news-releases/news-release-details/jpmorganchase-reports-third-quarter-2026-financial-results/ ; NFLX latest stored **Jul 16**, issuer issued **Q3 Oct 20**: https://ir.netflix.net/files/doc_financials/2026/q3/FINAL-Q3-26-Shareholder-Letter.pdf . These companies have **newer published financials not represented in the canonical metric_observations rows**. |
+| Research-to-action gate | Readiness: **27 research/valuation-ready, 1 investment-review-ready**; price-based `Attractive` must never be equated with `BUY`. |
+| Automated fundamental ingest | The 10 active inspected `cron.job` schedules include EOD prices and several validation/refresh services, but no independently verified scheduled `metric_observations` primary-financials ingestion. Existing `PREVIEW → validated APPLY` remains separately permissioned. |
+
+**Primary blocker = Financial data ingestion and subsequent model valuation freshness, not a missing Dashboard.** Price ingestion is relatively healthy; remaining work is verifying core fundamental facts against source, filling post-September gaps safely, then recalculating eligible valuations where material. Do not deploy automatic APPLY without separate authorization.
+
+### Revised MVP-1 acceptance checklist
+
+- [ ] Audited pilot-company *required model input inventory* (not all 64/500 symbols), with verified latest primary financial filing vs canonical metric/evidence dates, explicit missing data and reasons.
+- [x] EOD ingest/store coverage for the 64 tracked tickers on Oct 19–23 and independent comparison for the 13 overlapping provider prices recorded.
+- [x] Current `Valuation Map` matches its source view for all 28 valued stocks at display precision.
+- [ ] At least one company with a **new earnings release** has primary evidence + relevant metrics validated and, **only after separate user APPLY authorization**, ingested through the controlled gateway and revalued with repeatable, auditable model inputs. Merely previewing research does not count as a database refresh.
+- [ ] No material current issuer filings remain untriaged in the **pilot scope**; any stale/missing data remains explicitly blocked or flagged.
+- [ ] Confirm repeatable operational freshness checks after the *next completed* US market session and next material earnings event; do not add new jobs unless the existing workflow demonstrably cannot cover it.
+
+**Phase 2 and later:** only after real manual data refresh is accepted consider a minimal filing-release alert, scheduling or widening instrument coverage. No new tables by default, no full-index deep research, no auto-trade, no second accounting ledger.
+
 ## Owner's product decision
 
 **Make the existing core workflow usable before adding complexity.** Do not build the proposed five-table Research Attention schema, autonomous research orchestration, scanner-wide deep research, portfolio rotation or backtesting in Phase 1. Existing research foundations and deterministic investment gates stay in force.

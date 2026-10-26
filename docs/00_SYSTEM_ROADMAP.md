@@ -15,16 +15,16 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 
 **Approved now: simplify the roadmap and audit the existing end-to-end workflow. NOT authorized by this documentation PR: production schema changes, production research APPLY, changes to scoring/gates, market-data cutover, portfolio writes, cron/tasks, or trading.**
 
-**Immediate priority: Phase 1 — Working MVP**, using the existing `Data → Research → Valuation → Decision/Readiness → Read-only Report` path for 1–3 stock examples. See the [MVP-first working-slice plan and live audit](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md) for the acceptance checklist and observed blockers.
+**Immediate priority: Phase 1 / MVP-1 — Data Reliability**, using the existing `Data Sources → Canonical Price/Financial Facts → Evidence/Metric Storage → Source-backed Valuation → existing Valuation Map` path. **The existing Google Sheet is the only user-facing surface; no new Dashboard or report page.** Start with a pilot set of 1–3 stocks and expand only after actual ingestion/freshness acceptance. See the [MVP-first working-slice plan and live audit](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md) for the acceptance checklist and observed blockers.
 
 | Delivery phase | Priority / scope | Gate before advancing |
 | --- | --- | --- |
-| **1 — Working MVP (NOW)** | Reuse existing Supabase read models and current scanner/report surface. Show verified price, source/model-backed Fair Value, quality, readiness, blockers and timestamps on ACN/ADBE/PINS. Fix only reproduced E2E mismatches; manual PREVIEW by default. | One trustworthy human-readable, fail-closed report with positive and negative test cases; no new tables or workers. |
-| **2 — Basic automation (LATER)** | Reuse existing EOD price data and a limited alert/report refresh only when manual workflow succeeds and quota/permissions are proven. | Manual acceptance, reliability and quota budgets verified; separate authorization. |
+| **1 — Data Reliability MVP (NOW)** | Verify stock price completeness, provenance, timestamps, independent price agreement, primary issuer earnings/financial metrics, and revaluation freshness. Keep **existing Valuation Map** as the presentation, not a new UI. | Verified EOD data + pilot model input completeness + correct/latest primary source financial metrics and auditable new valuation where material; no new tables/workers. |
+| **2 — Basic automation (LATER)** | Reuse existing EOD price data and consider minimally necessary **new-filing detection and validated metric refresh** only after manual data ingestion/revaluation works reliably and quotas/permissions are proven. | Primary-source freshness process validated, quotas safe; separate authorization. |
 | **3 — Research selection/attention (DEFERRED)** | Issue #38 policy/priority/work queue and any new Research Attention schema only after observed volume/cost justifies it. | Measured need, minimal design, regression, separate authorization. |
 | **4 — Rotation/backtesting (FUTURE)** | Portfolio advisory and point-in-time evaluation, with #39 compatibility cutover only after approved parity. | Tested data/decision path, portfolio accounting boundary preserved. |
 
-**Do not mistake scanner ranking for investment eligibility:** live read-only checks on 2026-10-26 found 64 instruments, 27 research/valuation-ready and only 1 investment-review-ready. Scanner v1 currently scores 27 and must not be presented as BUY eligibility. ACN is the positive readiness regression; ADBE and PINS expose real blocked paths.
+**Observed data-quality bottleneck (read-only, 2026-10-26):** EOD stock closes were 64/64 for each trading session Oct 19–23. Existing Valuation Map matches backend values for 28/28 rows, but canonical financial metrics last ingested Sep 30, while ACN (Oct 1), JPM (Oct 13), NFLX (Oct 20) each issued newer primary earnings releases. Valuations are dated Sep 4–11 and cannot be called current solely because the market price is fresh. Details and evidence in [MVP-first working-slice plan](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md). Scanner/Valuation Map classification remains distinct from investment eligibility; only 1/64 review-ready.
 
 The older Epic #31 migration sequence and D0–D6 strategy tracks below are **future architecture/backlog references**, not the next execution sequence. No big-bang rewrite; retain all existing contracts and safety gates.
 
@@ -60,7 +60,7 @@ The table below preserves the originally recorded operational snapshot, includin
 | Legacy Screener surface | **6 visible tabs / no data deleted** |
 | Sector automation | **PAUSED — FINANCIALS_MODEL_DEBT_REVIEW** |
 | Next queued sector | Industrials |
-| Immediate next action (superseded by 2026-10-26 MVP-first decision) | **Phase 1 MVP read-only report + E2E blocker repair** |
+| Immediate next action (superseded by 2026-10-26 Data Reliability MVP decision) | **Audit/refresh source-backed financial metrics and valuation freshness; retain existing Valuation Map** |
 
 ## Core Architecture Redesign v1.0 — MIGRATION ACTIVE / PHASE #37 COMPLETE
 
