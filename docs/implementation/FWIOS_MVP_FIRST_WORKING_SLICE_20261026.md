@@ -56,6 +56,15 @@ Data sources: `fwios.v_research_readiness_current_v1`, `fwios.v_dashboard_valuat
 
 **Do not trade from this audit.** Numeric valuation and price outputs are not repeated here; re-read authoritative source/session and model/version when actually viewing the report.
 
+### Runnable MVP-1 read-only query — validated
+
+The [runnable pilot report](../../queries/mvp_readonly_fair_value_status_v1.sql) is a **plain SELECT**, not a deployed view/function. On 2026-10-26 it returned **3/3 pilot rows** in live read-only Supabase inspection:
+- ACN: `REVIEW_READY_NOT_TRADE`, with an **independent legacy decision/price gate disagreement** to display and resolve before any actionable claim.
+- ADBE: `QUALITY_OR_LINEAGE_REVIEW`, latest hardening-to-valuation run mismatch.
+- PINS: `QUALITY_OR_LINEAGE_REVIEW`, no fabricated promotion despite existing Fair Value.
+
+This validates an existing-view **data report slice only**. It does **not** yet establish a usable deployed end-user interface, refreshed price-dependent Decision Snapshot or full manual research APPLY acceptance.
+
 ### Minimal read-only SQL diagnostic
 
 ```sql
