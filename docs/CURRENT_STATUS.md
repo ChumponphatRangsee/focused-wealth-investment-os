@@ -33,6 +33,17 @@
 - **Regression:** `tests/valuation/test_valuation_input_resolver_v1.sql` returned **7/7 PASS (READ-ONLY)** against live Supabase. No canonical metrics, model rows, version state, valuation runs or portfolio state were written.
 - **Next exact action:** review PR #77, then resolve version-governance ambiguity and define approved generic semantic mappings/contracts for the three period-RED models. Production metric migration, model-version changes, resolver cutover and new valuation runs remain separately authorized future steps.
 
+## Valuation period semantics v2 — PR #78 / LIVE foundation migration (2026-10-26)
+
+- **Draft stacked PR [#78](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/78)** implements the approved follow-up to PR #77. Live Supabase migration `20261026101318 valuation_period_semantics_v2` has been applied after a rollback dry-run.
+- **Version authority fixed:** SEMIS 1.0 is retired and 1.1 is the sole production version. SAAS legacy `1.1-EXPERIMENTAL` is retired and canonical `1.1` is now the sole production version as an exact contract/policy/assumption clone. Historical valuation runs remain unchanged.
+- **Period-aware semantics live:** generic `BOOK_TO_BILL`, `REVENUE_GROWTH_GUIDANCE_LC_MID` and `FREE_CASH_FLOW_GUIDANCE` definitions plus `METRIC_PERIOD_AWARE_V1` mappings are live. Four lineage-linked semantic alias observations cover ACN/EOG/NFLX without rewriting legacy observations.
+- **ACN v2 contract:** `IT_SERVICES_FCF_COMPOUNDER_V1::2.0` is registered as `EXPERIMENTAL` with relative-period selectors and `production_read_cutover=false`. Reported FCF guidance values are no longer copied into v2 assumptions.
+- **Verification:** migration dry-run PASS; post-apply valuation semantics regression **12/12 PASS**. ACN/EOG/NFLX Valuation Map values and valuation run IDs remained unchanged before/after migration.
+- **ACN current-period PREVIEW now complete:** primary-source payload contains FY2026 FCF 11.620598B, year-end net cash 2.726011B, 596.1M shares, FY2027 FCF guidance 11.0/11.4/11.8B and FY2027 LC revenue-growth guidance midpoint 4.5%. Controlled PREVIEW returned **7/7 metrics PASS, 2/2 Tier-A evidence PASS, 0 blockers, production_changes=NONE**; canonical APPLY has not been executed.
+- **Read-only shadow v2:** Bear 171.9854, Base 232.6516, Bull 325.5685, probability-weighted 240.7143 versus production v1 PW 233.0596 (+3.28%). At dashboard price 249.415, shadow PW upside is about -3.49%. Regression **8/8 PASS (READ-ONLY)** and no v2 valuation run exists.
+- **Next exact action:** controlled research APPLY of the exact reviewed payload requires separate authorization. After APPLY, verify receipt/idempotency, rerun the canonical v2 resolver for 7/7 required PASS, then create only a shadow/non-production v2 valuation run before any production cutover.
+
 ## MVP-1 scope correction — existing Valuation Map + Data Reliability, no new UI (2026-10-26)
 
 - **Owner clarified goal:** do **not** build a separate dashboard/tab/report. Use the existing [Focused Wealth Dashboard / Valuation Map](https://docs.google.com/spreadsheets/d/17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8/edit) for display. MVP-1 measures **data capture completeness, correctness and freshness** for tracked stock prices, issuer financial facts, model inputs and revaluations. [Revised audit and acceptance checklist](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md).
