@@ -24,7 +24,9 @@ Repository for deterministic investment research/decision contracts, Supabase-ba
 
 The architecture has evolved beyond the original September 2026 sector-first baseline. Research readiness, S&P 500 expansion, pricing and performance features have their own scoped documents; use the [current index](docs/CURRENT_STATUS.md) to find them rather than a dated chat handover.
 
-**Strategy planning (not implemented):** [Value, Entry Timing & Portfolio Rotation](docs/implementation/VALUE_ENTRY_ROTATION_STRATEGY_ROADMAP_20261023.md) extends the [master roadmap](docs/00_SYSTEM_ROADMAP.md) with source-backed intrinsic valuation, price-entry context, candidate research attention, portfolio opportunity-cost comparison, and point-in-time evaluation. This is **documentation only**: no scheduled research task, API/database mutation, new scoring policy, broker execution or accounting changes are activated.
+**Current delivery focus (owner-approved 2026-10-26):** [Working MVP first — read-only E2E plan & observed blockers](docs/implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md). Use the existing Supabase data → research → valuation → decision/readiness → report path for 1–3 stocks before implementing new schema, research queues, schedules or rotation. This roadmap/docs change **does not deploy a working MVP**; acceptance of the actual user-facing report is still pending.
+
+**Strategy planning (not implemented; future backlog after MVP):** [Value, Entry Timing & Portfolio Rotation](docs/implementation/VALUE_ENTRY_ROTATION_STRATEGY_ROADMAP_20261023.md) extends the [master roadmap](docs/00_SYSTEM_ROADMAP.md) with source-backed intrinsic valuation, price-entry context, candidate research attention, portfolio opportunity-cost comparison, and point-in-time evaluation. This is **documentation only**: no scheduled research task, API/database mutation, new scoring policy, broker execution or accounting changes are activated.
 
 ## Tests and historical evidence
 
