@@ -24,7 +24,7 @@
 - **Live Supabase read-only checks (2026-10-26):** 64 stocks in readiness view; 27 research-ready, 27 valuation-ready, 1 quality-hardened, 1 investment-review-ready. Scanner v1 scored/ranked 27 stocks; its score **does not mean investment-review-ready**. ACN readiness is READY but the independent old dashboard valuation map says `PRICE VERIFY`; preserve both meanings. ADBE's latest valuation and older hardening snapshot are not lineage-aligned, while PINS carries quality review and stale/conflicted legacy mispricing/decision signals. These are **acceptance/test cases**, not recommendations.
 - **Next action:** the [MVP pilot SELECT](../queries/mvp_readonly_fair_value_status_v1.sql) has now returned 3/3 rows from existing views in live read-only inspection (ACN positive readiness but independent legacy-gate disagreement; ADBE lineage mismatch; PINS quality review). **Turn that verified SQL into one inspectable existing user-facing report**, then fix one reproduced blocker at a time through separately reviewed PRs. No runtime feature is yet deployed by this change.
 - **Deferred:** Issue #38 remains OPEN but is **future backlog** until manual MVP and real resource constraints justify attention ranking/queues; Issue #39 remains cutover-gated. The proposed five-table attention schema is not approved. Scanner v2 and U1 are not automatically resumed.
-- **PR status:** this update is proposed on a documentation branch for review; no merge or production acceptance is implied.
+- **Merge/deployment boundary:** check GitHub PR status for this roadmap/SELECT-only change; even a merge does **not** deploy a new end-user MVP report, adjust production gates or prove user-facing acceptance.
 
 ## Strategy documentation merge receipt — 2026-10-23
 
