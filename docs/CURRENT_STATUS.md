@@ -24,6 +24,14 @@
 - **Immediate task:** Audit ACN Oct 16 10-K vs canonical metrics/model requirements; propose/implement a minimal deterministic SHADOW-to-controlled-PREVIEW normalized payload bridge, with read-only testing and a scoped PR. Then handle JPM and NFLX. **No new SEC Cron, new Dashboard, schema redesign or auto-trading.**
 - **Authority:** This handover/docs PR does not approve controlled `APPLY`, production writes, production revaluation, worker deployment, scheduling changes or cutover. Preserve existing Contract and read-only-first workflow.
 
+## MVP-1 SEC-to-Metrics PREVIEW pilot — PR #76 (2026-10-26)
+
+- **Draft PR [#76](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/76)** implements a PREVIEW-only ACN bridge from existing SEC SHADOW evidence to the existing controlled research-ingest validator. No worker/cron/schema/dashboard/production data was changed.
+- **Live read-only result:** ACN FY2026 10-K accession `0001467373-26-000049` resolves from SHADOW. Deterministic normalization produced `REVENUE=74.183445 USD B` and `FREE_CASH_FLOW=11.620598 USD B` (OCF minus capex); `fwios.preview_research_ingest_v1` returned `PASS` with `production_changes=NONE`.
+- **Regression:** `tests/research/test_mvp1_sec_to_metrics_preview_v1.sql` returned **12/12 PASS** against live Supabase. Repeated PREVIEW produced stable payload/observation identities and left research receipts, evidence rows and metric-observation counts unchanged.
+- **Intentional valuation block:** the current ACN model `IT_SERVICES_FCF_COMPOUNDER_V1::1.0` still requires FY2026 guidance and Q3-specific inputs. The pilot therefore reports `BLOCKED_MODEL_PERIOD_ROLLOVER_REQUIRED` rather than reusing stale-period semantics. Additional blockers: compact SHADOW lacks debt facts for safe net-cash reconstruction; weighted-average diluted shares are not period-end shares outstanding; FY2027 guidance/bookings are not in current SEC Company Facts compact payload.
+- **Next exact action:** review/accept the PREVIEW bridge, then source the minimum missing current-period primary inputs and define a versioned ACN valuation input contract. Controlled `APPLY` and any production valuation run remain separately authorized future steps.
+
 ## MVP-1 scope correction — existing Valuation Map + Data Reliability, no new UI (2026-10-26)
 
 - **Owner clarified goal:** do **not** build a separate dashboard/tab/report. Use the existing [Focused Wealth Dashboard / Valuation Map](https://docs.google.com/spreadsheets/d/17_Z-s6OyspX48EC6DOsJUy0D7kuN67Gmo0bOMgVDkF8/edit) for display. MVP-1 measures **data capture completeness, correctness and freshness** for tracked stock prices, issuer financial facts, model inputs and revaluations. [Revised audit and acceptance checklist](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md).
