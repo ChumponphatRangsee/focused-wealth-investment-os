@@ -163,7 +163,7 @@
 - EOG = **FAIL** on `VAL-PROD-EOG-EP-V2-20261026`.
 - NFLX = **BLOCKED** on `VAL-PROD-NFLX-STREAM-V2-20261026`.
 - All three remain `investment_review_ready=false`; exact repeat apply is `NOOP_ALREADY_REFRESHED`.
-- Bridge-specific live SQL acceptance: **8/8 PASS**. Baseline Quality Hardening recheck: **10/11 PASS** because the existing QH-08 PINS ranking fixture no longer has a current PINS row; the bridge does not write ranking tables.
+- bridge-specific live SQL acceptance: **10/10 PASS**. Baseline Quality Hardening recheck: **10/11 PASS** because the existing QH-08 PINS ranking fixture no longer has a current PINS row; the bridge does not write ranking tables.
 - No portfolio/accounting/approval/execution/trading mutation; `auto_trade=false`, human execution only.
 - Next: canonicalize missing Owner Earnings / durability evidence through the controlled Evidence → Metrics path, then rerun the bridge. Reconcile PINS ranking-test drift separately.
 
