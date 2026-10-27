@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.21
+  id: FWIOS-CONTRACT-0.87.22
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -405,6 +405,38 @@ quality_hardening_v1:
   comm_services_quality_filter_acceptance: "8/8 PASS"
   financials_quality_filter_acceptance: "8/8 PASS"
 
+
+quality_hardening_refresh_v1:
+  policy_version_id: POL-QUALITY-HARDENING-REFRESH-V1
+  status: ACTIVE_CONTROLLED_APPLY
+  live_migration: 20261027023035_quality_hardening_refresh_bridge_v1
+  preview_function: fwios.preview_quality_hardening_refresh_v1
+  apply_function: fwios.apply_quality_hardening_refresh_v1
+  rpc_access: SERVICE_ROLE_ONLY
+  apply_requires_explicit_human_authorization: true
+  price_source: fwios.market_daily_closes
+  price_verification_set_gate_required: PASS
+  readiness_accepted_price_statuses_inherited: true
+  prior_hardening_freshness_required_for_carry_forward: true
+  business_durability_auto_upgrade: false
+  owner_earnings_auto_upgrade: false
+  value_trap_recomputed_from_current_mispricing: true
+  valuation_robustness_recomputed_from_current_valuation_and_price: true
+  shadow_evidence_direct_production_pass: false
+  idempotent_repeat_status: NOOP_ALREADY_REFRESHED
+  production_results_2026_10_27:
+    ACN: REVIEW
+    EOG: FAIL
+    NFLX: BLOCKED
+  investment_review_ready_promotions_from_refresh: 0
+  bridge_regression_status: "8/8 PASS live SQL"
+  baseline_quality_hardening_recheck: "10/11 PASS; QH-08 PINS current-ranking fixture drift is outside bridge scope"
+  portfolio_mutation: false
+  approval_mutation: false
+  execution_mutation: false
+  auto_trade: false
+  human_execution_only: true
+
 expected_return_v3:
   continuous_upside_score: "clamp(50 + 100 * upside, 0, 100)"
   formula: "(0.60 * base_upside_score + 0.40 * probability_weighted_upside_score) * valuation_confidence"
@@ -428,6 +460,7 @@ policy_governance:
     RESEARCH_READINESS: POL-RESEARCH-READINESS-V1
     DATA_SCORING: POL-DATA-SCORING-V3-DURABILITY
     QUALITY_HARDENING: POL-QUALITY-HARDENING-V1
+    QUALITY_HARDENING_REFRESH: POL-QUALITY-HARDENING-REFRESH-V1
     REVISION_SCORE: POL-REVISION-SCORE-V1
     CHASE_SCORE: POL-CHASE-SCORE-V1
     OPPORTUNITY_RANKING: POL-OPPORTUNITY-RANKING-V2
