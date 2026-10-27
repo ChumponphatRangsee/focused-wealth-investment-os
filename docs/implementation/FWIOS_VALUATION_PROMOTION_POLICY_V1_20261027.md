@@ -3,7 +3,7 @@
 Date: **2026-10-27 (Asia/Bangkok)**  
 Live migration: **20261027015027 — valuation_promotion_policy_v1**  
 Policy: **POL-VALUATION-PROMOTION-V1**  
-Status: **ACTIVE / NON-MUTATING / HUMAN CUTOVER REQUIRED**
+Status: **ACTIVE / CONTROLLED APPLY + ROLLBACK / HUMAN AUTHORIZATION REQUIRED**
 
 ## Why this exists
 
@@ -15,9 +15,9 @@ Promotion Policy v1 compresses that review into one deterministic result:
 - `MANUAL_REVIEW`
 - `BLOCKED`
 
-The policy does **not** promote a model or valuation by itself.
+The preview policy does **not** promote a model or valuation by itself.
 
-`AUTO_ELIGIBLE` means the shadow has cleared the standard gates and is ready for a future **single explicit human-approved promotion action**.
+`AUTO_ELIGIBLE` means the shadow has cleared the standard gates and may be passed to the service-role-only `apply_valuation_promotion_v1()` function **only after explicit human authorization**.
 
 ## Deterministic gates
 
@@ -72,6 +72,30 @@ The function is stable, security-invoker and non-mutating.
 
 Execution is revoked from PUBLIC, anon and authenticated; service role is explicitly allowed.
 
+### Apply function
+
+`fwios.apply_valuation_promotion_v1(shadow_run_id)`
+
+- requires the preview result to be `AUTO_ELIGIBLE`;
+- never mutates the shadow run in place;
+- creates a new deterministic `VAL-PROD-...` run with exact Fair Value parity to the approved shadow;
+- copies scenarios, inputs and resolved lineage;
+- promotes the v2 model version and retires the prior production version;
+- retains the prior production run/version as rollback metadata;
+- exact repeat calls return `NOOP_ALREADY_PROMOTED`;
+- service-role-only and human-authorized; no portfolio or trade mutation.
+
+### Rollback function
+
+`fwios.rollback_valuation_promotion_v1(production_run_id)`
+
+- only rolls back a run created by Promotion Policy v1;
+- requires that promoted run to still be the current Dashboard production run;
+- disables only the promoted production eligibility;
+- restores the prior production model version and model-registry metadata;
+- verifies the Dashboard returns to the recorded rollback run;
+- service-role-only and never automatic.
+
 ### Readiness view
 
 `fwios.v_valuation_promotion_readiness_v1`
@@ -82,22 +106,15 @@ The view uses `security_invoker=true` and is service-role-only.
 
 ## Current results
 
-| Ticker | Shadow version | Max absolute FV delta | Result |
+ACN, EOG and NFLX were evaluated as `AUTO_ELIGIBLE` and subsequently promoted with explicit human authorization on 2026-10-27.
+
+| Ticker | Production v2 run | PW Fair Value | Current production version |
 |---|---|---:|---|
-| ACN | IT_SERVICES_FCF_COMPOUNDER_V1::2.0 | 4.04% | **AUTO_ELIGIBLE** |
-| EOG | E&P_NORMALIZED_FCF_YIELD_V1::2.0 | ~0.00% | **AUTO_ELIGIBLE** |
-| NFLX | STREAMING_FCF_DCF_V1::2.0 | 3.74% | **AUTO_ELIGIBLE** |
+| ACN | `VAL-PROD-ACN-ITSERV-V2-20261026` | 240.71425210 | `IT_SERVICES_FCF_COMPOUNDER_V1::2.0` |
+| EOG | `VAL-PROD-EOG-EP-V2-20261026` | 169.54150480 | `E&P_NORMALIZED_FCF_YIELD_V1::2.0` |
+| NFLX | `VAL-PROD-NFLX-STREAM-V2-20261026` | 76.45212237 | `STREAMING_FCF_DCF_V1::2.0` |
 
-All three also pass:
-
-- required-input completeness;
-- Tier-A verified/conflict-free evidence;
-- complete metric lineage;
-- model regression;
-- same-kernel check;
-- explicit supersedes chain;
-- singular current production version;
-- mutation safety.
+The original shadow runs remain non-production approval artifacts. The prior v1 production runs remain available as rollback targets.
 
 ## Safety boundary
 
@@ -108,23 +125,23 @@ Policy configuration explicitly records:
 - `portfolio_mutation=false`
 - `auto_trade=false`
 
-Therefore the policy simplifies review but does not bypass human authorization or create an automatic trading path.
+Therefore the policy simplifies review and provides controlled apply/rollback mechanics, but still does not bypass human authorization or create an automatic trading path.
 
 ## Regression
 
 Live Supabase regression:
 
-`FWIOS VALUATION PROMOTION POLICY V1: PASS (12/12, NON-MUTATING)`
+`FWIOS VALUATION PROMOTION POLICY V1: PASS (12/12, POST-CUTOVER)`
 
 Coverage includes:
 
 - active policy configuration;
 - unknown-run fail-closed behavior;
-- ACN/EOG/NFLX eligibility;
-- input/evidence gates;
-- lineage;
-- unchanged production Dashboard;
+- post-cutover fail-closed preview behavior;
+- idempotent re-apply behavior;
+- v2 production authority;
 - shadow non-production boundary;
+- Dashboard v2 cutover;
 - function/view privileges;
 - explicit non-mutating result contract.
 
@@ -138,7 +155,7 @@ Normal model-refresh path becomes:
 
 Then:
 
-- `AUTO_ELIGIBLE` → one explicit promotion action;
+- `AUTO_ELIGIBLE` → one explicit service-role promotion action after human authorization;
 - `MANUAL_REVIEW` → inspect delta/method change;
 - `BLOCKED` → fix the reported blocker.
 

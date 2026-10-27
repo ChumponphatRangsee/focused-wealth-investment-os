@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.20
+  id: FWIOS-CONTRACT-0.87.21
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -439,8 +439,10 @@ policy_governance:
 
 valuation_promotion_v1:
   policy_version_id: POL-VALUATION-PROMOTION-V1
-  status: ACTIVE_NON_MUTATING
+  status: ACTIVE_CONTROLLED_APPLY_ROLLBACK
   preview_function: fwios.preview_valuation_promotion_v1
+  apply_function: fwios.apply_valuation_promotion_v1
+  rollback_function: fwios.rollback_valuation_promotion_v1
   readiness_view: fwios.v_valuation_promotion_readiness_v1
   result_states: [AUTO_ELIGIBLE, MANUAL_REVIEW, BLOCKED]
   required_input_pass_ratio: 1.00
@@ -455,13 +457,25 @@ valuation_promotion_v1:
   auto_eligible_max_abs_fv_delta: 0.15
   manual_review_high_delta: 0.30
   production_rollback_target_required: true
+  apply_requires_auto_eligible: true
+  apply_requires_explicit_human_authorization: true
+  rollback_requires_current_promoted_run: true
+  shadow_promoted_in_place: false
+  shadow_immutability_preserved: true
+  old_production_run_retained_for_rollback: true
   auto_apply: false
   human_cutover_required: true
   portfolio_mutation: false
   auto_trade: false
   service_role_only: true
-  regression_status: "12/12 PASS"
-  semantics: "AUTO_ELIGIBLE means ready for one explicit human-approved promotion action; it never performs cutover by itself."
+  current_promoted_models:
+    - IT_SERVICES_FCF_COMPOUNDER_V1::2.0
+    - E&P_NORMALIZED_FCF_YIELD_V1::2.0
+    - STREAMING_FCF_DCF_V1::2.0
+  production_cutover_status: LIVE_2026_10_27
+  production_cutover_regression: "14/14 PASS, rollback verified"
+  regression_status: "12/12 PASS POST-CUTOVER"
+  semantics: "Preview never performs cutover. AUTO_ELIGIBLE may be passed to the service-role apply function only after explicit human authorization; rollback is explicit and never automatic."
 
 opportunity_ranking_v2:
   policy_version_id: POL-OPPORTUNITY-RANKING-V2

@@ -44,7 +44,7 @@
 - **Canonical resolver now 7/7 required PASS** (plus 3/3 optional diagnostics PASS).
 - **Immutable shadow v2 run created:** `VAL-SHADOW-ACN-ITSERV-V2-20261026`, `production_eligible=false`, 10/10 inputs PASS, 10 resolved metric-input lineage edges. Bear 171.9854, Base 232.6516, Bull 325.5685, PW 240.7143 (+3.28% vs v1). At price 249.415, shadow PW upside is about -3.49%.
 - **Production boundary preserved:** Valuation Map still reads `VAL-SUPA-ACN-ITSERV-20260905` (v1 PW 233.0596473725). No production cutover and no trading action occurred.
-- **Next exact action:** shared promotion acceptance/rollback criteria are now implemented by `POL-VALUATION-PROMOTION-V1`; production cutover remains separately authorized.
+- **Status:** superseded by the 2026-10-27 v2 production cutover section below; ACN v2 is now production.
 
 ## EOG + NFLX period-aware v2 — LIVE shadow validation (2026-10-26)
 
@@ -55,7 +55,7 @@
 - **NFLX resolver/shadow:** canonical resolver now **6/6 required PASS** (9/9 total selectors PASS). Shadow run `VAL-SHADOW-NFLX-STREAM-V2-20261026` gives Bear 38.3421, Base 73.1427, Bull 121.1811, PW 76.4521 versus v1 PW 78.9148 (-3.12%). At dashboard price 65.87, shadow PW upside is ~16.07%.
 - **Verification:** EOG/NFLX shadow lineage edges are 8/9 respectively. Live regression: **10/10 PASS (SHADOW/NON-PRODUCTION)**.
 - **Production boundary preserved:** EOG Dashboard still uses `VAL-EOG-20260904-P087`; NFLX still uses `VAL-NFLX-STREAM-20260911`. No model promotion, dashboard cutover, trading, or portfolio/accounting mutation occurred.
-- **Next exact action:** promotion review is now automated by `POL-VALUATION-PROMOTION-V1`; ACN/EOG/NFLX are AUTO_ELIGIBLE. A production cutover remains one separately authorized action.
+- **Status:** superseded by the 2026-10-27 v2 production cutover section below; EOG/NFLX v2 are now production.
 
 ## Valuation Promotion Policy v1 — LIVE / NON-MUTATING (2026-10-27)
 
@@ -64,11 +64,28 @@
 - **Outputs:** only `AUTO_ELIGIBLE`, `MANUAL_REVIEW`, or `BLOCKED`.
 - **AUTO_ELIGIBLE criteria:** 100% required inputs PASS; Tier-A VERIFIED conflict-free evidence; complete metric-input lineage; model regression PASS; singular current production version; explicit supersedes chain; valuation/router/schema gates PASS; same kernel family; maximum absolute Bear/Base/Bull/PW Fair Value delta <=15%.
 - **Safety:** `auto_apply=false`, `human_cutover_required=true`, `portfolio_mutation=false`, `auto_trade=false`. The policy never promotes production by itself.
-- **Current results:** ACN = **AUTO_ELIGIBLE** (max FV delta 4.04%); EOG = **AUTO_ELIGIBLE** (~0.00%); NFLX = **AUTO_ELIGIBLE** (3.74%). All have zero blockers/review reasons.
+- **Historical pre-cutover result:** ACN/EOG/NFLX were all AUTO_ELIGIBLE and were subsequently promoted with explicit authorization on 2026-10-27.
 - **Regression:** `FWIOS VALUATION PROMOTION POLICY V1: PASS (12/12, NON-MUTATING)`.
 - **Access boundary:** preview function/readiness view are service-role-only; no public/anon/authenticated access.
-- **Production boundary preserved:** ACN/EOG/NFLX still use their existing production v1 runs in the Valuation Map. No model promotion, Dashboard cutover, trading, holdings, transaction, cash or accounting mutation occurred.
-- **Simplified workflow now:** `Evidence → Canonical Metrics → Resolver → Shadow Valuation → Promotion Policy`. AUTO_ELIGIBLE can proceed to one separately authorized promotion action; MANUAL_REVIEW inspects delta/method changes; BLOCKED fixes the reported gate.
+- **Cutover completed:** this pre-cutover boundary statement is superseded by the 2026-10-27 production-cutover receipt. No trading, holdings, transaction, cash or accounting mutation occurred.
+- **Simplified workflow:** `Evidence → Canonical Metrics → Resolver → Shadow Valuation → Promotion Policy`; AUTO_ELIGIBLE may be sent to one explicit service-role apply call, with rollback available if required.
+
+## Valuation v2 production cutover — LIVE / ROLLBACK VERIFIED (2026-10-27)
+
+- **Live apply/rollback migration:** `20261027020107 valuation_promotion_apply_rollback_v1`.
+- **Controlled functions:** `fwios.apply_valuation_promotion_v1(shadow_run_id)` and `fwios.rollback_valuation_promotion_v1(production_run_id)`; service-role-only, human-authorized, no auto-trading.
+- **Production authority:** ACN, EOG and NFLX v2 are now the sole `PRODUCTION` model versions with `production_read_cutover=true`. Their previous model versions are `RETIRED` but retained as rollback targets. Global authoritative production-version count remains 20.
+- **ACN:** production run `VAL-PROD-ACN-ITSERV-V2-20261026`, model `IT_SERVICES_FCF_COMPOUNDER_V1::2.0`, PW Fair Value **240.7142520975**; rollback run `VAL-SUPA-ACN-ITSERV-20260905`.
+- **EOG:** production run `VAL-PROD-EOG-EP-V2-20261026`, model `E&P_NORMALIZED_FCF_YIELD_V1::2.0`, PW Fair Value **169.5415048027**; rollback run `VAL-EOG-20260904-P087`.
+- **NFLX:** production run `VAL-PROD-NFLX-STREAM-V2-20261026`, model `STREAMING_FCF_DCF_V1::2.0`, PW Fair Value **76.4521223650**; rollback run `VAL-NFLX-STREAM-20260911`.
+- **Shadow immutability preserved:** all three original shadow runs remain `production_eligible=false`. Production runs are new immutable copies with exact Fair Value parity and copied canonical-input lineage (ACN 10, EOG 8, NFLX 9 edges).
+- **Idempotency:** exact repeat promotion calls return `NOOP_ALREADY_PROMOTED`; no duplicate production runs are created.
+- **Rollback verified:** all three rollback functions were executed inside a transaction and restored the prior Dashboard/model authority; the transaction was rolled back, leaving live production on v2. Result: `VALUATION_V2_ROLLBACK_DRY_RUN_PASS`.
+- **Regression:** `FWIOS VALUATION V2 PRODUCTION CUTOVER: PASS (14/14, ROLLBACK-VERIFIED)`.
+- **Existing Valuation Map verified:** Google Sheet already reflects v2 without manual edits — ACN 240.71, EOG 169.54, NFLX 76.45 Fair Value.
+- **Downstream gates preserved:** `v_research_readiness_current_v1` resolves the new v2 runs and all three are `VALUATION_READY`, but currently remain blocked from investment-review-ready by **Quality / Durability Hardening**. Valuation cutover does not create a buy signal.
+- **Safety:** promotion transaction asserted no changes to `portfolio_transactions`, `portfolio_source_positions`, `portfolio_live_holdings_rows_v1`, or `human_approval_packets`; `auto_trade=false`.
+- **Next exact action:** stop adding valuation-cutover architecture. Continue MVP data reliability / Quality-Durability Hardening and refresh downstream decision lineage from the new v2 production valuations where warranted.
 
 ## MVP-1 scope correction — existing Valuation Map + Data Reliability, no new UI (2026-10-26)
 
