@@ -76,11 +76,25 @@ with checks as (
       where d.ticker='NFLX' and d.decision_state='REVIEW - QUALITY HARDENING'
         and d.portfolio_batch_id is null and d.portfolio_fit_snapshot_id is null
         and s.scoring_policy_id='FWB-DATA-SCORING-V4-PORTFOLIO-INDEPENDENT' and s.portfolio_fit_score is null)
-  union all select 'DPI-24 PINS price-conflict decision preserved',
-    exists(select 1 from fwios.v_latest_decision_snapshots where ticker='PINS'
-      and decision_snapshot_id='DEC-PINS-REFRESH-20260911' and decision_state='PRICE CONFLICT')
-  union all select 'DPI-25 PINS preview fail-closed',
-    fwios.preview_decision_refresh_bridge_v2('PINS')->>'reason'='CURRENT_MISPRICING_NOT_ALIGNED_TO_HARDENING'
+  union all select 'DPI-24 PINS current decision portfolio-independent',
+    exists(select 1 from fwios.v_latest_decision_snapshots
+      where ticker='PINS'
+        and decision_snapshot_id='DEC-DPI-PINS-a77877e1ac450268'
+        and decision_state='REVIEW - QUALITY HARDENING'
+        and portfolio_batch_id is null
+        and portfolio_fit_snapshot_id is null)
+  union all select 'DPI-25 PINS current lineage aligned',
+    exists(
+      select 1
+      from fwios.v_latest_decision_snapshots d
+      join fwios.v_candidate_quality_hardening_current h on h.ticker=d.ticker
+      join fwios.v_valuation_mispricing_current m on m.ticker=d.ticker
+      where d.ticker='PINS'
+        and d.hardening_snapshot_id=h.hardening_snapshot_id
+        and d.mispricing_snapshot_id=m.mispricing_snapshot_id
+        and h.mispricing_snapshot_id=m.mispricing_snapshot_id
+        and m.effective_price_gate='PASS'
+    )
   union all select 'DPI-26 ACN normalized core score',
     exists(select 1 from fwios.v_latest_decision_snapshots where ticker='ACN' and core_score=70.1952)
   union all select 'DPI-27 EOG normalized core score',
@@ -95,9 +109,12 @@ with checks as (
     (select count(*)=4 from fwios.v_opportunity_quality_current
       where ticker in ('ACN','EOG','NFLX','PINS')
         and portfolio_scenario_gate='NOT_APPLICABLE - PORTFOLIO INDEPENDENT')
-  union all select 'DPI-31 PINS opportunity still price verify',
+  union all select 'DPI-31 PINS opportunity current and fail-closed on chase',
     exists(select 1 from fwios.v_opportunity_quality_current where ticker='PINS'
-      and opportunity_state='PRICE_VERIFY' and final_buy_review_gate='BLOCKED - PRICE VERIFY')
+      and opportunity_state='MISPRICED_CANDIDATE'
+      and price_gate='PASS'
+      and mispricing_gate='PASS'
+      and final_buy_review_gate='BLOCKED - CHASE')
   union all select 'DPI-32 retired ranking zero visible',
     (select count(*)=0 from fwios.v_opportunity_ranking_current)
   union all select 'DPI-33 protected counts unchanged',
