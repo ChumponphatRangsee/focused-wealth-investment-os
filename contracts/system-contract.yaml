@@ -429,7 +429,7 @@ quality_hardening_refresh_v1:
     EOG: FAIL
     NFLX: BLOCKED
   investment_review_ready_promotions_from_refresh: 0
-  bridge_regression_status: "8/8 PASS live SQL"
+  bridge_regression_status: "10/10 PASS live SQL"
   baseline_quality_hardening_recheck: "10/11 PASS; QH-08 PINS current-ranking fixture drift is outside bridge scope"
   portfolio_mutation: false
   approval_mutation: false
