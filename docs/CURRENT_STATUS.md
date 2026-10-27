@@ -2,8 +2,6 @@
 
 > **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the portfolio-independent Decision / Opportunity cutover. Active contract is `FWIOS-CONTRACT-0.87.24`. Live Supabase migration `20261027035558 decision_opportunity_portfolio_independence_v1` is verified at **35/35 PASS**. Portfolio Fit is retired from the active Scanner/Decision/Opportunity path; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED. Repository migration/test/receipt are included with this status update. Re-check current `main` on each new session. **Live operational truth overrides this dated index.**
 
-> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the Decision / Ranking Refresh Bridge v1 live cutover. Decision / Ranking feature parity was verified after PR #86 merged at `e4ae154d6e290b8fa6f44f04829d2c99be656ded`; active contract is `FWIOS-CONTRACT-0.87.23`. Live Supabase migration `20261027033605 decision_ranking_refresh_bridge_v1` and the merged repository migration/test/receipt are aligned. Re-check current `main` on each new session. **Live operational truth overrides this dated index.**
-
 ## Mandatory read / execution order
 
 1. Read [AGENTS.md](../AGENTS.md) and [system-contract.yaml](../contracts/system-contract.yaml); preserve human-execution-only and financial-accounting guardrails.
@@ -15,7 +13,7 @@
 ## Repository / source precedence
 
 - Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
-- Latest verified **feature merge baseline** for this status update: `e4ae154d6e290b8fa6f44f04829d2c99be656ded` (PR #86 merge). A later docs-only status sync may advance `main`; re-check on each new session.
+- Latest verified **pre-cutover main baseline**: `7a9f4f98852a25137f7ab7c791ca45c68fb364a2` (PR #87 merge). This portfolio-independent cutover is synchronized by the feature PR containing this status update; re-check current `main` after merge.
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
 
