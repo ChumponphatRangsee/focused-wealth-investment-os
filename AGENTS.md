@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.20**  
+Contract version: **FWIOS-CONTRACT-0.87.21**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -118,11 +118,11 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-LINEAGE-GRAPH-V1` — append-only evidence→metric→decision lineage active; no production read cutover
 - `POL-MARKET-OBSERVATION-V1` — canonical provider/session-aware market observations + dual-write compatibility; no production read cutover
 - `POL-THESIS-MEMORY-V1` — normalized thesis conditions/KPI bindings + append-only decision/reactivation memory; no production read cutover
-- `POL-VALUATION-PROMOTION-V1` — deterministic shadow→promotion readiness; `AUTO_ELIGIBLE` never performs cutover by itself; explicit human promotion remains required
+- `POL-VALUATION-PROMOTION-V1` — deterministic shadow→promotion readiness plus service-role-only controlled apply/rollback; preview never cuts over by itself and apply requires explicit human authorization
 
 AI must never retune deterministic gates ad hoc to make a name pass.
 
-### Valuation Promotion Policy — ACTIVE / NON-MUTATING
+### Valuation Promotion Policy — ACTIVE / CONTROLLED APPLY + ROLLBACK
 
 `POL-VALUATION-PROMOTION-V1` standardizes promotion review for validated valuation-model shadow runs.
 
@@ -136,6 +136,10 @@ Rules:
 - Larger deltas or kernel changes require `MANUAL_REVIEW`; hard gate failures return `BLOCKED`.
 - Current production run/version are retained as rollback targets.
 - Policy preview is service-role-only, non-mutating, `auto_apply=false`, `auto_trade=false`, and never mutates holdings/transactions/cash.
+- After explicit human authorization, `fwios.apply_valuation_promotion_v1(shadow_run_id)` may cut over only an `AUTO_ELIGIBLE` shadow. It creates a new production run; it never flips the shadow run in place.
+- The prior production run/version must be retained as an explicit rollback target. Exact repeat apply calls must be idempotent `NOOP_ALREADY_PROMOTED`.
+- `fwios.rollback_valuation_promotion_v1(production_run_id)` may only roll back a currently active run created by Promotion Policy v1; rollback is never automatic.
+- Apply/rollback are service-role-only, human-execution-only, and must not mutate holdings, transactions, cash, accounting, approval, or trade execution.
 
 ### Controlled ChatGPT Research Ingestion — ACTIVE
 
