@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** for handover to the Clean-Room End-to-End Validation milestone. Active contract is `FWIOS-CONTRACT-0.87.26`. Latest verified pre-handover `main` is `a10c32253cd126f91a0989baf081f293c152c13f`. The portfolio-independent Decision / Opportunity cutover, retired-runtime cleanup, and PINS current-lineage repair are complete. Portfolio Fit is retired from the active Scanner/Decision/Opportunity path; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED. **Next milestone is ticker-only clean-room E2E validation, not further ticker-specific patching.** Re-check current `main` and live Supabase on each new session. **Live operational truth overrides this dated index.**
+> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after Clean-Room E2E Test #1. Active contract remains `FWIOS-CONTRACT-0.87.26`; valuation / Quality Hardening / risk / Chase thresholds were not changed. Latest verified `main` baseline for Test #1 is `f3b96b3e6b869151c1bf388ff527f02373b2d471`. Test #1 on MA proves ticker-only evidence → canonical/derived metrics → production-model Fair Value → verified price → mispricing → canonical Quality Hardening, but the full E2E remains fail-closed before Revision/Chase/Core Scoring/Decision/Opportunity. Portfolio Fit stays retired; `POL-OPPORTUNITY-RANKING-V2` stays RETIRED; `auto_trade=false`. **Next milestone is shared lineage/scoring/orchestration closure, not MA-specific patching.** Re-check current `main` and live Supabase on each new session. **Live operational truth overrides this dated index.**
 
 ## Mandatory read / execution order
 
@@ -13,9 +13,23 @@
 ## Repository / source precedence
 
 - Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
-- Latest verified **pre-handover main baseline**: `a10c32253cd126f91a0989baf081f293c152c13f` (PR #90 merge). Re-check current `main` before any new-chat work.
+- Latest verified **Clean-Room Test #1 main baseline**: `f3b96b3e6b869151c1bf388ff527f02373b2d471` (PR #91 merge). Re-check current `main` before any new-chat work.
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
+
+## Clean-Room E2E Test #1 — MA / PARTIAL PASS, DOWNSTREAM FAIL-CLOSED (2026-10-27)
+
+- **Production receipt:** [FWIOS_CLEAN_ROOM_E2E_TEST1_20261027.md](implementation/FWIOS_CLEAN_ROOM_E2E_TEST1_20261027.md).
+- **Isolation:** MA had zero pre-test ticker-specific research candidates, evidence, canonical metrics, valuations, hardening, Decisions or Opportunity snapshots. Historical data was not deleted. Shared canonical market data remained an allowed system service.
+- **Proved path:** ticker identity → 4 Tier-A primary evidence rows → 22 direct canonical metrics → 6 explicit derived metrics → Payment Network production routing → Fair Value → verified 2026-10-26 close → mispricing → canonical Quality Hardening.
+- **MA valuation:** `PAYMENT_NETWORK_FCF_DCF_V1::1.0`; Bear/Base/Bull/PW = **310.4742 / 475.3015 / 710.9092 / 492.9966 USD**. Verified close = **613.84 USD**; PW upside = **-19.6865%**.
+- **Hardening:** Durability PASS / Owner Earnings PASS / Value Trap PASS / Robustness REVIEW / Overall **REVIEW**. No BUY/PASS outcome was forced.
+- **Downstream:** Revision and Chase correctly BLOCK for unregistered Payment Network coverage; core scoring is absent because controlled ingest does not mutate `research_candidates`; Decision blocks `CORE_RESEARCH_SCORE_MISSING`; no Opportunity row was materialized.
+- **Idempotency:** controlled research replay `NOOP_ALREADY_APPLIED`; six derivations `NOOP_ALREADY_APPLIED`; valuation `NOOP_ALREADY_APPLIED`; hardening `NOOP_ALREADY_REFRESHED`.
+- **Live shared fixes:** `20261027051419 clean_room_metric_derivation_lineage_v1`; `20261027051454 payment_network_valuation_runner_v1`; `20261027051904 quality_hardening_current_canonical_precedence_v1`; `20261027052154 research_ingest_period_type_conflict_identity_v1`.
+- **Lineage:** evidence/metric/derived-metric/valuation/hardening graph has 35 MA artifacts and 65 resolved edges with 0 unresolved. **Remaining defect:** verified market price and mispricing are not first-class lineage graph artifacts/edges.
+- **Protected state:** portfolio transactions **58→58**, source positions **32→32**, live holdings rows **15→15**, accounts **3→3**, approval packets **1→1**, approval events **0→0**. No portfolio/accounting/approval/execution mutation; `auto_trade=false`.
+- **Before Test #2:** close market/mispricing graph lineage, add/prove a generic ticker-only core-scoring bridge, and add/prove ticker-scoped Opportunity Quality refresh. Do not add MA-specific thresholds. For the next clean-room ticker, prefer an archetype already covered by Revision/Chase unless the goal is explicitly to design Payment Network cross-sector scoring.
 
 ## Handover / Next Milestone — CLEAN-ROOM E2E VALIDATION (2026-10-27)
 
