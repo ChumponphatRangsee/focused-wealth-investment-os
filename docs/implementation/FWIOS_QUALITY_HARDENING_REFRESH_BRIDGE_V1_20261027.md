@@ -97,7 +97,7 @@ All three current mispricing gates are `FAIL - INSUFFICIENT MISPRICING`.
 
 ## Regression
 
-Bridge-specific live SQL acceptance: **8/8 PASS**.
+bridge-specific live SQL acceptance: **10/10 PASS**.
 
 Baseline Quality Hardening regression recheck: **10/11 PASS**. The single failure is the existing `QH-08 PINS production bucket` fixture because `v_opportunity_ranking_current` currently contains no PINS row. The refresh bridge does not write ranking tables, so this is recorded as pre-existing ranking/test drift and is not repaired by this PR.
 
