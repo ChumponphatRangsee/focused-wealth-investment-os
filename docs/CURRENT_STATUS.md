@@ -44,7 +44,7 @@
 - **Canonical resolver now 7/7 required PASS** (plus 3/3 optional diagnostics PASS).
 - **Immutable shadow v2 run created:** `VAL-SHADOW-ACN-ITSERV-V2-20261026`, `production_eligible=false`, 10/10 inputs PASS, 10 resolved metric-input lineage edges. Bear 171.9854, Base 232.6516, Bull 325.5685, PW 240.7143 (+3.28% vs v1). At price 249.415, shadow PW upside is about -3.49%.
 - **Production boundary preserved:** Valuation Map still reads `VAL-SUPA-ACN-ITSERV-20260905` (v1 PW 233.0596473725). No production cutover and no trading action occurred.
-- **Next exact action:** ACN/EOG/NFLX all now have validated period-aware shadow routes. Review the three v1/v2 deltas together and define promotion acceptance/rollback criteria before any production cutover.
+- **Next exact action:** shared promotion acceptance/rollback criteria are now implemented by `POL-VALUATION-PROMOTION-V1`; production cutover remains separately authorized.
 
 ## EOG + NFLX period-aware v2 — LIVE shadow validation (2026-10-26)
 
@@ -55,7 +55,20 @@
 - **NFLX resolver/shadow:** canonical resolver now **6/6 required PASS** (9/9 total selectors PASS). Shadow run `VAL-SHADOW-NFLX-STREAM-V2-20261026` gives Bear 38.3421, Base 73.1427, Bull 121.1811, PW 76.4521 versus v1 PW 78.9148 (-3.12%). At dashboard price 65.87, shadow PW upside is ~16.07%.
 - **Verification:** EOG/NFLX shadow lineage edges are 8/9 respectively. Live regression: **10/10 PASS (SHADOW/NON-PRODUCTION)**.
 - **Production boundary preserved:** EOG Dashboard still uses `VAL-EOG-20260904-P087`; NFLX still uses `VAL-NFLX-STREAM-20260911`. No model promotion, dashboard cutover, trading, or portfolio/accounting mutation occurred.
-- **Next exact action:** perform one cross-model promotion review for ACN/EOG/NFLX and define shared acceptance/rollback criteria. Any production promotion remains separately authorized.
+- **Next exact action:** promotion review is now automated by `POL-VALUATION-PROMOTION-V1`; ACN/EOG/NFLX are AUTO_ELIGIBLE. A production cutover remains one separately authorized action.
+
+## Valuation Promotion Policy v1 — LIVE / NON-MUTATING (2026-10-27)
+
+- **Live migration:** `20261027015027 valuation_promotion_policy_v1`.
+- **Policy:** `POL-VALUATION-PROMOTION-V1`, active deterministic readiness for validated shadow valuation runs.
+- **Outputs:** only `AUTO_ELIGIBLE`, `MANUAL_REVIEW`, or `BLOCKED`.
+- **AUTO_ELIGIBLE criteria:** 100% required inputs PASS; Tier-A VERIFIED conflict-free evidence; complete metric-input lineage; model regression PASS; singular current production version; explicit supersedes chain; valuation/router/schema gates PASS; same kernel family; maximum absolute Bear/Base/Bull/PW Fair Value delta <=15%.
+- **Safety:** `auto_apply=false`, `human_cutover_required=true`, `portfolio_mutation=false`, `auto_trade=false`. The policy never promotes production by itself.
+- **Current results:** ACN = **AUTO_ELIGIBLE** (max FV delta 4.04%); EOG = **AUTO_ELIGIBLE** (~0.00%); NFLX = **AUTO_ELIGIBLE** (3.74%). All have zero blockers/review reasons.
+- **Regression:** `FWIOS VALUATION PROMOTION POLICY V1: PASS (12/12, NON-MUTATING)`.
+- **Access boundary:** preview function/readiness view are service-role-only; no public/anon/authenticated access.
+- **Production boundary preserved:** ACN/EOG/NFLX still use their existing production v1 runs in the Valuation Map. No model promotion, Dashboard cutover, trading, holdings, transaction, cash or accounting mutation occurred.
+- **Simplified workflow now:** `Evidence → Canonical Metrics → Resolver → Shadow Valuation → Promotion Policy`. AUTO_ELIGIBLE can proceed to one separately authorized promotion action; MANUAL_REVIEW inspects delta/method changes; BLOCKED fixes the reported gate.
 
 ## MVP-1 scope correction — existing Valuation Map + Data Reliability, no new UI (2026-10-26)
 
