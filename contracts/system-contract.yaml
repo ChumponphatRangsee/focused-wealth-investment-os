@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.25
+  id: FWIOS-CONTRACT-0.87.26
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -419,13 +419,35 @@ decision_opportunity_portfolio_independence_v1:
     ACN: REVIEW
     EOG: FAIL
     NFLX: REVIEW
-    PINS: BLOCKED_STALE_HARDENING_MISPRICING_LINEAGE
+    PINS: REVIEW_CURRENT_LINEAGE
   regression_status: "35/35 PASS live SQL"
   portfolio_mutation: false
   approval_mutation: false
   execution_mutation: false
   auto_trade: false
   human_execution_only: true
+
+pins_current_lineage_repair_v1:
+  status: LIVE_COMPLETE
+  applied_at: "2026-10-27"
+  valuation_run_id: VAL-SUPA-PINS-DIGADS-20260905
+  price_snapshot_id: PX-DCL-PINS-20261026-9ea8129c68
+  mispricing_snapshot_id: MIS-QHR-PINS-20261026-59a4494e51
+  hardening_snapshot_id: HARD-QHR-PINS-20261026-3b737f3fd20c
+  decision_snapshot_id: DEC-DPI-PINS-a77877e1ac450268
+  current_price_gate: PASS
+  current_mispricing_gate: PASS
+  hardening_gate: REVIEW
+  decision_state: REVIEW_QUALITY_HARDENING
+  promotion_gate: BLOCKED_QUALITY_HARDENING
+  remaining_blockers: [RISK_GATE_WATCH, INCOMPLETE_CHASE_DATA, OWNER_EARNINGS_REVIEW]
+  portfolio_dependency: false
+  portfolio_mutation: false
+  approval_mutation: false
+  execution_mutation: false
+  auto_trade: false
+  human_execution_only: true
+  dedicated_regression_status: "18/18 PASS live SQL"
 
 quality_hardening_v1:
   policy_version_id: POL-QUALITY-HARDENING-V1
