@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the Decision / Ranking Refresh Bridge v1 live cutover. Decision / Ranking feature parity was verified after PR #86 merged at `e4ae154d6e290b8fa6f44f04829d2c99be656ded`; active contract is `FWIOS-CONTRACT-0.87.23`. Live Supabase migration `20261027033605 decision_ranking_refresh_bridge_v1` and the merged repository migration/test/receipt are aligned. Re-check current `main` on each new session. **Live operational truth overrides this dated index.**
+> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the portfolio-independent Decision / Opportunity cutover. Active contract is `FWIOS-CONTRACT-0.87.24`. Live Supabase migration `20261027035558 decision_opportunity_portfolio_independence_v1` is verified at **35/35 PASS**. Portfolio Fit is retired from the active Scanner/Decision/Opportunity path; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED. Repository migration/test/receipt are included with this status update. Re-check current `main` on each new session. **Live operational truth overrides this dated index.**
 
 ## Mandatory read / execution order
 
@@ -13,11 +13,30 @@
 ## Repository / source precedence
 
 - Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
-- Latest verified **feature merge baseline** for this status update: `e4ae154d6e290b8fa6f44f04829d2c99be656ded` (PR #86 merge). A later docs-only status sync may advance `main`; re-check on each new session.
+- Latest verified **pre-cutover main baseline**: `7a9f4f98852a25137f7ab7c791ca45c68fb364a2` (PR #87 merge). This portfolio-independent cutover is synchronized by the feature PR containing this status update; re-check current `main` after merge.
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
 
-## Decision / Ranking Refresh Bridge v1 — LIVE / FAIL-CLOSED (2026-10-27)
+## Decision / Opportunity Portfolio Independence — LIVE / ACTIVE (2026-10-27)
+
+- **Live migration:** `20261027035558 decision_opportunity_portfolio_independence_v1`.
+- **Active Decision scoring:** `POL-DATA-SCORING-V4-PORTFOLIO-INDEPENDENT` / `FWB-DATA-SCORING-V4-PORTFOLIO-INDEPENDENT` = **40% Business Thesis / 40% Expected Return / 20% Downside Risk / 0% Portfolio Fit**. This is the normalized 30:30:15 legacy non-portfolio ratio; Quality minimum 70, Chase max 60 and Expected Return 60/40 internals are unchanged.
+- **Portfolio Fit retired from the active path:** `POL-PORTFOLIO-FIT-V1` is RETIRED and `FWB-PORTFOLIO-FIT-V1` is inactive. Historical tables/snapshots remain for audit; no destructive DROP was performed.
+- **Active Decision bridge:** `POL-DECISION-OPPORTUNITY-REFRESH-BRIDGE-V2`; preview/apply do not read `candidate_portfolio_fit_snapshots` or `v_latest_portfolio_batch`. New portfolio-independent Decision rows use NULL legacy fit/batch fields.
+- **Active Opportunity path:** `POL-OPPORTUNITY-QUALITY-V3-PORTFOLIO-INDEPENDENT`; `v_opportunity_quality_current` no longer joins portfolio batch or Portfolio Scenario review. Portfolio scenario compatibility columns remain but are `NOT_APPLICABLE - PORTFOLIO INDEPENDENT` / NULL.
+- **Retired paths:** Decision/Ranking bridge v1 and Opportunity Quality v2 are RETIRED; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED and is not reactivated.
+- **Current Decisions:** ACN `DEC-DPI-ACN-1b8c0fbb6b0c850e` = **REVIEW**; EOG `DEC-DPI-EOG-f20c421e6bd81612` = **FAIL**; NFLX `DEC-DPI-NFLX-65100f7a08581ea9` = **REVIEW**. Required invariants are preserved.
+- **PINS:** no new Decision. v2 preview fails closed because current `MIS-PINS-20260910-REFRESH` / price conflict is not aligned with hardening `HARD-PINS-20260906-V2`, which still references the Sep-06 mispricing snapshot.
+- **Opportunity refresh:** v3 refreshed 27 candidates for 2026-10-27; PINS remains `PRICE_VERIFY`. No Portfolio Scenario is required before human review.
+- **Acceptance:** **35/35 PASS live SQL**; repeat Decision APPLY for ACN/EOG/NFLX = `NOOP_ALREADY_REFRESHED`.
+- **Safety:** protected portfolio/accounting/approval counts unchanged; no portfolio, approval or execution mutation; `auto_trade=false`, human execution only.
+- **Next exact action:** reconcile PINS hardening ↔ current mispricing/price-conflict lineage. NFLX Revision/Chase evidence is a later promotion blocker, not a Portfolio Fit blocker. Do **not** refresh Portfolio Fit for MVP-1.
+
+See [production receipt](implementation/FWIOS_DECISION_OPPORTUNITY_PORTFOLIO_INDEPENDENCE_20261027.md) and [regression SQL](../tests/decision/test_decision_opportunity_portfolio_independence_v1.sql).
+
+## Decision / Ranking Refresh Bridge v1 — SUPERSEDED / HISTORICAL (2026-10-27)
+
+> Historical receipt only. Its Portfolio Fit blockers and next-step recommendations were superseded by the portfolio-independent cutover above.
 
 - **Source handover:** [FWIOS MVP-1 Decision / Ranking Handover](implementation/FWIOS_DECISION_RANKING_HANDOVER_20261027.md) is now a historical input to the completed bridge audit.
 - **Live migration:** `20261027033605 decision_ranking_refresh_bridge_v1`; policy `POL-DECISION-RANKING-REFRESH-BRIDGE-V1`.

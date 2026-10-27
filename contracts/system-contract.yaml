@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.23
+  id: FWIOS-CONTRACT-0.87.24
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -365,20 +365,53 @@ portfolio_state:
   scenario_mutates_live_portfolio: false
 
 production_path:
-  [Source, Evidence, Canonical_Facts, Normalized_Metrics, Intrinsic_Valuation, Market_Price_Mispricing, Portfolio_State_Fit, Quality_Durability_Hardening, Core_Scoring, Revision_Chase_Gates, Decision_Snapshot, Opportunity_Ranking, New_Cash_Allocation, Portfolio_Scenario_Simulation, Rebalancing_Recommendation, Human_Approval]
+  [Source, Evidence, Canonical_Facts, Normalized_Metrics, Intrinsic_Valuation, Market_Price_Mispricing, Quality_Durability_Hardening, Core_Scoring, Revision_Chase_Gates, Decision_Snapshot, Opportunity_Quality, Human_Review]
+production_path_portfolio_independent: true
+portfolio_fit_in_active_scanner_decision_opportunity_path: false
+legacy_opportunity_ranking_v2_status: RETIRED
 
 scoring:
-  business_thesis: 0.30
-  expected_return_valuation: 0.30
-  portfolio_fit: 0.25
-  downside_risk: 0.15
+  business_thesis: 0.40
+  expected_return_valuation: 0.40
+  portfolio_fit: 0.00
+  downside_risk: 0.20
   core_weight_sum: 1.00
-  active_policy_version: POL-DATA-SCORING-V3-DURABILITY
-  backing_policy_id: FWB-DATA-SCORING-V3-DURABILITY
+  active_policy_version: POL-DATA-SCORING-V4-PORTFOLIO-INDEPENDENT
+  backing_policy_id: FWB-DATA-SCORING-V4-PORTFOLIO-INDEPENDENT
+  portfolio_fit_gate_active: false
+  portfolio_fit_required: false
+  legacy_portfolio_fit_min_retained_for_compatibility: 50
   expected_return_curve: continuous_confidence_adjusted
   expected_return_base_weight: 0.60
   expected_return_probability_weighted_weight: 0.40
   historical_return_can_substitute_expected_return: false
+
+decision_opportunity_portfolio_independence_v1:
+  status: LIVE_ACTIVE
+  live_migration: 20261027035558_decision_opportunity_portfolio_independence_v1
+  decision_bridge_policy: POL-DECISION-OPPORTUNITY-REFRESH-BRIDGE-V2
+  opportunity_policy: POL-OPPORTUNITY-QUALITY-V3-PORTFOLIO-INDEPENDENT
+  retired_portfolio_fit_policy: POL-PORTFOLIO-FIT-V1
+  retired_decision_ranking_bridge: POL-DECISION-RANKING-REFRESH-BRIDGE-V1
+  retired_opportunity_quality_policy: POL-OPPORTUNITY-QUALITY-V2
+  opportunity_ranking_v2_status: RETIRED
+  decision_portfolio_fit_required: false
+  decision_portfolio_batch_required: false
+  opportunity_portfolio_scenario_required: false
+  historical_portfolio_data_preserved: true
+  valuation_threshold_changes: false
+  hardening_threshold_changes: false
+  production_results_2026_10_27:
+    ACN: REVIEW
+    EOG: FAIL
+    NFLX: REVIEW
+    PINS: BLOCKED_STALE_HARDENING_MISPRICING_LINEAGE
+  regression_status: "35/35 PASS live SQL"
+  portfolio_mutation: false
+  approval_mutation: false
+  execution_mutation: false
+  auto_trade: false
+  human_execution_only: true
 
 quality_hardening_v1:
   policy_version_id: POL-QUALITY-HARDENING-V1
