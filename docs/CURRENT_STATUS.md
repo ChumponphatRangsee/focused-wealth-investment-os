@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the portfolio-independent Decision / Opportunity cutover. Active contract is `FWIOS-CONTRACT-0.87.26`. Live Supabase migrations `20261027035558 decision_opportunity_portfolio_independence_v1` and `20261027041844 remove_retired_decision_portfolio_runtime_v1` are verified. Portfolio Fit is retired from the active Scanner/Decision/Opportunity path; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED. Repository migration/test/receipt are included with this status update. Re-check current `main` on each new session. **Live operational truth overrides this dated index.**
+> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** for handover to the Clean-Room End-to-End Validation milestone. Active contract is `FWIOS-CONTRACT-0.87.26`. Latest verified pre-handover `main` is `a10c32253cd126f91a0989baf081f293c152c13f`. The portfolio-independent Decision / Opportunity cutover, retired-runtime cleanup, and PINS current-lineage repair are complete. Portfolio Fit is retired from the active Scanner/Decision/Opportunity path; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED. **Next milestone is ticker-only clean-room E2E validation, not further ticker-specific patching.** Re-check current `main` and live Supabase on each new session. **Live operational truth overrides this dated index.**
 
 ## Mandatory read / execution order
 
@@ -13,9 +13,21 @@
 ## Repository / source precedence
 
 - Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
-- Latest verified **pre-cutover main baseline**: `7a9f4f98852a25137f7ab7c791ca45c68fb364a2` (PR #87 merge). This portfolio-independent cutover is synchronized by the feature PR containing this status update; re-check current `main` after merge.
+- Latest verified **pre-handover main baseline**: `a10c32253cd126f91a0989baf081f293c152c13f` (PR #90 merge). Re-check current `main` before any new-chat work.
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
+
+## Handover / Next Milestone — CLEAN-ROOM E2E VALIDATION (2026-10-27)
+
+- **Primary handover:** [FWIOS_CLEAN_ROOM_E2E_HANDOVER_20261027.md](implementation/FWIOS_CLEAN_ROOM_E2E_HANDOVER_20261027.md).
+- **Current readiness:** core pipeline components are assembled and verified enough to begin a clean-room test, but a full ticker-only run from zero active stock-specific derived state has **not yet been proven end to end**.
+- **Target flow:** `Ticker → Evidence/Data → Canonical Metrics → Validation → Valuation/Fair Value → Verified Price → Mispricing → Quality Hardening → Revision/Chase → Scoring → Decision → Opportunity Quality`.
+- **Do not hard-delete historical stock data before Test #1.** Preserve history as an audit/control sample and isolate the active test state instead.
+- **Test objective:** prove one supported stock can complete the pipeline without silently reusing legacy ticker-specific evidence, metrics, price snapshots, valuations, hardening or Decisions.
+- **Pass condition is pipeline correctness, not BUY.** REVIEW / FAIL / BLOCKED is acceptable when supported by current evidence and fail-closed rules.
+- **Scaling sequence:** 1 ticker → 1 ticker per supported valuation archetype → 5–10 mixed tickers → 50 → 100 → full S&P 500.
+- **Guardrails:** keep Portfolio Fit retired; keep Opportunity Ranking v2 retired; do not weaken valuation / Quality Hardening / risk / Chase thresholds; `auto_trade=false`; no portfolio/accounting/approval/execution mutation.
+- **Do not continue PINS/NFLX patching first** unless the clean-room test proves a shared pipeline defect that requires a minimal deterministic fix.
 
 ## Retired Runtime Cleanup — LIVE / COMPLETE (2026-10-27)
 
@@ -52,7 +64,7 @@ See [production receipt](implementation/FWIOS_PINS_CURRENT_LINEAGE_REPAIR_202610
 - **Opportunity refresh:** v3 refreshed 27 candidates for 2026-10-27; PINS is now `MISPRICED_CANDIDATE` but remains blocked by risk/chase gates. No Portfolio Scenario is required before human review.
 - **Acceptance:** **35/35 PASS live SQL**; repeat Decision APPLY for ACN/EOG/NFLX = `NOOP_ALREADY_REFRESHED`.
 - **Safety:** protected portfolio/accounting/approval counts unchanged; no portfolio, approval or execution mutation; `auto_trade=false`, human execution only.
-- **Next exact action:** inspect PINS/NFLX Revision-Chase evidence freshness and the remaining PINS `RISK GATE WATCH` semantics. Do not weaken Hardening or risk/chase thresholds.
+- **Superseded next action:** PINS/NFLX Revision-Chase follow-up is deferred. The current milestone is Clean-Room E2E Test #1; only return to ticker-specific blockers when the clean-room run demonstrates they are shared pipeline issues or after E2E acceptance.
 
 See [production receipt](implementation/FWIOS_DECISION_OPPORTUNITY_PORTFOLIO_INDEPENDENCE_20261027.md) and [regression SQL](../tests/decision/test_decision_opportunity_portfolio_independence_v1.sql).
 
