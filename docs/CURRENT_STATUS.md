@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the portfolio-independent Decision / Opportunity cutover. Active contract is `FWIOS-CONTRACT-0.87.24`. Live Supabase migration `20261027035558 decision_opportunity_portfolio_independence_v1` is verified at **35/35 PASS**. Portfolio Fit is retired from the active Scanner/Decision/Opportunity path; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED. Repository migration/test/receipt are included with this status update. Re-check current `main` on each new session. **Live operational truth overrides this dated index.**
+> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the portfolio-independent Decision / Opportunity cutover. Active contract is `FWIOS-CONTRACT-0.87.25`. Live Supabase migrations `20261027035558 decision_opportunity_portfolio_independence_v1` and `20261027041844 remove_retired_decision_portfolio_runtime_v1` are verified. Portfolio Fit is retired from the active Scanner/Decision/Opportunity path; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED. Repository migration/test/receipt are included with this status update. Re-check current `main` on each new session. **Live operational truth overrides this dated index.**
 
 ## Mandatory read / execution order
 
@@ -16,6 +16,14 @@
 - Latest verified **pre-cutover main baseline**: `7a9f4f98852a25137f7ab7c791ca45c68fb364a2` (PR #87 merge). This portfolio-independent cutover is synchronized by the feature PR containing this status update; re-check current `main` after merge.
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
+
+## Retired Runtime Cleanup — LIVE / COMPLETE (2026-10-27)
+
+- **Live migration:** `20261027041844 remove_retired_decision_portfolio_runtime_v1`.
+- Removed 7 retired runtime functions: Decision/Ranking bridge v1 (4), Opportunity Quality v2 refresh (1), Portfolio Fit v2 preview/materialize (2).
+- Active v2/v3 runtime remains intact.
+- Historical policy versions, snapshots, ranking rows, lineage and migrations are retained because they are audit/FK history, not active runtime.
+- No `CASCADE`, no portfolio/accounting mutation, `auto_trade=false`.
 
 ## Decision / Opportunity Portfolio Independence — LIVE / ACTIVE (2026-10-27)
 
@@ -33,26 +41,6 @@
 - **Next exact action:** reconcile PINS hardening ↔ current mispricing/price-conflict lineage. NFLX Revision/Chase evidence is a later promotion blocker, not a Portfolio Fit blocker. Do **not** refresh Portfolio Fit for MVP-1.
 
 See [production receipt](implementation/FWIOS_DECISION_OPPORTUNITY_PORTFOLIO_INDEPENDENCE_20261027.md) and [regression SQL](../tests/decision/test_decision_opportunity_portfolio_independence_v1.sql).
-
-## Decision / Ranking Refresh Bridge v1 — SUPERSEDED / HISTORICAL (2026-10-27)
-
-> Historical receipt only. Its Portfolio Fit blockers and next-step recommendations were superseded by the portfolio-independent cutover above.
-
-- **Source handover:** [FWIOS MVP-1 Decision / Ranking Handover](implementation/FWIOS_DECISION_RANKING_HANDOVER_20261027.md) is now a historical input to the completed bridge audit.
-- **Live migration:** `20261027033605 decision_ranking_refresh_bridge_v1`; policy `POL-DECISION-RANKING-REFRESH-BRIDGE-V1`.
-- **Read-only diagnosis proved stale downstream lineage:** ACN/EOG Decision Score + Decision Snapshot still referenced September valuation/mispricing state; NFLX had current valuation/hardening but no canonical Portfolio Fit, score or Decision; PINS retained historical Decision/ranking state.
-- **ACN refreshed Decision:** `DEC-DRB-ACN-b8eea53f1b52a486` → current valuation `VAL-PROD-ACN-ITSERV-V2-20261026` + current hardening `HARD-QHR-ACN-20261026-7cf9191efa86`; state remains **REVIEW - QUALITY HARDENING**. Input integrity is **BLOCKED - STALE PORTFOLIO FIT**.
-- **EOG refreshed Decision:** `DEC-DRB-EOG-374bad5c8efc68a1` → current valuation `VAL-PROD-EOG-EP-V2-20261026` + current hardening `HARD-QCE-EOG-20261026-8094977faaad`; state remains **FAIL - QUALITY HARDENING**. Input integrity is **BLOCKED - STALE PORTFOLIO FIT**.
-- **NFLX remains REVIEW and fail-closed:** no Decision was created because `PORTFOLIO_FIT_SNAPSHOT_MISSING`; current hardening remains `HARD-QCE-NFLX-20261026-2d4df8695276` = **REVIEW**.
-- **PINS remains separate:** no PINS Decision rewrite was performed. Its current hardening is REVIEW while its Decision + Portfolio Fit lineage remains historical/stale; QH-08 ranking drift remains unresolved.
-- **Portfolio Fit freshness exposed:** ACN/EOG/PINS latest fit snapshots reference `PORTFOLIO-M2-20260905-01`, while current portfolio state is `PORTFOLIO-MTM-20260924-01`. The bridge never promotes through this mismatch.
-- **Ranking lifecycle drift exposed:** live `POL-OPPORTUNITY-RANKING-V2` is **RETIRED** after Opportunity Quality v2, despite older contract/status prose that still calls it active. The bridge intentionally does **not** reactivate it.
-- **Ranking audit run:** `OPPRANK-DRB-800010edd38342f5`; ACN/EOG/PINS are auditable `EXCLUDED` rows and NFLX has no candidate row; `v_opportunity_ranking_current` remains **0 rows**. Downstream allocation/scenario/rebalance stays fail-closed.
-- **Acceptance:** **24/24 PASS live SQL**; exact repeat Decision/ranking APPLY is `NOOP_ALREADY_REFRESHED`; current ACN/EOG hardening→Decision lineage edges exist.
-- **Safety / unchanged:** valuation/hardening thresholds unchanged; scoring weights remain 30/30/25/15; protected portfolio/accounting/approval counts unchanged; `auto_trade=false`; no holdings, transactions, cash, approvals or execution mutation.
-- **Next exact action:** refresh/reconcile **Portfolio Fit against the current portfolio batch first**, then explicitly reconcile whether the production capital path should use retired Opportunity Ranking v2 or Opportunity Quality v2. Do not reactivate Ranking v2 incidentally. After a canonical NFLX fit exists, verify its missing Revision/Chase/base-score chain before any Decision. Keep PINS ranking drift as an independent regression fix.
-
-See [production receipt](implementation/FWIOS_DECISION_RANKING_REFRESH_BRIDGE_V1_20261027.md) and [regression SQL](../tests/decision/test_decision_ranking_refresh_bridge_v1.sql).
 
 ## Valuation input resolver / model-period audit — PR #77 MERGED (2026-10-26)
 
