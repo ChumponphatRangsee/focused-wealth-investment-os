@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.19**  
+Contract version: **FWIOS-CONTRACT-0.87.20**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -118,8 +118,24 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-LINEAGE-GRAPH-V1` — append-only evidence→metric→decision lineage active; no production read cutover
 - `POL-MARKET-OBSERVATION-V1` — canonical provider/session-aware market observations + dual-write compatibility; no production read cutover
 - `POL-THESIS-MEMORY-V1` — normalized thesis conditions/KPI bindings + append-only decision/reactivation memory; no production read cutover
+- `POL-VALUATION-PROMOTION-V1` — deterministic shadow→promotion readiness; `AUTO_ELIGIBLE` never performs cutover by itself; explicit human promotion remains required
 
 AI must never retune deterministic gates ad hoc to make a name pass.
+
+### Valuation Promotion Policy — ACTIVE / NON-MUTATING
+
+`POL-VALUATION-PROMOTION-V1` standardizes promotion review for validated valuation-model shadow runs.
+
+Rules:
+- Results are only `AUTO_ELIGIBLE`, `MANUAL_REVIEW`, or `BLOCKED`.
+- `AUTO_ELIGIBLE` means ready for one explicit human-approved production promotion; it is **not** automatic cutover.
+- Required inputs must be 100% PASS and backed by Tier-A, VERIFIED, conflict-free evidence.
+- Metric-input lineage must be complete; model regression and valuation/router/schema gates must PASS.
+- Exactly one current production model version must exist and the shadow version must explicitly supersede it.
+- Same kernel family plus max absolute Bear/Base/Bull/PW Fair Value delta <=15% is required for `AUTO_ELIGIBLE`.
+- Larger deltas or kernel changes require `MANUAL_REVIEW`; hard gate failures return `BLOCKED`.
+- Current production run/version are retained as rollback targets.
+- Policy preview is service-role-only, non-mutating, `auto_apply=false`, `auto_trade=false`, and never mutates holdings/transactions/cash.
 
 ### Controlled ChatGPT Research Ingestion — ACTIVE
 
