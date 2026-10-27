@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the Decision / Ranking Refresh Bridge v1 live cutover. GitHub `main` was verified at merge commit `81aba1e3a3ce62520c6b9da11838b1376b0ae531` (PR #85); active contract is `FWIOS-CONTRACT-0.87.23`. The Decision/Ranking bridge is live in Supabase and is being recorded on branch `fix/mvp1-decision-ranking-refresh-bridge`; re-check merge state before relying on repository parity. **Live operational truth overrides this dated index.**
+> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the Decision / Ranking Refresh Bridge v1 live cutover. Decision / Ranking feature parity was verified after PR #86 merged at `e4ae154d6e290b8fa6f44f04829d2c99be656ded`; active contract is `FWIOS-CONTRACT-0.87.23`. Live Supabase migration `20261027033605 decision_ranking_refresh_bridge_v1` and the merged repository migration/test/receipt are aligned. Re-check current `main` on each new session. **Live operational truth overrides this dated index.**
 
 ## Mandatory read / execution order
 
@@ -13,7 +13,7 @@
 ## Repository / source precedence
 
 - Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
-- Latest verified GitHub `main` for this status update: `81aba1e3a3ce62520c6b9da11838b1376b0ae531` (PR #85 merge). Re-check on each new session.
+- Latest verified **feature merge baseline** for this status update: `e4ae154d6e290b8fa6f44f04829d2c99be656ded` (PR #86 merge). A later docs-only status sync may advance `main`; re-check on each new session.
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
 
