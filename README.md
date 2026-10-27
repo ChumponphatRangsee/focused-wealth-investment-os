@@ -2,7 +2,7 @@
 
 Repository for deterministic investment research/decision contracts, Supabase-backed state and integration services, migrations and regression tests.
 
-- **Contract:** `FWIOS-CONTRACT-0.87.19` (see [system contract](contracts/system-contract.yaml) and [VERSION](VERSION); version is not a deployment receipt).
+- **Contract:** `FWIOS-CONTRACT-0.87.22` (see [system contract](contracts/system-contract.yaml) and [VERSION](VERSION); version is not a deployment receipt).
 - **Compatible foundation:** `0.87`.
 - **Safety:** Human execution only; no auto-buy/sell. Portfolio transactions/accounting remain under the designated Investment Portfolio Tracker; scanner research does not change holdings, quantities or cash.
 - **Current operational truth:** Verify live Supabase, Google Sheets, GitHub PR/commit and relevant scheduled functions independently. Historical snapshots in this repository must never be assumed to describe today's production state.
