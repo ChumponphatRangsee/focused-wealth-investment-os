@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** GitHub docs-only strategy review **2026-10-23 (Asia/Bangkok)** based on `main` commit `be59ab3348b3955be1f6584ff6c8aa8ebc1d9e85`. The legacy Dashboard workstream has its own dated Supabase/Sheets/cron/Edge execution receipt from 2026-10-23; **this strategy-documentation review did not repeat that runtime verification**. **Other workstreams and current performance were not comprehensively re-verified**; re-check relevant systems before acting. Update this index when workstream state materially changes; do not treat its PR state as live indefinitely.
+> **Navigation index, not operational authority.** Updated **2026-10-27 10:22 Asia/Bangkok** after the Quality Hardening Canonical Evidence cutover. GitHub `main` was verified at merge commit `51ab08328ce81af10c723482986b1bba0ed67bc3`; active contract is `FWIOS-CONTRACT-0.87.23`. Live SQL verification for the valuation/hardening workstream is recorded below. Other workstreams must still be re-checked before action. **Live operational truth overrides this dated index.**
 
 ## Mandatory read / execution order
 
@@ -13,16 +13,21 @@
 ## Repository / source precedence
 
 - Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
-- GitHub main baseline used for the 2026-10-23 strategy-documentation change: `be59ab3348b3955be1f6584ff6c8aa8ebc1d9e85` (re-check on each new session).
+- Latest verified GitHub `main` for this status update: `51ab08328ce81af10c723482986b1bba0ed67bc3` (PR #84 merge). Re-check on each new session.
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
 
-## Next-chat handover — SEC Shadow → Financial Metrics (2026-10-26)
+## Next-chat handover — Decision / Ranking Lineage (2026-10-27)
 
-- **Start with:** [FWIOS MVP-1 SEC-to-Metrics Handover](implementation/FWIOS_MVP1_SEC_TO_METRICS_HANDOVER_20261026.md). This is the current work-item handoff; older plans must be read in its context.
-- **Latest read-only diagnosis:** Existing weekday SEC schedule successfully stores `SEC_SUBMISSIONS` and `SEC_COMPANY_FACTS` in `fwios.decision_refresh_shadow_evidence`. The Worker intentionally runs in `SHADOW` with `authoritative_write=false`, does **not** persist normalized canonical `metric_observations` or trigger a new valuation. `research_ingest_receipts_v1` still had 0 entries on 2026-10-26.
-- **Immediate task:** Audit ACN Oct 16 10-K vs canonical metrics/model requirements; propose/implement a minimal deterministic SHADOW-to-controlled-PREVIEW normalized payload bridge, with read-only testing and a scoped PR. Then handle JPM and NFLX. **No new SEC Cron, new Dashboard, schema redesign or auto-trading.**
-- **Authority:** This handover/docs PR does not approve controlled `APPLY`, production writes, production revaluation, worker deployment, scheduling changes or cutover. Preserve existing Contract and read-only-first workflow.
+- **Start with:** [FWIOS MVP-1 Decision / Ranking Handover](implementation/FWIOS_DECISION_RANKING_HANDOVER_20261027.md). This supersedes the older SEC→Metrics handover as the active next-chat entry point.
+- **Upstream state is now current through Quality Hardening:** `Evidence → Canonical Metrics → Period-aware Resolver → Valuation v2 → Quality Hardening`.
+- **Current acceptance invariants:** ACN = **REVIEW**, EOG = **FAIL**, NFLX = **REVIEW**; all three remain `investment_review_ready=false`.
+- **Completed:** valuation v2 production cutover, stale price/mispricing compatibility repair, EOG/NFLX controlled canonical evidence ingestion, canonical Durability/Owner Earnings resolver, explicit evidence/metric→hardening lineage and stable idempotent refresh.
+- **Verified regressions:** Valuation v2 cutover **14/14 PASS + rollback verified**; Valuation Promotion **12/12 PASS**; Quality Hardening Refresh **10/10 PASS**; Canonical Hardening Evidence **16/16 PASS**. These are live SQL results, not GitHub CI.
+- **Main remaining blocker:** downstream Decision Snapshot / score / Opportunity Ranking lineage may still reference historical upstream state. Start READ-ONLY and verify ACN/EOG/NFLX/PINS current decision/ranking rows before designing any write.
+- **Separate known drift:** legacy Quality Hardening test `QH-08 PINS production bucket` previously failed because PINS no longer had the expected current ranking row. Diagnose this independently; do not change hardening policy to hide it.
+- **Next exact action:** audit `current valuation → current mispricing → current hardening → score/revision-chase → Decision Snapshot → Opportunity Ranking`. Implement only the minimum deterministic refresh bridge if live evidence proves downstream lineage is stale.
+- **Safety:** do not redesign valuation, do not retune hardening thresholds, do not use shadow evidence as authoritative production input, do not mutate holdings/transactions/cash/accounting/approvals/execution, and keep `auto_trade=false`.
 
 ## Valuation input resolver / model-period audit — PR #77 MERGED (2026-10-26)
 
@@ -133,7 +138,7 @@
 
 ## Documentation hygiene — audited 2026-10-20
 
-- Latest merged contract as of this GitHub inspection: `FWIOS-CONTRACT-0.87.19` in AGENTS and system-contract YAML. PR #65 is **merged** as of 2026-10-23; README and VERSION align with `FWIOS-CONTRACT-0.87.19` on the inspected `main`. Re-check `main` on future sessions.
+- Latest verified merged contract for this status update: `FWIOS-CONTRACT-0.87.23` in AGENTS, README, VERSION and system-contract YAML on `main` commit `51ab08328ce81af10c723482986b1bba0ed67bc3`. Re-check `main` on future sessions.
 - [Documentation audit and classification](DOCUMENTATION_AUDIT_20261020.md): in-place legacy banners, historical evidence archives, files retained due to active dependencies and explicit deferred code retirement.
 - The old Dashboard CSV function is still deployed as a rollback-only path in prior checked Supabase evidence; repository docs must not authorize deleting its deployed endpoint or shared valuation/thesis views.
 
