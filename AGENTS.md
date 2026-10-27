@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.21**  
+Contract version: **FWIOS-CONTRACT-0.87.22**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -119,6 +119,7 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-MARKET-OBSERVATION-V1` — canonical provider/session-aware market observations + dual-write compatibility; no production read cutover
 - `POL-THESIS-MEMORY-V1` — normalized thesis conditions/KPI bindings + append-only decision/reactivation memory; no production read cutover
 - `POL-VALUATION-PROMOTION-V1` — deterministic shadow→promotion readiness plus service-role-only controlled apply/rollback; preview never cuts over by itself and apply requires explicit human authorization
+- `POL-QUALITY-HARDENING-REFRESH-V1` — deterministic service-role-only bridge from current production valuation + accepted canonical daily close to current mispricing/hardening lineage; apply requires explicit human authorization and never retunes hardening thresholds
 
 AI must never retune deterministic gates ad hoc to make a name pass.
 
@@ -140,6 +141,22 @@ Rules:
 - The prior production run/version must be retained as an explicit rollback target. Exact repeat apply calls must be idempotent `NOOP_ALREADY_PROMOTED`.
 - `fwios.rollback_valuation_promotion_v1(production_run_id)` may only roll back a currently active run created by Promotion Policy v1; rollback is never automatic.
 - Apply/rollback are service-role-only, human-execution-only, and must not mutate holdings, transactions, cash, accounting, approval, or trade execution.
+
+### Quality Hardening Refresh Bridge — ACTIVE / CONTROLLED APPLY
+
+`POL-QUALITY-HARDENING-REFRESH-V1` repairs stale post-valuation-cutover hardening lineage without changing `POL-QUALITY-HARDENING-V1`.
+
+Rules:
+- PREVIEW selects the latest production-eligible valuation and latest readiness-accepted canonical daily close.
+- APPLY requires explicit human authorization and is service-role-only.
+- Compatibility market-price/mispricing snapshots may only be derived from existing canonical market observations plus an existing PASS verification set; no external price refetch is required.
+- Business Durability and Owner Earnings may only carry forward from still-fresh prior production hardening evidence and can never be auto-upgraded.
+- Value Trap and Valuation Robustness are recomputed from current valuation/current price.
+- Missing production hardening evidence remains BLOCKED; shadow evidence cannot directly create a production PASS.
+- Exact repeat APPLY is idempotent `NOOP_ALREADY_REFRESHED`.
+- No holdings, transactions, cash, accounting, approval, execution or trading mutation. `auto_trade=false`; human execution only.
+
+Production refresh receipt on 2026-10-27: ACN = REVIEW, EOG = FAIL, NFLX = BLOCKED; all three hardening snapshots now reference their current v2 production valuation and none is investment-review-ready.
 
 ### Controlled ChatGPT Research Ingestion — ACTIVE
 
