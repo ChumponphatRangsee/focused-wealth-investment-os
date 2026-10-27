@@ -2,7 +2,7 @@
 
 Mandatory execution contract for AI agents and automations.
 
-Contract version: **FWIOS-CONTRACT-0.87.22**  
+Contract version: **FWIOS-CONTRACT-0.87.23**  
 Compatible live foundation: **0.87**
 
 ## 1. Objective
@@ -120,6 +120,7 @@ Facts and assumptions stay separate. Preview/scenario/recommendation/approval fu
 - `POL-THESIS-MEMORY-V1` — normalized thesis conditions/KPI bindings + append-only decision/reactivation memory; no production read cutover
 - `POL-VALUATION-PROMOTION-V1` — deterministic shadow→promotion readiness plus service-role-only controlled apply/rollback; preview never cuts over by itself and apply requires explicit human authorization
 - `POL-QUALITY-HARDENING-REFRESH-V1` — deterministic service-role-only bridge from current production valuation + accepted canonical daily close to current mispricing/hardening lineage; apply requires explicit human authorization and never retunes hardening thresholds
+- `POL-QUALITY-HARDENING-CANONICAL-EVIDENCE-V1` — deterministic service-role-only resolver/refresh overlay for Tier-A verified canonical Durability and Owner Earnings evidence; shadow evidence can never directly promote production
 
 AI must never retune deterministic gates ad hoc to make a name pass.
 
@@ -157,6 +158,21 @@ Rules:
 - No holdings, transactions, cash, accounting, approval, execution or trading mutation. `auto_trade=false`; human execution only.
 
 Production refresh receipt on 2026-10-27: ACN = REVIEW, EOG = FAIL, NFLX = BLOCKED; all three hardening snapshots now reference their current v2 production valuation and none is investment-review-ready.
+
+### Quality Hardening Canonical Evidence — ACTIVE / CONTROLLED APPLY
+
+`POL-QUALITY-HARDENING-CANONICAL-EVIDENCE-V1` resolves Business Durability and Owner Earnings from canonical `metric_observations` backed by Tier-A verified `evidence_records`, then overlays those gates on the existing price/mispricing refresh path.
+
+Rules:
+- ChatGPT-originated financial facts must enter through the controlled research PREVIEW/APPLY gateway before this resolver can consume them.
+- Shadow/collection evidence is never a production gate input by itself.
+- Business Durability PASS requires at least the active policy's minimum consecutive annual revenue anchor; v1 uses >=3 years and current/near-current annual evidence.
+- Owner Earnings uses same-period Revenue + Share-Based Compensation plus positive verified FCF. Existing thresholds remain unchanged: <=10% SBC/revenue is the clean narrow pass; >10% requires reconciliation; >20% hard review; >30% fail.
+- Canonical evidence may upgrade a stale/missing evidence gate only when deterministic requirements are met. Price-sensitive Value Trap and Valuation Robustness remain owned by the base refresh policy.
+- APPLY requires explicit human authorization, is service-role-only, writes immutable hardening snapshots plus normalized evidence/metric lineage, and is idempotent.
+- No holdings, transactions, cash, accounting, approval, execution or trading mutation. `auto_trade=false`; human execution only.
+
+2026-10-27 production result: EOG Owner Earnings moved BLOCKED → PASS but overall remains **FAIL** because Valuation Robustness is FAIL. NFLX Durability/Owner Earnings moved BLOCKED → PASS and overall moved **BLOCKED → REVIEW** because Valuation Robustness remains REVIEW. Neither became investment-review-ready.
 
 ### Controlled ChatGPT Research Ingestion — ACTIVE
 
