@@ -155,6 +155,20 @@
 - **Historical handovers:** [archive index](archive/handovers/README.md); old paths remain short compatibility pointers only.
 - **Rules for upkeep:** [Documentation lifecycle](DOCUMENTATION_LIFECYCLE.md).
 
+## Quality Hardening Refresh Bridge v1 — LIVE / FAIL-CLOSED (2026-10-27)
+
+- Live migration: `20261027023035 quality_hardening_refresh_bridge_v1`; policy `POL-QUALITY-HARDENING-REFRESH-V1`.
+- The bridge repairs stale post-valuation-cutover hardening lineage from current production valuation + accepted canonical daily close without changing Quality Hardening thresholds.
+- ACN = **REVIEW** on `VAL-PROD-ACN-ITSERV-V2-20261026`.
+- EOG = **FAIL** on `VAL-PROD-EOG-EP-V2-20261026`.
+- NFLX = **BLOCKED** on `VAL-PROD-NFLX-STREAM-V2-20261026`.
+- All three remain `investment_review_ready=false`; exact repeat apply is `NOOP_ALREADY_REFRESHED`.
+- Bridge-specific live SQL acceptance: **8/8 PASS**. Baseline Quality Hardening recheck: **10/11 PASS** because the existing QH-08 PINS ranking fixture no longer has a current PINS row; the bridge does not write ranking tables.
+- No portfolio/accounting/approval/execution/trading mutation; `auto_trade=false`, human execution only.
+- Next: canonicalize missing Owner Earnings / durability evidence through the controlled Evidence → Metrics path, then rerun the bridge. Reconcile PINS ranking-test drift separately.
+
+See [production receipt](implementation/FWIOS_QUALITY_HARDENING_REFRESH_BRIDGE_V1_20261027.md) and [regression SQL](../tests/decision/test_quality_hardening_refresh_bridge_v1.sql).
+
 ## On next material change
 
 Record: date/timezone; checked GitHub commit and relevant PR state; verified or unverified live environment; completed scope; open blockers; exact next action; links to source evidence. Avoid numerical pricing or account-value snapshots in this index unless they are necessary and time-stamped.
