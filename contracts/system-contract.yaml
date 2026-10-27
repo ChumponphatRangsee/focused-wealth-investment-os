@@ -1,5 +1,5 @@
 contract:
-  id: FWIOS-CONTRACT-0.87.24
+  id: FWIOS-CONTRACT-0.87.25
   foundation_compatibility: "0.87"
   snapshot_date: "2026-09-30"
   timezone: Asia/Bangkok
@@ -385,6 +385,20 @@ scoring:
   expected_return_base_weight: 0.60
   expected_return_probability_weighted_weight: 0.40
   historical_return_can_substitute_expected_return: false
+
+retired_runtime_cleanup_v1:
+  status: LIVE_COMPLETE
+  live_migration: 20261027041844_remove_retired_decision_portfolio_runtime_v1
+  removed_runtime_functions:
+    [preview_decision_refresh_bridge_v1, apply_decision_refresh_bridge_v1, preview_opportunity_ranking_refresh_bridge_v1, apply_opportunity_ranking_refresh_bridge_v1, refresh_opportunity_quality_v2, preview_candidate_portfolio_fit_v2, materialize_candidate_portfolio_fit_v2]
+  historical_tables_preserved: true
+  historical_policy_versions_preserved: true
+  historical_lineage_preserved: true
+  destructive_cascade_used: false
+  active_runtime_functions_preserved:
+    [preview_decision_refresh_bridge_v2, apply_decision_refresh_bridge_v2, refresh_opportunity_quality_v3]
+  auto_trade: false
+  human_execution_only: true
 
 decision_opportunity_portfolio_independence_v1:
   status: LIVE_ACTIVE
