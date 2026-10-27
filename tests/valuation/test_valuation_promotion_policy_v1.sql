@@ -1,11 +1,11 @@
 -- Valuation Promotion Policy v1 regression
--- The policy is non-mutating. The test verifies current eligible candidates plus fail-closed behavior.
+-- Post-cutover lifecycle regression. Non-mutating: apply calls are idempotent NOOPs.
 
 do $$
 declare
   r jsonb;
 begin
-  -- T01 active policy exists and cannot auto-apply.
+  -- T01 active policy remains human-gated and never auto-trades.
   if not exists (
     select 1
     from fwios.policy_versions
@@ -15,6 +15,8 @@ begin
       and (config->>'auto_apply')::boolean=false
       and (config->>'human_cutover_required')::boolean=true
       and (config->>'auto_trade')::boolean=false
+      and config->>'apply_function'='fwios.apply_valuation_promotion_v1'
+      and config->>'rollback_function'='fwios.rollback_valuation_promotion_v1'
   ) then raise exception 'T01 promotion policy missing or unsafe'; end if;
 
   -- T02 unknown shadow run fails closed.
@@ -23,57 +25,41 @@ begin
      or not (r->'blockers') ? 'SHADOW_RUN_NOT_FOUND'
   then raise exception 'T02 unknown run did not fail closed: %',r; end if;
 
-  -- T03 ACN is AUTO_ELIGIBLE.
+  -- T03-T05 promoted shadows are no longer preview-eligible because v2 is now production.
   r := fwios.preview_valuation_promotion_v1('VAL-SHADOW-ACN-ITSERV-V2-20261026');
-  if r->>'promotion_status'<>'AUTO_ELIGIBLE'
-     or jsonb_array_length(r->'blockers')<>0
-     or (r->'fair_value_delta'->>'max_abs_pct')::numeric > 0.15
-  then raise exception 'T03 ACN eligibility failed: %',r; end if;
-
-  -- T04 EOG is AUTO_ELIGIBLE.
+  if r->>'promotion_status'<>'BLOCKED' then raise exception 'T03 ACN promoted shadow should be blocked from re-preview: %',r; end if;
   r := fwios.preview_valuation_promotion_v1('VAL-SHADOW-EOG-EP-V2-20261026');
-  if r->>'promotion_status'<>'AUTO_ELIGIBLE'
-     or jsonb_array_length(r->'blockers')<>0
-     or (r->'fair_value_delta'->>'max_abs_pct')::numeric > 0.15
-  then raise exception 'T04 EOG eligibility failed: %',r; end if;
-
-  -- T05 NFLX is AUTO_ELIGIBLE.
+  if r->>'promotion_status'<>'BLOCKED' then raise exception 'T04 EOG promoted shadow should be blocked from re-preview: %',r; end if;
   r := fwios.preview_valuation_promotion_v1('VAL-SHADOW-NFLX-STREAM-V2-20261026');
-  if r->>'promotion_status'<>'AUTO_ELIGIBLE'
-     or jsonb_array_length(r->'blockers')<>0
-     or (r->'fair_value_delta'->>'max_abs_pct')::numeric > 0.15
-  then raise exception 'T05 NFLX eligibility failed: %',r; end if;
+  if r->>'promotion_status'<>'BLOCKED' then raise exception 'T05 NFLX promoted shadow should be blocked from re-preview: %',r; end if;
 
-  -- T06 required inputs are 100% PASS for all three.
+  -- T06 exact re-apply is idempotent for all promoted shadows.
+  r := fwios.apply_valuation_promotion_v1('VAL-SHADOW-ACN-ITSERV-V2-20261026');
+  if r->>'status'<>'NOOP_ALREADY_PROMOTED' then raise exception 'T06 ACN apply idempotency failed: %',r; end if;
+  r := fwios.apply_valuation_promotion_v1('VAL-SHADOW-EOG-EP-V2-20261026');
+  if r->>'status'<>'NOOP_ALREADY_PROMOTED' then raise exception 'T06 EOG apply idempotency failed: %',r; end if;
+  r := fwios.apply_valuation_promotion_v1('VAL-SHADOW-NFLX-STREAM-V2-20261026');
+  if r->>'status'<>'NOOP_ALREADY_PROMOTED' then raise exception 'T06 NFLX apply idempotency failed: %',r; end if;
+
+  -- T07 no current experimental promotion candidate remains for the three cut-over routes.
   if exists (
-    select 1
-    from fwios.v_valuation_promotion_readiness_v1
+    select 1 from fwios.v_valuation_promotion_readiness_v1
     where ticker in ('ACN','EOG','NFLX')
-      and (
-        (checks->>'required_inputs_pass')::boolean is distinct from true
-        or (checks->>'required_tier_a_verified_conflict_free')::boolean is distinct from true
-      )
-  ) then raise exception 'T06 required input/evidence gate failed'; end if;
+  ) then raise exception 'T07 promoted models still appear in experimental readiness view'; end if;
 
-  -- T07 complete input lineage for all three.
+  -- T08 production model authority is v2 and singular.
   if exists (
-    select 1
-    from fwios.v_valuation_promotion_readiness_v1
-    where ticker in ('ACN','EOG','NFLX')
-      and (checks->>'all_input_lineage_complete')::boolean is distinct from true
-  ) then raise exception 'T07 lineage gate failed'; end if;
-
-  -- T08 production dashboard still points at pre-v2 runs.
-  if not exists (
-    select 1 from fwios.v_dashboard_valuation_map
-    where ticker='ACN' and valuation_run_id='VAL-SUPA-ACN-ITSERV-20260905'
-  ) or not exists (
-    select 1 from fwios.v_dashboard_valuation_map
-    where ticker='EOG' and valuation_run_id='VAL-EOG-20260904-P087'
-  ) or not exists (
-    select 1 from fwios.v_dashboard_valuation_map
-    where ticker='NFLX' and valuation_run_id='VAL-NFLX-STREAM-20260911'
-  ) then raise exception 'T08 production dashboard changed unexpectedly'; end if;
+    select model_id
+    from fwios.valuation_model_versions
+    where model_id in (
+      'IT_SERVICES_FCF_COMPOUNDER_V1',
+      'E&P_NORMALIZED_FCF_YIELD_V1',
+      'STREAMING_FCF_DCF_V1'
+    )
+    group by model_id
+    having count(*) filter(where status='PRODUCTION')<>1
+       or not bool_or(status='PRODUCTION' and version_label='2.0')
+  ) then raise exception 'T08 v2 production authority invalid'; end if;
 
   -- T09 shadow runs remain non-production.
   if exists (
@@ -85,34 +71,51 @@ begin
       'VAL-SHADOW-NFLX-STREAM-V2-20261026'
     )
       and production_eligible=true
-  ) then raise exception 'T09 shadow run promoted unexpectedly'; end if;
+  ) then raise exception 'T09 shadow run promoted in place'; end if;
 
-  -- T10 preview function is not public/anon/authenticated executable.
+  -- T10 service-role-only preview/apply/rollback and readiness view.
   if has_function_privilege('public','fwios.preview_valuation_promotion_v1(text)','EXECUTE')
      or has_function_privilege('anon','fwios.preview_valuation_promotion_v1(text)','EXECUTE')
      or has_function_privilege('authenticated','fwios.preview_valuation_promotion_v1(text)','EXECUTE')
      or not has_function_privilege('service_role','fwios.preview_valuation_promotion_v1(text)','EXECUTE')
-  then raise exception 'T10 preview function privilege boundary invalid'; end if;
-
-  -- T11 readiness view is not public/anon/authenticated readable and is service-role readable.
-  if has_table_privilege('public','fwios.v_valuation_promotion_readiness_v1','SELECT')
+     or has_function_privilege('public','fwios.apply_valuation_promotion_v1(text)','EXECUTE')
+     or has_function_privilege('anon','fwios.apply_valuation_promotion_v1(text)','EXECUTE')
+     or has_function_privilege('authenticated','fwios.apply_valuation_promotion_v1(text)','EXECUTE')
+     or not has_function_privilege('service_role','fwios.apply_valuation_promotion_v1(text)','EXECUTE')
+     or has_function_privilege('public','fwios.rollback_valuation_promotion_v1(text)','EXECUTE')
+     or has_function_privilege('anon','fwios.rollback_valuation_promotion_v1(text)','EXECUTE')
+     or has_function_privilege('authenticated','fwios.rollback_valuation_promotion_v1(text)','EXECUTE')
+     or not has_function_privilege('service_role','fwios.rollback_valuation_promotion_v1(text)','EXECUTE')
+     or has_table_privilege('public','fwios.v_valuation_promotion_readiness_v1','SELECT')
      or has_table_privilege('anon','fwios.v_valuation_promotion_readiness_v1','SELECT')
      or has_table_privilege('authenticated','fwios.v_valuation_promotion_readiness_v1','SELECT')
      or not has_table_privilege('service_role','fwios.v_valuation_promotion_readiness_v1','SELECT')
-  then raise exception 'T11 readiness view privilege boundary invalid'; end if;
+  then raise exception 'T10 promotion access boundary invalid'; end if;
 
-  -- T12 preview is explicitly non-mutating/human-cutover only.
-  if exists (
-    select 1
-    from fwios.v_valuation_promotion_readiness_v1
-    where ticker in ('ACN','EOG','NFLX')
-      and (
-        result->>'production_changes' <> 'NONE'
-        or (result->>'auto_apply')::boolean is distinct from false
-        or (result->>'human_cutover_required')::boolean is distinct from true
-        or (result->>'auto_trade')::boolean is distinct from false
+  -- T11 production runs are explicitly human-only/no-auto-trade.
+  if (select count(*) from fwios.valuation_runs
+      where run_id in (
+        'VAL-PROD-ACN-ITSERV-V2-20261026',
+        'VAL-PROD-EOG-EP-V2-20261026',
+        'VAL-PROD-NFLX-STREAM-V2-20261026'
       )
-  ) then raise exception 'T12 mutation boundary failed'; end if;
+        and production_eligible=true
+        and raw_payload->>'promotion_policy_id'='POL-VALUATION-PROMOTION-V1'
+        and raw_payload->>'auto_trade'='false'
+        and raw_payload->>'human_execution_only'='true')<>3
+  then raise exception 'T11 promoted run safety metadata invalid'; end if;
+
+  -- T12 Dashboard is on the promoted v2 production runs.
+  if not exists (
+    select 1 from fwios.v_dashboard_valuation_map
+    where ticker='ACN' and valuation_run_id='VAL-PROD-ACN-ITSERV-V2-20261026'
+  ) or not exists (
+    select 1 from fwios.v_dashboard_valuation_map
+    where ticker='EOG' and valuation_run_id='VAL-PROD-EOG-EP-V2-20261026'
+  ) or not exists (
+    select 1 from fwios.v_dashboard_valuation_map
+    where ticker='NFLX' and valuation_run_id='VAL-PROD-NFLX-STREAM-V2-20261026'
+  ) then raise exception 'T12 Dashboard not on promoted v2 runs'; end if;
 end $$;
 
-select 'FWIOS VALUATION PROMOTION POLICY V1: PASS (12/12, NON-MUTATING)' result;
+select 'FWIOS VALUATION PROMOTION POLICY V1: PASS (12/12, POST-CUTOVER)' result;
