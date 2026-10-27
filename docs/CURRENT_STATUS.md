@@ -165,9 +165,25 @@
 - All three remain `investment_review_ready=false`; exact repeat apply is `NOOP_ALREADY_REFRESHED`.
 - bridge-specific live SQL acceptance: **10/10 PASS**. Baseline Quality Hardening recheck: **10/11 PASS** because the existing QH-08 PINS ranking fixture no longer has a current PINS row; the bridge does not write ranking tables.
 - No portfolio/accounting/approval/execution/trading mutation; `auto_trade=false`, human execution only.
-- Next: canonicalize missing Owner Earnings / durability evidence through the controlled Evidence → Metrics path, then rerun the bridge. Reconcile PINS ranking-test drift separately.
+- Next: **superseded by the Canonical Evidence v1 section below**. Reconcile PINS ranking-test drift separately.
 
 See [production receipt](implementation/FWIOS_QUALITY_HARDENING_REFRESH_BRIDGE_V1_20261027.md) and [regression SQL](../tests/decision/test_quality_hardening_refresh_bridge_v1.sql).
+
+## Quality Hardening Canonical Evidence v1 — LIVE / CONTROLLED APPLY (2026-10-27)
+
+- **Live migration:** `20261027031421 quality_hardening_canonical_evidence_v1`; policy `POL-QUALITY-HARDENING-CANONICAL-EVIDENCE-V1`.
+- EOG controlled research receipt `45a398e2-ac66-4ea9-a204-79747787ae40`: 1 Tier-A evidence + 2 canonical observations inserted through the controlled gateway. H1 2026 Revenue/SBC resolves SBC-to-Revenue at ~0.7593%; existing verified positive LTM FCF supplies the FCF check.
+- NFLX controlled research receipt `92d634fe-4281-44a4-8177-9d9c0364c8be`: 2 Tier-A evidence + 5 canonical observations inserted. FY2023–FY2025 Revenue supplies the 3-year durability anchor; 9M 2026 Revenue/SBC resolves SBC-to-Revenue at ~1.0759%; existing verified positive Q3 FCF supplies the FCF check.
+- **EOG current hardening:** `HARD-QCE-EOG-20261026-8094977faaad` → Business PASS / Owner Earnings PASS / Value Trap PASS / Robustness **FAIL** / Overall **FAIL**.
+- **NFLX current hardening:** `HARD-QCE-NFLX-20261026-2d4df8695276` → Business PASS / Owner Earnings PASS / Value Trap PASS / Robustness **REVIEW** / Overall **REVIEW**.
+- Both remain `quality_hardened=false` and `investment_review_ready=false`; no buy/trade signal was created.
+- Canonical evidence/metric → hardening lineage is explicit; shadow evidence is not a production gate input.
+- Deterministic fingerprint was corrected during validation so exact repeat applies are stable `NOOP_ALREADY_REFRESHED`.
+- **Acceptance:** canonical evidence **16/16 PASS live SQL**; base Quality Hardening Refresh **10/10 PASS live SQL**. These are not GitHub CI.
+- Protected portfolio/accounting/approval row counts were unchanged; `auto_trade=false`, human execution only.
+- **Next exact action:** refresh downstream Decision / Ranking lineage from the now-current hardening snapshots without weakening EOG FAIL or NFLX REVIEW. Keep PINS ranking drift as a separate cleanup.
+
+See [production receipt](implementation/FWIOS_QUALITY_HARDENING_CANONICAL_EVIDENCE_V1_20261027.md) and [regression SQL](../tests/decision/test_quality_hardening_canonical_evidence_v1.sql).
 
 ## On next material change
 

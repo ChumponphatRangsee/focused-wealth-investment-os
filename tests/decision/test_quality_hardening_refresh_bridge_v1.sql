@@ -33,8 +33,8 @@ select 'QHR-04 EOG projects FAIL',
        then 'PASS' else 'FAIL' end
 
 union all
-select 'QHR-05 NFLX projects BLOCKED',
-  case when fwios.preview_quality_hardening_refresh_v1('NFLX')->'projected'->>'overall_gate'='BLOCKED'
+select 'QHR-05 NFLX projects REVIEW after canonical evidence',
+  case when fwios.preview_quality_hardening_refresh_v1('NFLX')->'projected'->>'overall_gate'='REVIEW'
        then 'PASS' else 'FAIL' end
 
 union all
