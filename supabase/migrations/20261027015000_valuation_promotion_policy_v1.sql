@@ -406,3 +406,7 @@ select
 from evaluated;
 
 revoke all on function fwios.preview_valuation_promotion_v1(text) from public;
+grant execute on function fwios.preview_valuation_promotion_v1(text) to service_role;
+
+revoke all on fwios.v_valuation_promotion_readiness_v1 from public;
+grant select on fwios.v_valuation_promotion_readiness_v1 to service_role;
