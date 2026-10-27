@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the portfolio-independent Decision / Opportunity cutover. Active contract is `FWIOS-CONTRACT-0.87.25`. Live Supabase migrations `20261027035558 decision_opportunity_portfolio_independence_v1` and `20261027041844 remove_retired_decision_portfolio_runtime_v1` are verified. Portfolio Fit is retired from the active Scanner/Decision/Opportunity path; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED. Repository migration/test/receipt are included with this status update. Re-check current `main` on each new session. **Live operational truth overrides this dated index.**
+> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the portfolio-independent Decision / Opportunity cutover. Active contract is `FWIOS-CONTRACT-0.87.26`. Live Supabase migrations `20261027035558 decision_opportunity_portfolio_independence_v1` and `20261027041844 remove_retired_decision_portfolio_runtime_v1` are verified. Portfolio Fit is retired from the active Scanner/Decision/Opportunity path; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED. Repository migration/test/receipt are included with this status update. Re-check current `main` on each new session. **Live operational truth overrides this dated index.**
 
 ## Mandatory read / execution order
 
@@ -25,6 +25,20 @@
 - Historical policy versions, snapshots, ranking rows, lineage and migrations are retained because they are audit/FK history, not active runtime.
 - No `CASCADE`, no portfolio/accounting mutation, `auto_trade=false`.
 
+## PINS Current-Lineage Repair — LIVE / COMPLETE (2026-10-27)
+
+- Existing Quality Hardening refresh used canonical daily close **2026-10-26 = $21.22**, verification gate PASS.
+- Created `PX-DCL-PINS-20261026-9ea8129c68`, `MIS-QHR-PINS-20261026-59a4494e51`, `HARD-QHR-PINS-20261026-3b737f3fd20c`.
+- PINS current price gate = **PASS**, mispricing = **PASS**, Hardening remains **REVIEW**.
+- Created portfolio-independent Decision `DEC-DPI-PINS-a77877e1ac450268` / score `SCORE-DPI-PINS-a77877e1ac450268`; Decision remains **REVIEW - QUALITY HARDENING**.
+- Opportunity Quality now shows `MISPRICED_CANDIDATE`, but still fail-closed at `BLOCKED - RISK` and `BLOCKED - CHASE`; no buy signal.
+- Repeat hardening and Decision APPLY = `NOOP_ALREADY_REFRESHED`.
+- Historical Sep-11 price-conflict Decision remains immutable for audit.
+- No portfolio/accounting/approval/execution mutation; `auto_trade=false`.
+- Dedicated regression: **18/18 PASS live SQL**. Portfolio-independence regression is updated to the new PINS current state.
+
+See [production receipt](implementation/FWIOS_PINS_CURRENT_LINEAGE_REPAIR_20261027.md) and [regression SQL](../tests/decision/test_pins_current_lineage_repair_v1.sql).
+
 ## Decision / Opportunity Portfolio Independence — LIVE / ACTIVE (2026-10-27)
 
 - **Live migration:** `20261027035558 decision_opportunity_portfolio_independence_v1`.
@@ -34,11 +48,11 @@
 - **Active Opportunity path:** `POL-OPPORTUNITY-QUALITY-V3-PORTFOLIO-INDEPENDENT`; `v_opportunity_quality_current` no longer joins portfolio batch or Portfolio Scenario review. Portfolio scenario compatibility columns remain but are `NOT_APPLICABLE - PORTFOLIO INDEPENDENT` / NULL.
 - **Retired paths:** Decision/Ranking bridge v1 and Opportunity Quality v2 are RETIRED; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED and is not reactivated.
 - **Current Decisions:** ACN `DEC-DPI-ACN-1b8c0fbb6b0c850e` = **REVIEW**; EOG `DEC-DPI-EOG-f20c421e6bd81612` = **FAIL**; NFLX `DEC-DPI-NFLX-65100f7a08581ea9` = **REVIEW**. Required invariants are preserved.
-- **PINS:** no new Decision. v2 preview fails closed because current `MIS-PINS-20260910-REFRESH` / price conflict is not aligned with hardening `HARD-PINS-20260906-V2`, which still references the Sep-06 mispricing snapshot.
-- **Opportunity refresh:** v3 refreshed 27 candidates for 2026-10-27; PINS remains `PRICE_VERIFY`. No Portfolio Scenario is required before human review.
+- **PINS:** current lineage is repaired; latest Decision is `DEC-DPI-PINS-a77877e1ac450268` = **REVIEW - QUALITY HARDENING**, aligned to current verified price/mispricing/hardening.
+- **Opportunity refresh:** v3 refreshed 27 candidates for 2026-10-27; PINS is now `MISPRICED_CANDIDATE` but remains blocked by risk/chase gates. No Portfolio Scenario is required before human review.
 - **Acceptance:** **35/35 PASS live SQL**; repeat Decision APPLY for ACN/EOG/NFLX = `NOOP_ALREADY_REFRESHED`.
 - **Safety:** protected portfolio/accounting/approval counts unchanged; no portfolio, approval or execution mutation; `auto_trade=false`, human execution only.
-- **Next exact action:** reconcile PINS hardening ↔ current mispricing/price-conflict lineage. NFLX Revision/Chase evidence is a later promotion blocker, not a Portfolio Fit blocker. Do **not** refresh Portfolio Fit for MVP-1.
+- **Next exact action:** inspect PINS/NFLX Revision-Chase evidence freshness and the remaining PINS `RISK GATE WATCH` semantics. Do not weaken Hardening or risk/chase thresholds.
 
 See [production receipt](implementation/FWIOS_DECISION_OPPORTUNITY_PORTFOLIO_INDEPENDENCE_20261027.md) and [regression SQL](../tests/decision/test_decision_opportunity_portfolio_independence_v1.sql).
 
