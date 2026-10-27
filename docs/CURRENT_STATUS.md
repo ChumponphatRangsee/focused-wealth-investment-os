@@ -1,6 +1,6 @@
 # FWIOS — Current Status / New-Chat Entry Point
 
-> **Navigation index, not operational authority.** Updated **2026-10-27 10:22 Asia/Bangkok** after the Quality Hardening Canonical Evidence cutover. GitHub `main` was verified at merge commit `51ab08328ce81af10c723482986b1bba0ed67bc3`; active contract is `FWIOS-CONTRACT-0.87.23`. Live SQL verification for the valuation/hardening workstream is recorded below. Other workstreams must still be re-checked before action. **Live operational truth overrides this dated index.**
+> **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** after the Decision / Ranking Refresh Bridge v1 live cutover. GitHub `main` was verified at merge commit `81aba1e3a3ce62520c6b9da11838b1376b0ae531` (PR #85); active contract is `FWIOS-CONTRACT-0.87.23`. The Decision/Ranking bridge is live in Supabase and is being recorded on branch `fix/mvp1-decision-ranking-refresh-bridge`; re-check merge state before relying on repository parity. **Live operational truth overrides this dated index.**
 
 ## Mandatory read / execution order
 
@@ -13,21 +13,27 @@
 ## Repository / source precedence
 
 - Repository: [focused-wealth-investment-os](https://github.com/ChumponphatRangsee/focused-wealth-investment-os), default branch: `main`.
-- Latest verified GitHub `main` for this status update: `51ab08328ce81af10c723482986b1bba0ed67bc3` (PR #84 merge). Re-check on each new session.
+- Latest verified GitHub `main` for this status update: `81aba1e3a3ce62520c6b9da11838b1376b0ae531` (PR #85 merge). Re-check on each new session.
 - **Live operational truth > deployed source and current merged contracts > latest verified feature evidence > this dated index > archived handovers.**
 - The active system contract controls execution safety. Historic architectural handover prose does **not** authorize a production cutover.
 
-## Next-chat handover — Decision / Ranking Lineage (2026-10-27)
+## Decision / Ranking Refresh Bridge v1 — LIVE / FAIL-CLOSED (2026-10-27)
 
-- **Start with:** [FWIOS MVP-1 Decision / Ranking Handover](implementation/FWIOS_DECISION_RANKING_HANDOVER_20261027.md). This supersedes the older SEC→Metrics handover as the active next-chat entry point.
-- **Upstream state is now current through Quality Hardening:** `Evidence → Canonical Metrics → Period-aware Resolver → Valuation v2 → Quality Hardening`.
-- **Current acceptance invariants:** ACN = **REVIEW**, EOG = **FAIL**, NFLX = **REVIEW**; all three remain `investment_review_ready=false`.
-- **Completed:** valuation v2 production cutover, stale price/mispricing compatibility repair, EOG/NFLX controlled canonical evidence ingestion, canonical Durability/Owner Earnings resolver, explicit evidence/metric→hardening lineage and stable idempotent refresh.
-- **Verified regressions:** Valuation v2 cutover **14/14 PASS + rollback verified**; Valuation Promotion **12/12 PASS**; Quality Hardening Refresh **10/10 PASS**; Canonical Hardening Evidence **16/16 PASS**. These are live SQL results, not GitHub CI.
-- **Main remaining blocker:** downstream Decision Snapshot / score / Opportunity Ranking lineage may still reference historical upstream state. Start READ-ONLY and verify ACN/EOG/NFLX/PINS current decision/ranking rows before designing any write.
-- **Separate known drift:** legacy Quality Hardening test `QH-08 PINS production bucket` previously failed because PINS no longer had the expected current ranking row. Diagnose this independently; do not change hardening policy to hide it.
-- **Next exact action:** audit `current valuation → current mispricing → current hardening → score/revision-chase → Decision Snapshot → Opportunity Ranking`. Implement only the minimum deterministic refresh bridge if live evidence proves downstream lineage is stale.
-- **Safety:** do not redesign valuation, do not retune hardening thresholds, do not use shadow evidence as authoritative production input, do not mutate holdings/transactions/cash/accounting/approvals/execution, and keep `auto_trade=false`.
+- **Source handover:** [FWIOS MVP-1 Decision / Ranking Handover](implementation/FWIOS_DECISION_RANKING_HANDOVER_20261027.md) is now a historical input to the completed bridge audit.
+- **Live migration:** `20261027033605 decision_ranking_refresh_bridge_v1`; policy `POL-DECISION-RANKING-REFRESH-BRIDGE-V1`.
+- **Read-only diagnosis proved stale downstream lineage:** ACN/EOG Decision Score + Decision Snapshot still referenced September valuation/mispricing state; NFLX had current valuation/hardening but no canonical Portfolio Fit, score or Decision; PINS retained historical Decision/ranking state.
+- **ACN refreshed Decision:** `DEC-DRB-ACN-b8eea53f1b52a486` → current valuation `VAL-PROD-ACN-ITSERV-V2-20261026` + current hardening `HARD-QHR-ACN-20261026-7cf9191efa86`; state remains **REVIEW - QUALITY HARDENING**. Input integrity is **BLOCKED - STALE PORTFOLIO FIT**.
+- **EOG refreshed Decision:** `DEC-DRB-EOG-374bad5c8efc68a1` → current valuation `VAL-PROD-EOG-EP-V2-20261026` + current hardening `HARD-QCE-EOG-20261026-8094977faaad`; state remains **FAIL - QUALITY HARDENING**. Input integrity is **BLOCKED - STALE PORTFOLIO FIT**.
+- **NFLX remains REVIEW and fail-closed:** no Decision was created because `PORTFOLIO_FIT_SNAPSHOT_MISSING`; current hardening remains `HARD-QCE-NFLX-20261026-2d4df8695276` = **REVIEW**.
+- **PINS remains separate:** no PINS Decision rewrite was performed. Its current hardening is REVIEW while its Decision + Portfolio Fit lineage remains historical/stale; QH-08 ranking drift remains unresolved.
+- **Portfolio Fit freshness exposed:** ACN/EOG/PINS latest fit snapshots reference `PORTFOLIO-M2-20260905-01`, while current portfolio state is `PORTFOLIO-MTM-20260924-01`. The bridge never promotes through this mismatch.
+- **Ranking lifecycle drift exposed:** live `POL-OPPORTUNITY-RANKING-V2` is **RETIRED** after Opportunity Quality v2, despite older contract/status prose that still calls it active. The bridge intentionally does **not** reactivate it.
+- **Ranking audit run:** `OPPRANK-DRB-800010edd38342f5`; ACN/EOG/PINS are auditable `EXCLUDED` rows and NFLX has no candidate row; `v_opportunity_ranking_current` remains **0 rows**. Downstream allocation/scenario/rebalance stays fail-closed.
+- **Acceptance:** **24/24 PASS live SQL**; exact repeat Decision/ranking APPLY is `NOOP_ALREADY_REFRESHED`; current ACN/EOG hardening→Decision lineage edges exist.
+- **Safety / unchanged:** valuation/hardening thresholds unchanged; scoring weights remain 30/30/25/15; protected portfolio/accounting/approval counts unchanged; `auto_trade=false`; no holdings, transactions, cash, approvals or execution mutation.
+- **Next exact action:** refresh/reconcile **Portfolio Fit against the current portfolio batch first**, then explicitly reconcile whether the production capital path should use retired Opportunity Ranking v2 or Opportunity Quality v2. Do not reactivate Ranking v2 incidentally. After a canonical NFLX fit exists, verify its missing Revision/Chase/base-score chain before any Decision. Keep PINS ranking drift as an independent regression fix.
+
+See [production receipt](implementation/FWIOS_DECISION_RANKING_REFRESH_BRIDGE_V1_20261027.md) and [regression SQL](../tests/decision/test_decision_ranking_refresh_bridge_v1.sql).
 
 ## Valuation input resolver / model-period audit — PR #77 MERGED (2026-10-26)
 
