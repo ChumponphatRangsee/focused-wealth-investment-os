@@ -15,7 +15,15 @@ Supabase = System of Record / State. GitHub = Logic / Contracts / Tests / Migrat
 
 **Approved now: simplify the roadmap and audit the existing end-to-end workflow. NOT authorized by this documentation PR: production schema changes, production research APPLY, changes to scoring/gates, market-data cutover, portfolio writes, cron/tasks, or trading.**
 
-**Immediate priority: Phase 1 / MVP-1 — Data Reliability**, using the existing `Data Sources → Canonical Price/Financial Facts → Evidence/Metric Storage → Source-backed Valuation → existing Valuation Map` path. **The existing Google Sheet is the only user-facing surface; no new Dashboard or report page.** Start with a pilot set of 1–3 stocks and expand only after actual ingestion/freshness acceptance. See the [MVP-first working-slice plan and live audit](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md) for the acceptance checklist and observed blockers.
+**Immediate priority: Phase 1 / MVP-1 — Data Reliability**, using the existing `Data Sources → Canonical Price/Financial Facts → Evidence/Metric Storage → Source-backed Valuation → existing Valuation Map` path. **The existing Google Sheet is the only user-facing surface; no new Dashboard or report page.** **Phase 1 pilot scope is locked to ACN, ADBE and PINS only.** Do not expand the financial-metric / Fair Value audit to the other 28 valued rows, all 64 tracked tickers, or the full S&P 500 as a Phase 1 follow-on. Expansion is a separate future owner decision after acceptance; keep existing 64-stock market-close monitoring intact. See the [MVP-first working-slice plan and live audit](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md) for the acceptance checklist and observed blockers.
+
+### 2026-10-28 owner scope lock — exactly three pilot tickers
+
+- **ACN — first:** Read-only audit of latest primary issuer/SEC financials vs typed canonical metric observations, evidence, reporting periods, units and required valuation inputs. Validate or refresh Fair Value only when changes are evidenced and any controlled production APPLY is separately authorized.
+- **ADBE — second:** Reconcile the valuation-run identity and Quality Hardening/price lineage; preserve prior snapshots and existing fail-closed gates.
+- **PINS — third:** Validate current price/mispricing/hardening lineage and distinguish genuine owner-earnings/value-trap/robustness REVIEW from stale or mismatched Decision evidence.
+- **Acceptance:** Confirm each pilot's data freshness, supported valuation and model/input provenance, explicit BLOCKED/REVIEW reason codes, existing Valuation Map parity and reproducible read-only E2E regressions. A BUY, quality PASS or investment-review-ready outcome is **not** required when current verified inputs justify a block.
+- **Not in Phase 1:** No blanket audit/refresh for all 28 valued stocks; no additional ticker cohort, U1 full S&P 500 expansion, research scheduler, portfolio rotation or backtesting. Existing EOD price operations and historical 28-row Valuation Map parity diagnostics may continue; they are **not approval for a 28-stock fundamental/valuation audit**. The MA clean-room engineering test is a separate technical validation case, not an extra Phase 1 business pilot.
 
 | Delivery phase | Priority / scope | Gate before advancing |
 | --- | --- | --- |
