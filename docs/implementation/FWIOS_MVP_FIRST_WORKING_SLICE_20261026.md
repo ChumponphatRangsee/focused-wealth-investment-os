@@ -19,6 +19,16 @@ Phase 1 execution order (one scoped, reviewed step at a time):
 
 **Scope distinction:** Existing 64-stock EOD market-price collection/monitoring and previously observed 28-row dashboard parity checks are operating context, **not** approval to deepen analysis, revalue, or refresh fundamentals for all those symbols. The separate MA clean-room proof may continue as an engineering/regression workstream, but MA does not become a fourth Phase 1 product pilot. Keep Phase 2–4 and broad clean-room scaling deferred.
 
+## 2026-10-28 handover addendum — state-first, API-led data research
+
+See [AI Research Manager / Phase 1 Handover](FWIOS_AI_RESEARCH_MANAGER_HANDOVER_20261028.md) for architecture, verified status, task ordering, safety constraints and copyable new-chat instructions.
+
+- **Primary division:** SEC/XBRL and market-data APIs collect numeric facts; Supabase/Policy Engine validates, stores and governs state; ChatGPT manages **proposed** research priorities/tasks. It is *not* a replacement for primary data feeds or authorization gates.
+- **Before research:** read existing primary filing identities, fiscal periods, canonical metrics/evidence, model-required inputs and current valuation IDs; compare with fresh SEC accession/fingerprint metadata. No delta = `NO_CHANGE` / avoid unnecessary deep research. Amended or restated source = precise, provenance-backed work item.
+- **Smallest next deliverable:** ACN **read-only** gap audit and existing-object inventory; draft minimum Research State Resolver SELECT and Filing Delta Detector contract. Only afterward propose any tightly scoped implementation. ADBE then PINS are the remaining pilot cases.
+- **Reuse validated gateway:** `fwios.preview_research_ingest_v1(p_payload jsonb)` (`chatgpt_research_payload_v1`), controlled `apply_research_ingest_v1` and immutable source/model lineage. Passing JSON validation is not sufficient to prove metric accuracy or timeliness.
+- **Not authorized here:** scheduling ChatGPT research, new automated canonical metric APPLY, new valuation production cutover, full autonomous Research Attention #38, or extending the pilot to any additional stock. These require separate review/approval; historical 64-stock EOD operations stay live.
+
 ## MVP-1 scope correction — DATA RELIABILITY, no new Dashboard (2026-10-26)
 
 **LATEST OWNER DECISION: the existing Google Sheet `Valuation Map` is the user-facing surface.** Do not build a new report, tab, dashboard, new research-attention schema or an autonomous research engine for MVP-1. Historical report/UI instructions further down are superseded wherever they suggest developing another user-facing view. The previous SQL pilot remains a **diagnostic** only.
