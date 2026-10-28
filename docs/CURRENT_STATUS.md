@@ -9,6 +9,14 @@
 - **Important boundary:** The 64-ticker EOD price feed remains an existing service; historical Valuation Map 28/28 row parity may be monitored without launching 28 stock-specific fundamental reviews. MA Clean-Room Test #1 is a separate technical E2E proof, not a fourth Phase 1 product pilot. Any expansion sequence documented in the older handover is future planning only.
 - **Change scope:** Documentation/plan only. No production research APPLY, valuation recalculation, migration, CI claim, policy threshold change, Sheet write or trading authorized by this decision. See [working MVP checklist](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md) and [master roadmap](00_SYSTEM_ROADMAP.md).
 
+## 2026-10-28 research-manager architecture / new-chat handover
+
+- **New handover:** [FWIOS_AI_RESEARCH_MANAGER_HANDOVER_20261028.md](implementation/FWIOS_AI_RESEARCH_MANAGER_HANDOVER_20261028.md). Use as the Phase 1 conversation/handoff entrypoint; verify live state on each new session.
+- **Owner's responsibility split:** API/Workers collect SEC/XBRL and market facts; Supabase stays the canonical data/policy authority; ChatGPT proposes research priorities and bounded next tasks, **not** authoritative financial facts or automated investment decisions. Check existing filing versions and canonical input states before delta research.
+- **First authorized next activity is READ-ONLY:** audit ACN's primary filings, SEC shadow evidence and canonical metric/valuation gaps; inventory existing objects before proposing a Research State Resolver or Delta Detector. ADBE/PINS follow as scoped lineage/gate cases. No new ChatGPT schedule, autonomous research engine or production APPLY is authorized by this document.
+- **Operational issue found 2026-10-28:** Cron job `fwios-opportunity-quality-refresh` (id 10) still calls removed `refresh_opportunity_quality_v2` and failed Oct 27–28; investigate separately before any reviewed fix. Current database exposes a v3 function with different authorization arguments.
+- **At the time of this handover:** `main` `f3b96b3e6b869151c1bf388ff527f02373b2d471`; PR #92 and #93 open/unmerged; 64/64 recent EOD stock closes; SEC shadow Oct 28 46/46 jobs PASS with `authoritative_write=false`; canonical metric refresh and unattended ChatGPT-to-Supabase production writes **not proven autonomous**. Dated checkpoint only.
+
 ## Mandatory read / execution order
 
 1. Read [AGENTS.md](../AGENTS.md) and [system-contract.yaml](../contracts/system-contract.yaml); preserve human-execution-only and financial-accounting guardrails.
