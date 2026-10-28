@@ -41,7 +41,7 @@ Only `TTWO` and `INTERACTIVE_ENTERTAINMENT_IP_DCF_V1` are allowed. Candidate mod
 
 ## Scheduled Task behavior
 
-Updated in-place (existing Task ID `6ae1ca651eb881919456df1b5d35186b`) to use ONLY these two TTWO-only, non-trading functions as automatic write permissions. Preserve the existing daily 15:00 Asia/Bangkok schedule. Schedule is a **ChatGPT task, not a database cron**, so scheduled runtime must independently prove it can call its connected Supabase actions and persist the next receipt. Manual invocation and a successful scheduled request are **not proof of scheduled write success**; inspect the latest task execution for confirmation.
+Updated in-place (existing Task ID `6ae1ca651eb881919456df1b5d35186b`) to use ONLY these two TTWO-only, non-trading functions as automatic write permissions. Preserve the existing daily 15:00 Asia/Bangkok schedule. Schedule is a **ChatGPT task, not a database cron**. **Scheduled-run verification ACCEPTED:** Run ID `aa770417-0c50-8322-b2b2-d199b43c66e7` started 2026-10-28 10:42:34 UTC, completed 10:44:07 UTC. The scheduled ChatGPT run reported live Supabase/GitHub access, research PREVIEW PASS (2 evidence, 8 metrics), and successfully invoked `fwios.evaluate_ttwo_ai_model_candidate_v1` for candidate `d8c7b8bd-fdb8-422e-bcb7-8124e6332bcb`. It returned existing idempotent evaluation `6befe463-16e0-4b10-b4e8-aca0f37d64db`; SQL readback at 10:44 UTC confirms one candidate, one evaluation receipt, zero production valuation and canonical metrics. This proves scheduled invocation and idempotent DB readback; **a scheduled run that actually creates a *new* receipt on a new source fingerprint remains untested**.
 
 ## Known limitations and production gates
 
