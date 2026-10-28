@@ -2,6 +2,21 @@
 
 > **Navigation index, not operational authority.** Updated **2026-10-27 Asia/Bangkok** for handover to the Clean-Room End-to-End Validation milestone. Active contract is `FWIOS-CONTRACT-0.87.26`. Latest verified pre-handover `main` is `a10c32253cd126f91a0989baf081f293c152c13f`. The portfolio-independent Decision / Opportunity cutover, retired-runtime cleanup, and PINS current-lineage repair are complete. Portfolio Fit is retired from the active Scanner/Decision/Opportunity path; `POL-OPPORTUNITY-RANKING-V2` remains RETIRED. **Next milestone is ticker-only clean-room E2E validation, not further ticker-specific patching.** Re-check current `main` and live Supabase on each new session. **Live operational truth overrides this dated index.**
 
+## 2026-10-28 owner scope lock — Phase 1 ONLY ACN / ADBE / PINS
+
+- **Latest owner decision:** Phase 1 Working MVP financial-data / Fair Value / blocker review is restricted to **ACN, ADBE and PINS**. **No automatic expansion to the other 28 valued stocks, the 64 monitored stocks, or full S&P 500.** Even after pilot acceptance, expansion needs a separate explicit owner decision.
+- **Execution order:** ACN read-only primary filing/metric inventory and Fair Value freshness → ADBE valuation/hardening lineage → PINS canonical price/mispricing/hardening/Decision reasons → reproducible three-ticker acceptance in the existing Valuation Map. Keep a verified blocker explicit; no forced BUY or QUALITY PASS.
+- **Important boundary:** The 64-ticker EOD price feed remains an existing service; historical Valuation Map 28/28 row parity may be monitored without launching 28 stock-specific fundamental reviews. MA Clean-Room Test #1 is a separate technical E2E proof, not a fourth Phase 1 product pilot. Any expansion sequence documented in the older handover is future planning only.
+- **Change scope:** Documentation/plan only. No production research APPLY, valuation recalculation, migration, CI claim, policy threshold change, Sheet write or trading authorized by this decision. See [working MVP checklist](implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md) and [master roadmap](00_SYSTEM_ROADMAP.md).
+
+## 2026-10-28 research-manager architecture / new-chat handover
+
+- **New handover:** [FWIOS_AI_RESEARCH_MANAGER_HANDOVER_20261028.md](implementation/FWIOS_AI_RESEARCH_MANAGER_HANDOVER_20261028.md). Use as the Phase 1 conversation/handoff entrypoint; verify live state on each new session.
+- **Owner's responsibility split:** API/Workers collect SEC/XBRL and market facts; Supabase stays the canonical data/policy authority; ChatGPT proposes research priorities and bounded next tasks, **not** authoritative financial facts or automated investment decisions. Check existing filing versions and canonical input states before delta research.
+- **First authorized next activity is READ-ONLY:** audit ACN's primary filings, SEC shadow evidence and canonical metric/valuation gaps; inventory existing objects before proposing a Research State Resolver or Delta Detector. ADBE/PINS follow as scoped lineage/gate cases. No new ChatGPT schedule, autonomous research engine or production APPLY is authorized by this document.
+- **Operational issue found 2026-10-28:** Cron job `fwios-opportunity-quality-refresh` (id 10) still calls removed `refresh_opportunity_quality_v2` and failed Oct 27–28; investigate separately before any reviewed fix. Current database exposes a v3 function with different authorization arguments.
+- **At the time of this handover:** `main` `f3b96b3e6b869151c1bf388ff527f02373b2d471`; PR #92 and #93 open/unmerged; 64/64 recent EOD stock closes; SEC shadow Oct 28 46/46 jobs PASS with `authoritative_write=false`; canonical metric refresh and unattended ChatGPT-to-Supabase production writes **not proven autonomous**. Dated checkpoint only.
+
 ## Mandatory read / execution order
 
 1. Read [AGENTS.md](../AGENTS.md) and [system-contract.yaml](../contracts/system-contract.yaml); preserve human-execution-only and financial-accounting guardrails.
@@ -25,7 +40,7 @@
 - **Do not hard-delete historical stock data before Test #1.** Preserve history as an audit/control sample and isolate the active test state instead.
 - **Test objective:** prove one supported stock can complete the pipeline without silently reusing legacy ticker-specific evidence, metrics, price snapshots, valuations, hardening or Decisions.
 - **Pass condition is pipeline correctness, not BUY.** REVIEW / FAIL / BLOCKED is acceptable when supported by current evidence and fail-closed rules.
-- **Scaling sequence:** 1 ticker → 1 ticker per supported valuation archetype → 5–10 mixed tickers → 50 → 100 → full S&P 500.
+- **Future engineering scaling sequence (DEFERRED, not Phase 1 authorization):** 1 ticker → one per supported valuation archetype → 5–10 mixed tickers → 50 → 100 → full S&P 500. The 2026-10-28 scope lock prohibits expanding the active Phase 1 product pilot beyond ACN/ADBE/PINS or launching an all-28 valuation audit without a new owner decision.
 - **Guardrails:** keep Portfolio Fit retired; keep Opportunity Ranking v2 retired; do not weaken valuation / Quality Hardening / risk / Chase thresholds; `auto_trade=false`; no portfolio/accounting/approval/execution mutation.
 - **Do not continue PINS/NFLX patching first** unless the clean-room test proves a shared pipeline defect that requires a minimal deterministic fix.
 
@@ -137,7 +152,7 @@ See [production receipt](implementation/FWIOS_DECISION_OPPORTUNITY_PORTFOLIO_IND
 - **Price data (verified read-only):** last completed US session 2026-10-23; 64/64 accepted Twelve Data EOD stock observations each trading day Oct 19–23, all Tier-A PASS and URLs present. 13 independent Alpha Vantage overlap prices on Oct 23 differ 0–0.0261%; do **not** assert all 64 independently cross-checked.
 - **Valuation Map parity:** existing Google Sheet's 28 valued rows match backend 28 rows for price date, price, Bear/Base/Bull/PW Fair Value and upside within displayed rounding. Valuation dates are Sep 4–11, despite Oct 23 price session.
 - **Financial ingestion freshness — confirmed gap:** 453 `metric_observations` rows covering 28/64 tracked instruments; last database metric ingestion Sep 30 and newest stored source `reported_at` Sep 10. ACN's stored metrics last reported Jun 18 (issuer Q4 FY26 Oct 1), JPM Jul 14 (issuer Q3 Oct 13), NFLX Jul 16 (issuer Q3 Oct 20). Their latest source filings must be triaged and verified before claiming current Fair Value. The current ten active cron names contain no independently established scheduled canonical financial-metric ingest.
-- **Immediate delivery item:** pilot source/evidence/period/unit audit and missing/latest earnings capture for ACN/JPM/NFLX, then manual verified `PREVIEW`; controlled `APPLY`/production revaluation **only with separately explicit authorization**, and validate the existing Valuation Map afterward. No new table, scheduler, spreadsheet UI, score/quality threshold or trading.
+- **Superseded 2026-10-26 delivery item:** source/evidence/period/unit audit and missing/latest earnings capture for ACN/JPM/NFLX was the earlier data-gap example, **not the active three-ticker Phase 1 pilot**. Per the 2026-10-28 scope lock, run the ACN → ADBE → PINS pilot only; JPM/NFLX evidence remains a historical freshness finding, not authorized new pilot work. Manual validated `PREVIEW` may follow review, whereas controlled `APPLY`/production revaluation requires separately explicit authorization. No new table, scheduler, spreadsheet UI, score/quality threshold or trading.
 - **Previous MVP SQL report:** stays as a read-only diagnostic; not a UI to implement. Previously named "read-only user-facing report" next action is **superseded**.
 
 ## MVP-first owner reprioritization and read-only E2E audit — 2026-10-26
