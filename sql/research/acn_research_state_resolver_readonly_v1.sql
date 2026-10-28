@@ -42,6 +42,19 @@ input_checks AS (
          m.period_type, m.fiscal_year, m.period_end, m.as_of_date,
          m.primary_evidence_id,
          (i.gate_status='PASS'
+          AND i.input_value_text ~ '^-?[0-9]+(\.[0-9]+)?$'
+          AND m.value_numeric = CASE
+            WHEN i.input_value_text ~ '^-?[0-9]+(\.[0-9]+)?$'
+            THEN i.input_value_text::numeric ELSE NULL END
+          AND (
+            (i.input_role='GUIDANCE' AND m.period_type='GUIDANCE'
+             AND m.fiscal_year=b.fiscal_year+1)
+            OR (i.input_key='fcf_ltm' AND m.period_type='LTM'
+                AND m.fiscal_year=b.fiscal_year AND m.period_end=b.fiscal_end)
+            OR (i.input_key IN ('net_cash','shares_outstanding')
+                AND m.period_type='INSTANT'
+                AND m.fiscal_year=b.fiscal_year AND m.period_end=b.fiscal_end)
+          )
           AND m.observation_key IS NOT NULL
           AND m.provenance_status='PASS'
           AND m.quality_gate='PASS'
@@ -100,7 +113,8 @@ annual_checks AS (
     FROM jsonb_array_elements(
       COALESCE(sh.payload->'facts'->x.sec_xbrl_tag->'units'->'USD','[]'::jsonb)
     ) AS f(value)
-    WHERE f.value->>'start'=b.fiscal_start::text
+    WHERE sh.collection_status='PASS'
+      AND f.value->>'start'=b.fiscal_start::text
       AND f.value->>'end'=b.fiscal_end::text
       AND f.value->>'accn'=b.latest_sec_accession_number
       AND f.value->>'form'='10-K'
