@@ -2,7 +2,7 @@
 -- Only ACN, ADBE, PINS are gated. All other valuation rows are byte-for-byte preserved by predicate.
 -- Reviewed preflight: 29 -> 28 valued; ONLY ADBE loses untrusted RETIRED model FV.
 -- Not an override of price/quality/decision/trading; no DELETE/UPDATE, no new schedule.
-CREATE OR REPLACE VIEW fwios.v_dashboard_valuation_map AS
+CREATE OR REPLACE VIEW fwios.v_dashboard_valuation_map WITH (security_invoker=true) AS
 WITH latest_valuation AS (
          SELECT DISTINCT ON (v.ticker) v.ticker,
             v.run_id AS valuation_run_id,
