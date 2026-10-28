@@ -6,13 +6,26 @@ Contract: `FWIOS-CONTRACT-0.87.19` (unchanged)
 Supabase project: `focused-wealth-investment-os` (`ysjbmeukwbfnxnwqchuq`)  
 Baseline inspected: GitHub `main` `298fbb8e7aa09126c049cf218036e811f40444cd`. Live Supabase was read-only inspected on 2026-10-26.
 
+## 2026-10-28 owner decision — Phase 1 pilot scope LOCKED
+
+**Only three Phase 1 business pilot tickers: ACN, ADBE, PINS.** The owner explicitly declined expanding the financial-data or Fair Value review to all 28 currently valued tickers in this phase. Even if the three pilots pass, **do not automatically begin a 28-stock, 64-stock or S&P 500 fundamental/valuation audit**. A later explicit scope decision is required; do not pre-authorize expansion in this plan.
+
+Phase 1 execution order (one scoped, reviewed step at a time):
+
+1. **ACN / financial data reliability (first):** Read-only compare latest SEC/issuer release and required metric inputs against canonical evidence/metrics, period, currency, unit and report dates. Record exact missing, stale or conflicting fields. Then preview any corrected ingest; production APPLY and a new eligible valuation require separate explicit authorization and tested gateway controls.
+2. **ADBE / valuation-to-hardening lineage:** Compare latest eligible valuation run and referenced Quality Hardening run, price/mispricing links, as-of fields, and reason codes. Fix only an evidenced shared problem in a separately reviewed PR; do not overwrite historical snapshots.
+3. **PINS / quality and decision blockers:** Verify current canonical price → mispricing → hardening → Decision links and genuine owner-earnings/value-trap/robustness REVIEW. Preserve fail-closed behavior and production thresholds.
+4. **Three-ticker acceptance:** For **each** of ACN/ADBE/PINS, verify current primary-source freshness or an explicit stale-data block, model-required input inventory, reproducible source-backed Fair Value when supported, timestamps/run IDs, clear reason codes, and parity on the existing Valuation Map. No forced BUY/PASS; other stocks remain outside the deep-audit pilot.
+
+**Scope distinction:** Existing 64-stock EOD market-price collection/monitoring and previously observed 28-row dashboard parity checks are operating context, **not** approval to deepen analysis, revalue, or refresh fundamentals for all those symbols. The separate MA clean-room proof may continue as an engineering/regression workstream, but MA does not become a fourth Phase 1 product pilot. Keep Phase 2–4 and broad clean-room scaling deferred.
+
 ## MVP-1 scope correction — DATA RELIABILITY, no new Dashboard (2026-10-26)
 
 **LATEST OWNER DECISION: the existing Google Sheet `Valuation Map` is the user-facing surface.** Do not build a new report, tab, dashboard, new research-attention schema or an autonomous research engine for MVP-1. Historical report/UI instructions further down are superseded wherever they suggest developing another user-facing view. The previous SQL pilot remains a **diagnostic** only.
 
 **MVP-1 goal:** verify, repair and prove the *existing* data pipeline:
 
-1. **Availability/completeness:** every in-scope tracked stock has the required latest canonical market close, verified source/provenance and a persisted record. For the **selected 1–3 valuation pilot names**, inventory model-required financial facts (revenue, margins, shares/SBC, FCF/debt/cash, guidance as applicable), filing date/period/currency, evidence and explicit missing fields. Do not assume every stock needs identical metrics or a valuation model.
+1. **Availability/completeness:** every in-scope tracked stock has the required latest canonical market close, verified source/provenance and a persisted record. For the **three locked valuation pilot names (ACN, ADBE, PINS)**, inventory model-required financial facts (revenue, margins, shares/SBC, FCF/debt/cash, guidance as applicable), filing date/period/currency, evidence and explicit missing fields. Do not assume every stock needs identical metrics or a valuation model.
 2. **Correctness:** cross-check prices with an independent authorized provider when possible; reconcile key financial facts to primary issuer IR/SEC releases, accounting period, unit/currency and normalization. Reject contradictory observations; no guessed metric, silent overwrite or unversioned change to valuation assumptions.
 3. **Freshness:** after the last completed US trading session, accepted EOD prices should be present for 100% of the **current 64-stock tracked universe** by the next Bangkok morning (respect market holidays). Fundamental freshness is based on the **most recent published company filing or earnings release**, not a price timestamp or ingestion timestamp. Set a narrowly approved refresh expectation (proposal: review/ingest material primary financial updates within two business days after release, then revalue if model inputs changed); do not imply that a 2026-09 valuation became fresh when the price updated in October.
 4. **Valuation:** an immutable production-eligible valuation run is tied to source-backed current-period metrics, versioned assumptions and as-of date; revaluation after materially new validated metrics must be explicit, with lineage/quality gates preserved. `Valuation Map` may remain unchanged but must not describe an old model as up-to-date. No forced `BUY`.
@@ -55,7 +68,7 @@ Phase 1 can use an **existing read-only report/view/dashboard surface**, not a n
 
 ### Do now: Phase 1 — Working MVP
 
-- Select **1–3 supported tickers**; pilot **ACN (positive readiness control), ADBE (valuation/hardening lineage issue), PINS (hardening and price-gate issue)**. These are regression cases, **not buy recommendations**.
+- Select **exactly three supported tickers**: **ACN (financial freshness / Valuation input control), ADBE (valuation-to-hardening lineage mismatch), PINS (quality / price / Decision blockers)**. These are scoped regression cases, **not buy recommendations**; the historical ACN positive-readiness result is dated and must not substitute for a current live gate readback.
 - Read from already deployed, authorized Supabase sources: `fwios.v_research_readiness_current_v1` for deterministic readiness, `fwios.v_dashboard_valuation_map` for fair-value/market context, `fwios.v_scanner_current_v1` for current scanner compatibility, and existing valuation/evidence/decision lineage as needed. Do not replace these as authoritative without an explicitly tested cutover.
 - Produce one compact user-facing result: ticker, latest verified canonical price and session, bear/base/bull/PW fair value (when available), valuation model and run ID/as-of, research readiness, valuation readiness, quality-hardening gate, investment-review readiness, decision price/mispricing gates and **specific blocker**. A scanner rank/score is **not** a buy signal.
 - Show **BLOCKED / WAIT / REVIEW / DATA MISSING** rather than inventing a missing metric or forcing a recommendation. Separate “valuation exists” from “investment actionable”; preserve `auto_trade=false`.
@@ -140,6 +153,8 @@ ORDER BY r.ticker;
 This diagnostic **only compares** existing read models. It does not unify their semantics or grant production execution authority. For a deployed report, inspect each view's access contract and prefer the existing authorized backend/Sheet boundary.
 
 ## Next implementation slice — one PR at a time
+
+**2026-10-28 ordering:** First complete ACN's read-only financial-metric gap audit, then ADBE's lineage reconciliation, then PINS's blocker reconciliation, followed by the three-ticker Final Acceptance. The earlier numbered MVP-1/2/3 steps below describe reusable implementation mechanics, **not** authorization to widen the pilot.
 
 1. **MVP-1: Read-only report/Surface.** Wire one minimal report using existing views and show both canonical freshness and independent deterministic gates. First deliverable: reproducible ACN, ADBE and PINS outputs with no false actionable signals. If no code is needed, document which existing screen already meets the requirement and close this step only after user-facing acceptance.
 2. **MVP-2: Focused blocker repair.** Fix the first reproduced high-impact mismatch (e.g., ADBE stale hardening-to-valuation lineage or legacy price-gate interpretation) through a separate tested PR. Do **not** mutate a gate merely to make a name eligible.
