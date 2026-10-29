@@ -1,0 +1,22 @@
+-- Price-only phase-2 cutover verification. READ ONLY.
+WITH tests(test_name,passed) AS (
+ SELECT '01_CRYPTO_CRON_ROUTED', (SELECT active AND command LIKE '%/functions/v1/price-market-refresh-v1%' AND command LIKE '%CRYPTO%' FROM cron.job WHERE jobid=14)
+ UNION ALL SELECT '02_FX_CRON_ROUTED',(SELECT active AND command LIKE '%/functions/v1/price-market-refresh-v1%' AND command LIKE '%FX%' FROM cron.job WHERE jobid=15)
+ UNION ALL SELECT '03_SHEET_CRON_ROUTED',(SELECT active AND command LIKE '%/functions/v1/price-sheet-sync-v1%' FROM cron.job WHERE jobid=16)
+ UNION ALL SELECT '04_EOD_ENQUEUE_RETAINED',(SELECT active FROM cron.job WHERE jobid=6)
+ UNION ALL SELECT '05_EOD_WORKER_RETAINED',(SELECT active FROM cron.job WHERE jobid=7)
+ UNION ALL SELECT '06_NO_OLD_MTM_CRON',(SELECT count(*)=0 FROM cron.job WHERE active AND command LIKE '%/functions/v1/portfolio-mtm-refresh-v1%')
+ UNION ALL SELECT '07_NATIVE_USD_CRYPTOS_PERSISTED',(SELECT count(DISTINCT instrument_id)>=6 FROM fwios.market_observations WHERE provider='COINGECKO' AND value_currency='USD' AND raw_payload->>'price_only'='true')
+ UNION ALL SELECT '08_FX_PERSISTED',(SELECT count(*)>=1 FROM fwios.market_observations WHERE provider='FRANKFURTER_FX' AND fx_base_currency='USD' AND fx_quote_currency='THB')
+ UNION ALL SELECT '09_CANONICAL_MARKET_OBSERVATIONS_PRESERVED',(SELECT count(*)>1000 FROM fwios.market_observations)
+ UNION ALL SELECT '10_DAILY_STOCK_CLOSED_PRICES_PRESERVED',(SELECT count(*)=64 FROM fwios.market_daily_closes WHERE session_date=DATE '2026-10-28')
+ UNION ALL SELECT '11_MTM_RUNS_DROPPED',(SELECT to_regclass('fwios.portfolio_mtm_runs') IS NULL)
+ UNION ALL SELECT '12_PORTFOLIO_QUOTES_DROPPED',(SELECT to_regclass('fwios.portfolio_market_quote_snapshots') IS NULL)
+ UNION ALL SELECT '13_SHEET_HOLDINGS_SNAPSHOTS_DROPPED',(SELECT to_regclass('fwios.portfolio_live_holdings_rows_v1') IS NULL)
+ UNION ALL SELECT '14_SCENARIO_TABLES_DROPPED',(SELECT to_regclass('fwios.portfolio_scenario_runs') IS NULL)
+ UNION ALL SELECT '15_TTWO_MODEL_CANDIDATES_DROPPED',(SELECT to_regclass('fwios.ai_model_candidates_v1') IS NULL)
+ UNION ALL SELECT '16_LEGACY_TRANSACTIONS_PROTECTED',(SELECT count(*)=58 FROM fwios.portfolio_transactions)
+ UNION ALL SELECT '17_PRICE_AUTH_PROVIDER_STILL_PRESENT',(SELECT count(*)>0 FROM fwios.decision_refresh_provider_registry WHERE provider_key='TWELVE_DATA')
+ UNION ALL SELECT '18_PRICE_ONLY_JOB_UNIVERSE_NONTRADING',(SELECT count(*)=0 FROM cron.job WHERE active AND jobname ILIKE '%trade%')
+)
+SELECT test_name,CASE WHEN passed IS TRUE THEN 'PASS' ELSE 'FAIL' END result FROM tests ORDER BY test_name;
