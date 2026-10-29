@@ -19,7 +19,7 @@ Only **CoinGecko native USD crypto quotes + Frankfurter USD/THB FX → `fwios.ma
 
 - After 15 user-approved Legacy table drops, **101 base tables** remained in `fwios` at last live audit. Research/Valuation/Decision schemas and functions are **not yet fully deleted**.
 - US stock EOD Cron #6 and #7 are now **disabled** after independent Crypto-only Sheet-sync verification. The 1,590 historical closes for 64 symbols were preserved. Four existing Stock rows in `_Market_Data` are frozen historical values, not an ongoing stock price service.
-- Legacy provider validator Cron #5 remains active; decision-named provider/auth SQL and related Edge endpoints remain pending dependency-safe retirement. The current Crypto/FX workers use direct CoinGecko/Frankfurter and Vault token auth.
+- Legacy provider validator Cron #5 was **disabled** on 2026-10-29 after verifying the price-only workers do not use the legacy decision provider registry. Decision-named provider/auth SQL and old Edge endpoints remain pending dependency-safe retirement. The current Crypto/FX workers use direct CoinGecko/Frankfurter and Vault token auth.
 - Supabase retains **58 historical portfolio_transactions**; fewer populated rows were visible in the Sheet Transactions tab and **ledger parity was not demonstrated**. This ledger is retained until verified source-ID reconciliation or recoverable backup.
 - Price-only deploy source/SQL receipt exists in **[PR #100](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/100)** (Draft / not merged as of this date). GitHub `main` code may still reference old runtime constructs.
 
@@ -34,3 +34,9 @@ Only **CoinGecko native USD crypto quotes + Frankfurter USD/THB FX → `fwios.ma
 - New migration `20261029101252_disable_legacy_stock_eod_cron_v1` **disabled** #6 and #7; #14/#15/#16 remain active. Historic `market_daily_closes` retained **1,590 rows / 64 symbols**. **No naturally scheduled post-cutover price-only run yet independently verified**.
 - Ledger read-only reconciliation: 58 Supabase entries are two imports of 29 unique source IDs, all represented in the Sheet; nine critical fields per entry (522 checks) showed zero differences. Sheet contains SRC-0030/SRC-0031 in addition. Retain Supabase ledger until a recoverability/raw-payload review has been finalized.
 - Remaining: 101 base tables, 127 SQL functions, 39 views, 16 triggers, 160 FKs at audit; full cleanup not complete. Provider validator #5 remains active; historical stock price rows will become stale and must not be advertised as current market prices.
+
+### Legacy provider validator retirement verified — 2026-10-29
+
+- Inspected the deployed `decision-refresh-provider-validator-v1` worker: it reads/writes `decision_refresh_*` provider registry, validator run and quota records and old `system_state`; price-only Crypto and Sheet workers do **not** call it or depend on its provider validation/promotion routines.
+- Disabled its standalone Cron **#5** via live-applied migration `20261029101711_disable_legacy_provider_validator_cron_v1`. Cron #5/#6/#7 are inactive, while only #14/#15/#16 remain active. Provider registry, logs, SQL procedures and Edge endpoint are retained for explicit dependency-ordered cleanup, not deleted.
+- Updated phase-2 read-only SQL regression to assert this state; **20/20 PASS**. No new naturally scheduled price-only cycle has yet been independently proven.
