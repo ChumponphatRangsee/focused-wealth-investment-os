@@ -1,46 +1,39 @@
-# Focused Wealth Investment OS (FWIOS)
+# Asset Price Data Service
 
-Repository for deterministic investment research/decision contracts, Supabase-backed state and integration services, migrations and regression tests.
+**Version 1.0.0 (documentation baseline)** · **Scope: Crypto + USD/THB FX → Supabase → Google Sheet.**
 
-- **Contract:** `FWIOS-CONTRACT-0.87.23` (see [system contract](contracts/system-contract.yaml) and [VERSION](VERSION); version is not a deployment receipt).
-- **Compatible foundation:** `0.87`.
-- **Safety:** Human execution only; no auto-buy/sell. Portfolio transactions/accounting remain under the designated Investment Portfolio Tracker; scanner research does not change holdings, quantities or cash.
-- **Current operational truth:** Verify live Supabase, Google Sheets, GitHub PR/commit and relevant scheduled functions independently. Historical snapshots in this repository must never be assumed to describe today's production state.
+This repository is being repurposed from the former Focused Wealth Investment OS into a narrowly scoped **asset price ingestion and synchronization service**. The only approved features for this version are:
 
-## Start here — one living entrypoint
+- Read supported *open cryptocurrency symbols* from the Investment Portfolio Tracker Google Sheet (read-only).
+- Fetch native USD cryptocurrency quotes via CoinGecko and USD/THB via Frankfurter; validate price, timestamp, provider and freshness.
+- Store verified price/FX observations in Supabase `fwios.market_observations`.
+- Publish eligible quotes and FX to the Google Sheet tab `_Market_Data` and verify its contents by reading them back. Existing `Price Data` and `Holdings` formulas consume that tab.
 
-1. [AGENTS.md](AGENTS.md) — mandatory execution guardrails.
-2. [Current project status](docs/CURRENT_STATUS.md) — dated navigation index to active workstreams, next steps and blockers; **not** a replacement for live verification.
-3. [System contract](contracts/system-contract.yaml), [VERSION](VERSION), and [master roadmap](docs/00_SYSTEM_ROADMAP.md).
-4. Read only the relevant [implementation plan/runbook](docs/implementation/) or [architecture reference](docs/01_SYSTEM_ARCHITECTURE.md); check the associated PR/Issue and production state before executing.
-5. [Documentation lifecycle](docs/DOCUMENTATION_LIFECYCLE.md) governs archival and when to create a new chat handover.
+## Operating architecture
 
-## Scope and ownership
-
-- **Supabase:** FWIOS state, deterministic pricing/research foundations, market data, orchestration and related read models.
-- **GitHub:** contracts, logic, migrations, tests, source code, decision history.
-- **Investment Portfolio Tracker (Google Sheets):** transaction and accounting source of truth for the current Phase-1 workflow; do not create a duplicate transaction ledger.
-- **Focused Wealth Dashboard:** portfolio-independent scanner/research presentation; coverage and scoring eligibility must be verified from the live scanner backend.
-
-The architecture has evolved beyond the original September 2026 sector-first baseline. Research readiness, S&P 500 expansion, pricing and performance features have their own scoped documents; use the [current index](docs/CURRENT_STATUS.md) to find them rather than a dated chat handover.
-
-**Current delivery focus (owner-approved 2026-10-26):** [Working MVP first — read-only E2E plan & observed blockers](docs/implementation/FWIOS_MVP_FIRST_WORKING_SLICE_20261026.md). Use the existing Supabase data → research → valuation → decision/readiness → report path for 1–3 stocks before implementing new schema, research queues, schedules or rotation. This roadmap/docs change **does not deploy a working MVP**; acceptance of the actual user-facing report is still pending.
-
-**Strategy planning (not implemented; future backlog after MVP):** [Value, Entry Timing & Portfolio Rotation](docs/implementation/VALUE_ENTRY_ROTATION_STRATEGY_ROADMAP_20261023.md) extends the [master roadmap](docs/00_SYSTEM_ROADMAP.md) with source-backed intrinsic valuation, price-entry context, candidate research attention, portfolio opportunity-cost comparison, and point-in-time evaluation. This is **documentation only**: no scheduled research task, API/database mutation, new scoring policy, broker execution or accounting changes are activated.
-
-## Tests and historical evidence
-
-A limited legacy read-only closeout checker remains:
-
-```bash
-python -m unittest discover -s tests -v
-python scripts/check_closeout.py /absolute/path/to/private-snapshot.json
+```text
+Google Sheet Holdings (symbols only; read-only)
+      │
+      ├─ CoinGecko → crypto prices in USD ─┐
+      └─ Frankfurter → USD/THB FX ─────────┤
+                                          ▼
+                              Supabase market_observations
+                                          ▼
+                                 price-sheet-sync-v1
+                                          ▼
+                           Google Sheet _Market_Data
+                                          ▼
+                         Price Data → Holdings formulas
 ```
 
-These commands do **not** constitute a full production acceptance or current trading signal. Never commit private portfolio snapshots, service credentials or tokens.
+**Not in scope:** Stock Discovery, Technical Screening, Thesis, Fundamental Research, Valuation, Scoring, Decision, Rankings, Portfolio MTM, database accounting or trades. Google Sheets remains the sole authority for transactions, holdings, cost basis and portfolio computations. **No future roadmap exists for v1.0.0.**
 
-Historical evidence: [September research closeout](docs/07_RESEARCH_CLOSEOUT.md), [Financials sector run](docs/runs/20260906_financials_sector_run.md), and [archived chat handovers](docs/archive/handovers/README.md).
+## Documents
 
-## Change history
+[System Contract](contracts/system-contract.yaml) · [Current Live Status](docs/CURRENT_STATUS.md) · [Price Pipeline & Validation](docs/PRICE_PIPELINE.md) · [Agent Instructions](AGENTS.md) · [Version](VERSION) · [Changelog](CHANGELOG.md)
 
-See [CHANGELOG.md](CHANGELOG.md), the exact merged GitHub PRs and [documentation audit](docs/DOCUMENTATION_AUDIT_20261020.md). A merged PR does not prove that corresponding Supabase/Sheet deployment checks passed.
+## Read this before using production
+
+This **documentation reset does not yet delete all legacy source code and database objects**. As of 2026-10-29, the former system's stock EOD Cron and Research/Decision database objects still existed; they are **not** new supported features. The price-only workers and Sheet readback have passed manual E2E tests. For exact live state and outstanding cleanup risks, see [Current Live Status](docs/CURRENT_STATUS.md). Cutover implementation under review: [PR #100](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/100).
+
+Old roadmap, policies, implementation handovers and investment strategy documents were deliberately deleted from the current Git tree; earlier commits retain standard Git history.
