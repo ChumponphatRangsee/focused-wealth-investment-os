@@ -1,59 +1,54 @@
-# Price Pipeline & Operations — v1.0.0
+# Price Pipeline & Operations — Asset Price Data Service v1.0.0
 
-**Only feature:** Crypto + USD/THB FX → Supabase → Google Sheets. No new investment project roadmap.
+**Only supported feature:** CoinGecko Crypto native USD prices + Frankfurter USD/THB FX → Supabase → Investment Portfolio Tracker Google Sheet. No Stock Discovery, Technical Screening, Fundamental Research, Thesis, Valuation, Scoring, Portfolio Backend, Trading or future roadmap.
+
+## Authoritative flow
 
 ```text
-Investment Portfolio Tracker — Holdings (OPEN crypto symbols, READ ONLY)
-    │
-    ├─ CoinGecko → native USD crypto prices ─┐
-    └─ Frankfurter → USD/THB FX rate ────────┤
-                                             ▼
-                                fwios.market_observations
-                                      │
-                                price-sheet-sync-v1
-                                      ▼
-                                 _Market_Data
-                                      ▼
-                                Price Data → Holdings
-                                    formulas
+Google Sheet Holdings (OPEN crypto symbols, read-only)
+   ├── CoinGecko native USD quotes ─┐
+   └── Frankfurter USD/THB FX ──────┤
+                                    ▼
+                         fwios.market_observations
+                                    ▼
+                      price-sheet-sync-v1 (v2)
+                                    ▼
+              Google Sheet _Market_Data (Crypto + FX)
+                                    ▼
+                      Price Data → Holdings formulas
 ```
 
-## Active price-only workers
+The existing stock rows in `_Market_Data` are protected historical values, **not new or ongoing stock price collection**. Google Sheet owns Transactions, Holdings, cost basis, manual overrides and portfolio formulas.
 
-| Job | Deployed Edge Function | Operation |
-|---|---|---|
-| Cron #14 | `price-market-refresh-v1` CRYPTO | Read supported open cryptocurrency symbols from Sheet; fetch positive native USD quotes and recent timestamps from CoinGecko; persist validated observations |
-| Cron #15 | `price-market-refresh-v1` FX | Fetch USD/THB from Frankfurter; reject invalid/stale source date; persist canonical FX observation |
-| Cron #16 | `price-sheet-sync-v1` v2 | Read verified open Crypto prices only; update Crypto rows and FX in `_Market_Data`, preserve historic Stock rows and verify readback |
+## Active production schedules
 
-Only these price-oriented jobs are supported in v1.0.0. Legacy Stock EOD Cron #6/#7 were **disabled on 2026-10-29** after a verified Crypto-only sync deployment. Historical closes and existing Stock rows in `_Market_Data` remain retained but are **not continuously refreshed**. Never present frozen stock prices as current.
+| Cron ID | Runtime | Purpose |
+| --- | --- | --- |
+| #14 | `price-market-refresh-v1` / mode CRYPTO | Read supported OPEN crypto holdings, fetch current CoinGecko USD quotes, validate and store canonical observations |
+| #15 | `price-market-refresh-v1` / mode FX | Fetch USD/THB from Frankfurter, validate FX date/rate, store observation |
+| #16 | `price-sheet-sync-v1` v2 | Update only existing/needed Crypto price rows and FX cells in `_Market_Data`; verify by readback |
 
-## Source, storage, authorization
+The inherited Cron job names may mention portfolio, stock or shadow; the **commands**, not the names, point to the price-only functions. All retired Cron registrations (#2, #5–#10) have been unscheduled. Sixteen retired Edge endpoints return HTTP 410; they are **not supported services**.
 
-- CoinGecko: supported USD pairs for `BTC, DOGE, ETH, HBAR, SOL, XRP`, dynamically limited by OPEN Crypto Holdings. Reject missing/negative or provider timestamp older than 2h.
-- Frankfurter: USD/THB, positive valid rate, source date no older than 5 days. Currency conversion remains in Google Sheet formulas.
-- Supabase: store via `fwios.ensure_market_observation_v1` in `fwios.market_observations`, with provider, source, observed-at, date, currency, status and provenance. Preserve market price history, identity and required security controls.
-- Auth: approved server-to-server token from Supabase Vault. Never put tokens in GitHub source, logs, query parameters or user-visible links.
-- Google Sheet: read open symbols from Holdings without saving their quantities/accounts to Supabase. Write only the dedicated `_Market_Data` price/FX cells. Existing `Price Data` and `Holdings` formulas own downstream calculations.
-- No position/cost basis/transaction writes, MTM, signals, scoring or auto trade.
+## Validation, auth and storage contract
 
-## Validation checklist
+- Supported Crypto: BTC, DOGE, ETH, HBAR, SOL, XRP, selected from current OPEN Crypto holdings read-only. Source: native CoinGecko USD with positive quote and provider timestamp no older than 2h at collection.
+- FX: positive Frankfurter USD/THB and source date within five days. The conversion to THB is performed in Google Sheet formulas; no conversion of crypto quote source into synthetic USD values.
+- Canonical destination: `fwios.market_observations`, via `fwios.ensure_market_observation_v1`. Required source identity, quote value/currency, observed time, session date, provenance and valid status. Price lookup uses `fwios.pr7_native_usd_price_read_v1` → `pr5_native_usd_price_shadow_v1` with `v_instrument_identity_current`.
+- Server-to-server authentication: Vault-backed automation token; never disclose a credential, expose it in a URL, or commit it to GitHub. Price-only endpoints validate the supplied header token and fail closed on missing/invalid auth.
+- `price-sheet-sync-v1` v2 **does not require live stock prices**: it matches Crypto symbols to current `_Market_Data` rows, updates Crypto and FX only, verifies values/readback, and rejects any attempted overwrite of a protected Stock row. No full-range clear. Preserves Manual Override J, Transactions, Holdings quantities, Cost Basis and downstream formulas.
+- No database Portfolio mutation. `auto_trade=false`.
 
-A successful change should prove (1) authenticated provider read and freshness, (2) Supabase price/FX observation persisted, (3) six current Crypto price rows and four preserved historic Stock rows in the ten-row Sheet `_Market_Data`, plus FX readback parity, (4) `Price Data` and Holdings formulas are nonempty/correct, (5) no portfolio DB mutation and (6) scheduled job configuration correct.
+## Database isolation after cleanup
 
-**Verified 2026-10-29:** manual CRYPTO HTTP 200, six quote writes; manual FX HTTP 200, one observation write; manual Sheet sync HTTP 200 with 10/10 rows/readback, no DB portfolio writes; 18/18 read-only regression PASS. This **does not** prove next scheduled Cron execution.
+Production `fwios` contains **five** tables: `asset_entities`, `instruments`, `instrument_symbols`, `instrument_identifiers`, and `market_observations`. One identity view and 13 SQL routines remain (including trigger support for archived relations).
 
-Fail closed when a source, credentials, quote, FX, market observation, symbol or readback is missing/stale/invalid. Do not silently substitute data or claim success based on a Cron trigger alone. Earlier code/deployment receipt is in [PR #100](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/100).
+The historical private archive `fwios_legacy_archive_20261029` contains **87** preserved tables, including 58 ledger records, 1,590 historical Stock EOD records and old Research/Thesis/Decision tables. Its schema grants no USAGE to `anon` or `authenticated`. This archival retention is **not** an independent database backup, and cannot be described as permanent legacy-data deletion.
 
-## Verified price-only sync and legacy Stock EOD retirement — 2026-10-29
+## Verified after live database cleanup — 2026-10-29
 
-- Deployed `price-sheet-sync-v1` **version 2** to production. Reads only OPEN Crypto symbols from Holdings (without writing holdings/accounts to Supabase); updates existing Crypto quote rows by symbol, preserves all four existing Stock price rows and their observation IDs, updates the existing FX cells, and checks readback. No full-range clear.
-- Production smoke tests: authenticated dry-run **HTTP 200 (6 cryptos, zero DB or Sheet writes)**; authenticated live sync **HTTP 200 (6 cryptos, Sheet readback verified, zero DB writes)**. Independent Google Sheet inspection confirmed all ten assets still present, four Stock price/observation IDs unchanged, all ten Price Data rows priced, no formula errors in checked Price Data and Holdings ranges.
-- Stock EOD Cron #6/#7 disabled via live-applied migration `20261029101252_disable_legacy_stock_eod_cron_v1`; the historical `fwios.market_daily_closes` table remains at **1,590 observations for 64 symbols**. Price-only Cron #14/#15/#16 remain active. **A naturally scheduled post-cutover run has not yet been independently verified**; one-off HTTP 200 and a successful database enqueue do not establish scheduled continuity.
-- Legacy provider-validator Cron #5 is **disabled** after verifying it calls only the retired Decision/Stock provider validation path. No wholesale legacy table/function/view cleanup yet; preserve provenance, canonical identity and historical transaction records until independently proven safe.
+CoinGecko CRYPTO direct live execution **6/6 HTTP 200**, Frankfurter FX **1/1 HTTP 200**, each with zero reported portfolio writes. Then `price-sheet-sync-v1` v2 **HTTP 200**, six Crypto prices and the FX cells written/read back successfully, four historical stock rows preserved, no database ledger writes. A final Sheet sync after the ledger/Cron isolation also returned **HTTP 200 and readback verified**. Checked ten `Price Data` asset prices and `Holdings` formula cells had no errors. SQL regression **27/27 PASS**.
 
-### Legacy provider validator retirement verified — 2026-10-29
+These are manual live E2E receipts. **No naturally scheduled post-cutover run has yet been independently verified**. Check Cron job run details, actual Edge responses, source timestamps, stored observations, Sheet readback and read-only formula consumers after the scheduled job window. A Cron `succeeded` status alone may only confirm the HTTP request was queued.
 
-- Inspected the deployed `decision-refresh-provider-validator-v1` worker: it reads/writes `decision_refresh_*` provider registry, validator run and quota records and old `system_state`; price-only Crypto and Sheet workers do **not** call it or depend on its provider validation/promotion routines.
-- Disabled its standalone Cron **#5** via live-applied migration `20261029101711_disable_legacy_provider_validator_cron_v1`. Cron #5/#6/#7 are inactive, while only #14/#15/#16 remain active. Provider registry, logs, SQL procedures and Edge endpoint are retained for explicit dependency-ordered cleanup, not deleted.
-- Updated phase-2 read-only SQL regression to assert this state; **20/20 PASS**. No new naturally scheduled price-only cycle has yet been independently proven.
+Do not delete archival transaction/market history until independent recoverability is proven. Review GitHub [PR #100](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/100) against current live migration history before merging or applying code.
