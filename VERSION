@@ -1,3 +1,5 @@
-FWIOS-CONTRACT-0.87.23
-foundation=0.87
-snapshot=2026-09-30
+ASSET-PRICE-CONTRACT-1.0.0
+version=1.0.0
+scope=CRYPTO_FX_SUPABASE_GOOGLE_SHEETS
+updated=2026-10-29
+runtime_migration=in_progress
