@@ -146,7 +146,8 @@ function parseLiveHoldings(source: unknown[][]) {
 async function loadPricePayload(googleToken:string) {
  const source = await readLiveHoldings(googleToken);
  const positions = parseLiveHoldings(source);  // Read Google Sheet only; do NOT persist holdings to Supabase.
- const openAssets = [...new Set(positions.map(p=>p.asset_symbol))].sort();
+ // Scope v1.0.0: refresh ONLY Crypto. Retain existing historical Stock rows unchanged.
+ const openAssets = [...new Set(positions.filter(p=>p.asset_class==="Crypto").map(p=>p.asset_symbol))].sort();
  if(openAssets.length<1 || openAssets.length>199)throw new Error("INVALID_PRICE_UNIVERSE_SIZE");
  const results = await sql!`select t.asset_symbol,fwios.pr7_native_usd_price_read_v1(t.asset_symbol) q
     from unnest(${openAssets}::text[]) as t(asset_symbol) order by asset_symbol`;
@@ -176,93 +177,102 @@ async function loadPricePayload(googleToken:string) {
   String(fx.observation_id),String(fx.observed_at),String(fx.session_date),String(fx.provenance_status)]};
 }
 async function writeShadow(payload: Awaited<ReturnType<typeof loadPricePayload>>, token: string) {
-  const rowCount = payload.values.length;
-  if (rowCount < 1 || rowCount >= SHEET_MAX_ROW) throw new Error("SHADOW_ROW_COUNT_OUT_OF_RANGE");
-  const endRow = rowCount + 1;
-  const formulas = payload.values.map((_, i) => {
-    const row = i + 2;
-    return [`=IF(AND(D${row}<>"",$S$2<>""),D${row}*$S$2,"")`];
+  // A stock holding may remain in the portfolio after Stock EOD retirement.
+  // Never fetch, rewrite, or clear its historical _Market_Data price cells.
+  const existingUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/` +
+    encodeURIComponent(`${SHEET_NAME}!A1:X${SHEET_MAX_ROW}`) +
+    "?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE";
+  const beforeDoc = await googleJson(existingUrl, token);
+  const before: any[][] = Array.isArray(beforeDoc?.values) ? beforeDoc.values : [];
+  if (String(before?.[0]?.[0] || "") !== "asset_symbol")
+    throw new Error("SHEET_HEADER_MISMATCH");
+  const existingBySymbol = new Map<string, number>();
+  const stockProtected = new Map<number, string>();
+  for (let row = 2; row <= SHEET_MAX_ROW; row++) {
+    const record = before[row - 1] || [];
+    const symbol = String(record[0] || "").trim().toUpperCase();
+    if (!symbol) continue;
+    if (existingBySymbol.has(symbol))
+      throw new Error("DUPLICATE_SHEET_SYMBOL_" + symbol);
+    existingBySymbol.set(symbol, row);
+    if (String(record[2] || "") === "Stock")
+      stockProtected.set(row, JSON.stringify(record.slice(0, 16)));
+  }
+  const claimedRows = new Set<number>(existingBySymbol.values());
+  const targets = payload.values.map((data) => {
+    const symbol = String(data[0]);
+    let row = existingBySymbol.get(symbol);
+    if (!row) {
+      for (let candidate = 2; candidate <= SHEET_MAX_ROW; candidate++) {
+        if (!claimedRows.has(candidate)) { row = candidate; break; }
+      }
+    }
+    if (!row) throw new Error("SHEET_CAPACITY_EXHAUSTED");
+    if (String((before[row - 1] || [])[2] || "") === "Stock")
+      throw new Error("STOCK_ROW_OVERWRITE_BLOCKED_" + symbol);
+    claimedRows.add(row);
+    return { row, data };
   });
-
-  const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchUpdate`;
-  await googleJson(batchUrl, token, {
-    method: "POST",
-    body: JSON.stringify({
-      valueInputOption: "USER_ENTERED",
-      data: [
-        { range: `${SHEET_NAME}!A2:P${endRow}`, majorDimension: "ROWS", values: payload.values },
-        { range: `${SHEET_NAME}!Q2:Q${endRow}`, majorDimension: "ROWS", values: formulas },
-        { range: `${SHEET_NAME}!R2:X2`, majorDimension: "ROWS", values: [payload.fx] },
-      ],
-    }),
-  });
-
-  const verifyRange = encodeURIComponent(`${SHEET_NAME}!A1:X${endRow}`);
-  const verify = await googleJson(
-    `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${verifyRange}?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE`,
-    token,
+  if (!targets.length || targets.length > 15)
+    throw new Error("CRYPTO_SHEET_UNIVERSE_INVALID");
+  const updates: any[] = [];
+  for (const t of targets) {
+    updates.push({ range:`${SHEET_NAME}!A${t.row}:P${t.row}`,
+      majorDimension:"ROWS", values:[t.data] });
+    updates.push({ range:`${SHEET_NAME}!Q${t.row}`,
+      majorDimension:"ROWS",
+      values:[[`=IF(AND(D${t.row}<>"",$S$2<>""),D${t.row}*$S$2,"")`]] });
+  }
+  updates.push({ range:`${SHEET_NAME}!R2:X2`,
+    majorDimension:"ROWS", values:[payload.fx] });
+  await googleJson(
+    `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchUpdate`,
+    token, { method:"POST",
+      body:JSON.stringify({valueInputOption:"USER_ENTERED",data:updates}) }
   );
-  const actual = Array.isArray(verify?.values) ? verify.values : [];
-  if (actual.length !== endRow) throw new Error("SHEET_VERIFY_ROW_COUNT_MISMATCH");
 
-  const actualSymbols = new Set(actual.slice(1).map((r: any[]) => String(r?.[0] || "").toUpperCase()));
-  const missingOpen = payload.openAssets.filter((s) => !actualSymbols.has(s));
-  if (missingOpen.length) throw new Error(`SHEET_VERIFY_OPEN_HOLDING_MISSING_${missingOpen.join(",")}`);
-  if (String(actual?.[0]?.[0] || "") !== "asset_symbol") throw new Error("SHEET_VERIFY_HEADER_MISMATCH");
-
-  // Compare the native source values with Google's post-write calculation.
-  for (let i = 0; i < payload.values.length; i++) {
-    const expected = payload.values[i];
-    const readback = actual[i + 1] || [];
-    for (const col of [0, 1, 5, 6, 7, 8, 14]) {
-      if (String(readback[col] ?? "") !== String(expected[col] ?? "")) {
-        throw new Error("SHEET_VERIFY_FIELD_MISMATCH_" + (i + 2) + "_" + col);
-      }
+  const afterDoc = await googleJson(existingUrl, token);
+  const after: any[][] = Array.isArray(afterDoc?.values) ? afterDoc.values : [];
+  if (String(after?.[0]?.[0] || "") !== "asset_symbol")
+    throw new Error("SHEET_READBACK_HEADER_MISMATCH");
+  for (const [row, snapshot] of stockProtected.entries()) {
+    if (JSON.stringify((after[row - 1] || []).slice(0, 16)) !== snapshot)
+      throw new Error("STOCK_HISTORY_MODIFIED_" + row);
+  }
+  for (const t of targets) {
+    const actual = after[t.row - 1] || [];
+    const expected = t.data;
+    for (const col of [0,1,2,4,5,6,7,8,14]) {
+      if (String(actual[col] ?? "") !== String(expected[col] ?? ""))
+        throw new Error("CRYPTO_READBACK_FIELD_MISMATCH_" + t.row + "_" + col);
     }
-    // Sheets USER_ENTERED converts ISO session_date into a date serial number.
-    const dateCell = readback[10];
-    const isoDate = typeof dateCell === "number"
-      ? new Date(Date.UTC(1899, 11, 30) + dateCell * 86400000).toISOString().slice(0, 10)
-      : String(dateCell || "").slice(0, 10);
-    if (isoDate !== String(expected[10]).slice(0, 10)) {
-      throw new Error("SHEET_VERIFY_SESSION_MISMATCH_" + (i + 2));
-    }
-    const p = Number(expected[3]), r = Number(readback[3]);
+    const rawDate = actual[10];
+    const isoDate = typeof rawDate === "number"
+      ? new Date(Date.UTC(1899,11,30)+rawDate*86400000).toISOString().slice(0,10)
+      : String(rawDate || "").slice(0,10);
+    if (isoDate !== String(expected[10]).slice(0,10))
+      throw new Error("CRYPTO_SESSION_MISMATCH_" + t.row);
+    const p = Number(expected[3]), r = Number(actual[3]);
     if (!Number.isFinite(p) || !Number.isFinite(r) ||
-        Math.abs(p - r) > 1e-8 * Math.max(1, Math.abs(p))) {
-      throw new Error("SHEET_VERIFY_USD_PRICE_MISMATCH_" + (i + 2));
-    }
-    if (expected[14] === true) {
-      const expectedThb = p * Number(payload.fx[1]);
-      const readThb = Number(readback[16]);
-      if (!Number.isFinite(readThb) ||
-          Math.abs(expectedThb - readThb) > 1e-7 * Math.max(1, Math.abs(expectedThb))) {
-        throw new Error("SHEET_VERIFY_CONVERTED_PRICE_MISMATCH_" + (i + 2));
-      }
-    }
+        Math.abs(p-r) > 1e-8*Math.max(1,Math.abs(p)))
+      throw new Error("CRYPTO_PRICE_READBACK_MISMATCH_" + t.row);
+    const converted = Number(actual[16]);
+    if (!Number.isFinite(converted) ||
+        Math.abs(converted-p*Number(payload.fx[1])) >
+          1e-7*Math.max(1,Math.abs(p*Number(payload.fx[1]))))
+      throw new Error("CRYPTO_FX_FORMULA_READBACK_MISMATCH_" + t.row);
   }
-  const actualFx = actual[1] || [];
-  if (String(actualFx[17]) !== String(payload.fx[0]) ||
-      Math.abs(Number(actualFx[18]) - Number(payload.fx[1])) > 1e-9 ||
-      String(actualFx[19]) !== String(payload.fx[2]) ||
-      String(actualFx[20]) !== String(payload.fx[3]) ||
-      String(actualFx[23]) !== String(payload.fx[6])) {
-    throw new Error("SHEET_VERIFY_FX_MISMATCH");
-  }
-
-
-  const staleStart = endRow + 1;
-  if (staleStart <= SHEET_MAX_ROW) {
-    const clearRange = encodeURIComponent(`${SHEET_NAME}!A${staleStart}:X${SHEET_MAX_ROW}`);
-    await googleJson(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${clearRange}:clear`,
-      token,
-      { method: "POST", body: "{}" },
-    );
-  }
-
-  return { rowCount, endRow, openAssets: payload.openAssets };
+  const fx = after[1] || [];
+  if (String(fx[17]) !== String(payload.fx[0]) ||
+      Math.abs(Number(fx[18])-Number(payload.fx[1])) > 1e-9 ||
+      String(fx[19]) !== String(payload.fx[2]) ||
+      String(fx[20]) !== String(payload.fx[3]) ||
+      String(fx[23]) !== String(payload.fx[6]))
+    throw new Error("FX_READBACK_MISMATCH");
+  return { rowCount:targets.length, totalRowsPreserved:existingBySymbol.size,
+    protectedStocks:stockProtected.size, openAssets:payload.openAssets };
 }
+
 Deno.serve(async(req:Request)=>{
  if(req.method!=="POST") return new Response("Method Not Allowed",{status:405});
  if(!sql||!dbUrl) return Response.json({ok:false,error:"DB_UNAVAILABLE"},{status:503});
