@@ -18,5 +18,7 @@ WITH tests(test_name,passed) AS (
  UNION ALL SELECT '16_LEGACY_TRANSACTIONS_PROTECTED',(SELECT count(*)=58 FROM fwios.portfolio_transactions)
  UNION ALL SELECT '17_PRICE_AUTH_PROVIDER_STILL_PRESENT',(SELECT count(*)>0 FROM fwios.decision_refresh_provider_registry WHERE provider_key='TWELVE_DATA')
  UNION ALL SELECT '18_PRICE_ONLY_JOB_UNIVERSE_NONTRADING',(SELECT count(*)=0 FROM cron.job WHERE active AND jobname ILIKE '%trade%')
+ UNION ALL SELECT '19_LEGACY_PROVIDER_VALIDATOR_DISABLED',(SELECT active=false FROM cron.job WHERE jobid=5)
+ UNION ALL SELECT '20_ONLY_PRICE_CRONS_ACTIVE',(SELECT array_agg(jobid ORDER BY jobid)=ARRAY[14,15,16] FROM cron.job WHERE active)
 )
 SELECT test_name,CASE WHEN passed IS TRUE THEN 'PASS' ELSE 'FAIL' END result FROM tests ORDER BY test_name;
