@@ -19,5 +19,5 @@ DROP VIEW fwios.v_portfolio_positions_marked_current RESTRICT;
 DROP VIEW fwios.v_portfolio_market_price_health RESTRICT;
 DROP VIEW fwios.v_portfolio_market_quotes_observation_compat RESTRICT;
 DROP VIEW fwios.v_portfolio_market_quote_current RESTRICT;
-DROP FUNCTION IF EXISTS fwios.sync_portfolio_market_quote_observation_v1() RESTRICT;
 DROP TABLE fwios.portfolio_market_quote_snapshots RESTRICT;
+DROP FUNCTION IF EXISTS fwios.sync_portfolio_market_quote_observation_v1() RESTRICT;
