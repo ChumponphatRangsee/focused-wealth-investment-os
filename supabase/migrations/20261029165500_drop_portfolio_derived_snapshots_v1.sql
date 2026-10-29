@@ -1,5 +1,5 @@
 -- Remove non-accounting portfolio derivatives after independent price-only readback proof.
--- NOTE: portfolio_transactions ledger is intentionally retained pending Sheet reconciliation.
+-- NOTE: portfolio_transactions ledger and candidate_portfolio_fit snapshots/fit policy are retained pending downstream FK cleanup.
 DO $pre$
 BEGIN
  IF (SELECT count(*) FROM fwios.portfolio_live_holdings_batches_v1)<>1 OR
@@ -27,6 +27,4 @@ DROP TABLE fwios.portfolio_position_reconciliations RESTRICT;
 DROP TABLE fwios.portfolio_source_positions RESTRICT;
 DROP TABLE fwios.portfolio_transaction_reconciliations RESTRICT;
 DROP TABLE fwios.portfolio_theme_registry RESTRICT;
-DROP TABLE fwios.candidate_portfolio_fit_snapshots RESTRICT;
 DROP TABLE fwios.candidate_portfolio_scenario_reviews_v2 RESTRICT;
-DROP TABLE fwios.portfolio_fit_policies RESTRICT;
