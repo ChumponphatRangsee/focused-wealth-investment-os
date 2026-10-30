@@ -1,11 +1,22 @@
 # Changelog — Asset Price Data Service
 
+## 2026-10-30 — Delete unheld 60 Stock identities and 1,789 prices (Production applied)
+
+- After verifying the current OPEN positions directly in Google Sheet, permanently deleted 60 unused stock identities and 60 associated symbol mappings plus 1,789 historical price observation rows, per explicit user instruction.
+- Retained exactly **10** canonical identities (4 held Stock: MSFT/NVDA/TLN/TTWO; 6 Crypto: BTC/DOGE/ETH/HBAR/SOL/XRP) and all their historical price records, the three core price tables, six functions, five price Crons and identity view.
+- Migration temporarily disabled only the append-only market observation trigger inside the same atomic transaction, re-enabled it before commit and passed strict count/history/identity guard checks. No deleted-record backup produced.
+- Original price observations **20,441 → 18,652** at commit; seven new Crypto+FX records appended during postflight E2E, bringing the count to **18,659**. Google Sheet _Market_Data real write and readback succeeded; retained old Stock quotes preserved.
+- Updated SQL regression **44/44 PASS**; 16 obsolete Edge deployments removed manually and verified absent from live Supabase.
+- US Stock EOD provider remains rate-limited pending first confirmed current-session quote; future newly held stocks require a safe identity registration process before refreshing.
+
+
+
 ## 2026-10-30 — Three-table price identity consolidation (Production applied)
 
 - Removed two redundant FWIOS price-identity tables: `asset_entities` and `instrument_identifiers`; preserved all 70 entity attributes under `instruments.metadata.retired_entity` and continued the original 70 instrument UUIDs/symbol mappings.
 - Replaced the identity view's entity join with `instruments.metadata` projection, retaining existing columns and names. `market_observations` retained, no canonical price records rekeyed or deleted.
 - Production now **3 tables, 1 view, 6 SQL routines, 5 Crons**. Live SQL regression **36/36 PASS**; post-cleanup Crypto/FX writes and `_Market_Data` Sheet readback all HTTP 200 with zero portfolio mutations.
-- US Stock EOD API quota still limits fresh close collection; 16 inactive Legacy Edge deployments still pending physical deletion.
+- US Stock EOD API quota still limits fresh close collection; the user has since removed all 16 inactive Legacy Edge deployments.
 
 
 ## 1.1.0 — 2026-10-30: Daily US Stock EOD deployed and scheduled (first quote pending)
