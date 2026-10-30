@@ -238,8 +238,17 @@ async function stockCloseRefresh(dry:boolean){
   url.searchParams.set("apikey",apiKey);
   // Do not include the private URL in any log, error, provenance or response.
   const data=await jsonFetch(url.toString());
-  if(data?.Note||data?.Information||data?.["Error Message"])
-   throw new Error("STOCK_EOD_PROVIDER_RATE_LIMIT_OR_KEY_RESTRICTION");
+  if(data?.Note||data?.Information||data?.["Error Message"]){
+   // Sanitize provider rejection without returning raw provider message or credentials.
+   const why=String(data.Note||data.Information||data["Error Message"]).toLowerCase();
+   const code=/limit|quota|frequency|requests per day|api calls/.test(why)
+     ?"ALPHA_VANTAGE_DAILY_RATE_LIMIT"
+     :/invalid|demo|not valid|unknown key/.test(why)
+     ?"ALPHA_VANTAGE_KEY_REJECTED"
+     :/premium|subscription|plan|upgrade/.test(why)
+     ?"ALPHA_VANTAGE_PLAN_RESTRICTED":"ALPHA_VANTAGE_PROVIDER_REJECTED";
+   throw new Error(code);
+  }
   const meta=String(data?.["Meta Data"]?.["2. Symbol"]||"").toUpperCase();
   if(meta!==symbol)throw new Error("STOCK_EOD_SYMBOL_MISMATCH_"+symbol);
   const series=data?.["Time Series (Daily)"];
