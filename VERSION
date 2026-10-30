@@ -1,5 +1,6 @@
 ASSET-PRICE-CONTRACT-1.0.0
 version=1.0.0
 scope=CRYPTO_FX_SUPABASE_GOOGLE_SHEETS
-updated=2026-10-29
-runtime_migration=in_progress
+updated=2026-10-30
+runtime_migration=price_only_scheduled_e2e_verified
+historical_database_retention=87_private_archive_tables_pending_external_backup

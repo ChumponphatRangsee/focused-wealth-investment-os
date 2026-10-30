@@ -73,9 +73,23 @@ excluded:
 
 legacy_runtime_notice:
   status: not_fully_removed
-  stock_eod_jobs_6_7: still_enabled_outside_v1_scope
-  provider_auth_tables: still_needed_by_legacy_stock_eod_until_migrated
-  unreconciled_portfolio_ledger: retained_to_avoid_unique_history_loss
+  stock_eod_jobs_6_7: unscheduled_archived_stock_history_preserved
+  provider_auth_tables: retained_in_private_archive_not_used_by_price_service
+  unreconciled_portfolio_ledger: 58_records_preserved_in_private_archive_pending_independent_backup
   live_price_only_manual_test: pass
-  next_scheduled_price_only_run_verified: false
+  next_scheduled_price_only_run_verified: true
+  live_cleanup_latest: '2026-10-29'
+  production_price_tables: 5
+  preserved_legacy_archive_tables: 87
+  preserved_legacy_archive_schema: fwios_legacy_archive_20261029
+  retired_legacy_edge_endpoints: 16
+  active_cron_ids: [14, 15, 16]
+  regression_assertions: 27
+  manual_post_cleanup_e2e: pass
+  archive_state_table_rls_enabled: true
+  price_market_collector_live_version: 2
+  scheduled_price_pipeline_verified_date: '2026-10-30'
+  full_cleanup_complete: false
+  full_cleanup_blocker: no_independently_verified_backup_of_87_private_archive_tables
+  source_scope_reduced_to_two_price_workers: true
   read_current_status: docs/CURRENT_STATUS.md
