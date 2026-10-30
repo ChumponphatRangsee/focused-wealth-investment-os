@@ -1,63 +1,68 @@
 contract:
-  id: ASSET-PRICE-CONTRACT-1.0.0
-  document_version: "1.0.0"
+  id: ASSET-PRICE-CONTRACT-1.1.0
+  document_version: "1.1.0"
   title: Asset Price Data Service
-  date: "2026-10-29"
+  date: "2026-10-30"
   timezone: Asia/Bangkok
-  status: documentation_baseline_live_cutover_in_progress
+  status: us_stock_eod_deployed_scheduled_provider_rate_limit
   auto_trade: false
-
 objective:
-  purpose: collect_validate_store_and_sync_prices
-  only_supported_features: [crypto_prices_usd, usd_thb_fx, market_observation_storage, google_sheet_price_sync]
+  purpose: collect_validate_store_and_sync_held_asset_prices
+  only_supported_features: [crypto_prices_usd, us_stock_unadjusted_eod_usd, usd_thb_fx, market_observation_storage, google_sheet_price_sync]
   no_future_roadmap: true
-
 authority:
-  crypto_and_fx_prices: Supabase fwios.market_observations
+  crypto_stock_fx_prices: Supabase fwios.market_observations
   holdings_transactions_cost_basis_portfolio_calculations: Investment Portfolio Tracker Google Sheet
   code_contract_tests: GitHub
   runtime_state: verify_live_supabase_cron_edge_and_google_sheet
-
 providers:
   crypto:
     name: COINGECKO
     quote_currency: USD
     symbols: [BTC, DOGE, ETH, HBAR, SOL, XRP]
     selection: active_crypto_symbols_from_google_sheet_holdings_read_only
-    positive_price_required: true
-    provider_timestamp_required: true
     max_quote_age_hours: 2
+  us_stock_eod:
+    name: ALPHA_VANTAGE_PRICE
+    endpoint: TIME_SERIES_DAILY
+    price: "4. close"
+    adjustment: unadjusted
+    quote_currency: USD
+    selection: open_stock_symbols_from_google_sheet_holdings_read_only
+    max_symbols: 15
+    require_actual_current_us_trading_session: true
+    only_post_close: true
+    no_weekend_or_stale_backdating: true
+    daily_free_requests_planned: 4
+    mark_price_only_stock_eod_provenance: true
   fx:
     name: FRANKFURTER_FX
     pair: USD/THB
-    positive_rate_required: true
     max_source_age_days: 5
-
 storage:
   canonical_table: fwios.market_observations
   approved_write_gateway: fwios.ensure_market_observation_v1
-  provider_and_time_provenance_required: true
   portfolio_table_writes_forbidden: true
   secrets_in_vault_only: true
-
 google_sheet:
   source_tab: Holdings
   source_permission: read_only
   destination_tab: _Market_Data
   destination_consumers: [Price Data, Holdings]
   destination_write_readback_required: true
+  historical_unverified_stock_rows_immutable: true
   do_not_modify: [Transactions, Holdings quantities, Cost Basis, Manual Overrides]
-
 workers:
   market_collector:
     edge_function: price-market-refresh-v1
-    modes: [CRYPTO, FX]
-    scheduled_job_ids: [14, 15]
+    modes: [CRYPTO, FX, US_STOCK_EOD]
+    scheduled_job_ids: [14, 15, 17]
+    us_stock_schedule: "19:00 America/New_York Monday-Friday, active Cron 17"
   sheet_price_sync:
     edge_function: price-sheet-sync-v1
-    scheduled_job_id: 16
+    scheduled_job_ids: [16, 18]
+    us_stock_followup: "19:30 America/New_York Monday-Friday, active Cron 18"
   require_server_authentication: true
-
 excluded:
   - stock_discovery
   - technical_screening
@@ -70,26 +75,17 @@ excluded:
   - portfolio_accounting_mutations
   - trading_execution
   - future_roadmap
-
 legacy_runtime_notice:
-  status: archive_deleted_sql_legacy_functions_retired_edge_tombstones_remain
-  manually_deleted_archive_schema: fwios_legacy_archive_20261029
-  archive_deleted_verified_at: '2026-10-30'
   archive_tables_remaining: 0
   archive_deleted_no_backup_by_user_instruction: true
-  former_archived_transactions_deleted: 58
-  former_archived_stock_close_rows_deleted: 1590
   production_price_tables: 5
   production_price_functions: 6
-  production_identity_views: 1
-  price_observations_preserved: true
   retired_legacy_edge_deployments_still_present: 16
   active_price_edge_functions: [price-market-refresh-v1, price-sheet-sync-v1]
-  active_cron_ids: [14, 15, 16]
-  scheduled_price_pipeline_verified_date: '2026-10-30'
-  post_archive_deletion_live_e2e: pass
-  regression_assertions: 27
-  sql_legacy_cleanup_complete: true
-  physical_edge_cleanup_complete: false
-  auto_trade: false
+  active_cron_ids: [14,15,16,17,18]
+  us_stock_extension_production_activation: scheduled_first_eod_success_pending
+  stock_provider_dry_run: ALPHA_VANTAGE_DAILY_RATE_LIMIT
+  stock_data_written: false
+  post_deploy_sheet_readback: pass
+  sql_regression_passed: 29
   read_current_status: docs/CURRENT_STATUS.md

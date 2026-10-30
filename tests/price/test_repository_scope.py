@@ -21,10 +21,34 @@ class PriceContractScope(unittest.TestCase):
 
     def test_contract_scope(self):
         contract = (ROOT / "contracts" / "system-contract.yaml").read_text(encoding="utf-8")
-        self.assertIn("ASSET-PRICE-CONTRACT-1.0.0", contract)
+        self.assertIn("ASSET-PRICE-CONTRACT-1.1.0", contract)
         self.assertIn("auto_trade: false", contract)
         self.assertIn("crypto_prices_usd", contract)
         self.assertIn("usd_thb_fx", contract)
+
+
+    def test_held_us_stock_eod_scope(self):
+        collector=(ROOT / "supabase" / "functions" / "price-market-refresh-v1" / "index.ts").read_text(encoding="utf-8")
+        sheet=(ROOT / "supabase" / "functions" / "price-sheet-sync-v1" / "index.ts").read_text(encoding="utf-8")
+        contract=(ROOT / "contracts" / "system-contract.yaml").read_text(encoding="utf-8")
+        cron=(ROOT / "supabase" / "migrations" / "20261030120000_schedule_held_us_stock_eod_v1.sql").read_text(encoding="utf-8")
+        self.assertIn("US_STOCK_EOD",collector)
+        self.assertIn("TIME_SERIES_DAILY",collector)
+        self.assertIn('["4. close"]',collector)
+        self.assertIn("ALPHA_VANTAGE_API_KEY",collector)
+        self.assertIn("ALPHA_VANTAGE_DAILY_RATE_LIMIT",collector)
+        self.assertIn("price_only_stock_eod",collector)
+        self.assertIn('from unnest(',collector)
+        self.assertIn("stockValues",sheet)
+        self.assertIn("updateableStockSymbols",sheet)
+        self.assertIn("STOCK_REGULAR_CLOSE",sheet)
+        self.assertIn("us_stock_unadjusted_eod_usd",contract)
+        self.assertIn("19:00",cron)
+        self.assertIn("19:30",cron)
+        self.assertIn("America/New_York",cron)
+        self.assertIn("extract(isodow",cron)
+        self.assertIn("price-market-refresh-v1",cron)
+        self.assertIn("price-sheet-sync-v1",cron)
 
     def test_only_current_migration_receipts(self):
         files = [p.name for p in (ROOT / "supabase" / "migrations").glob("*.sql")]

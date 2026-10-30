@@ -1,41 +1,34 @@
-# Current Live Status — Asset Price Data Service v1.0.0
+# Current Production Status — Asset Price Data Service v1.1.0
 
-**Checked in live Supabase, 2026-10-30 Asia/Bangkok.** Contract: `ASSET-PRICE-CONTRACT-1.0.0`. Production's price-only database schema is fully reduced. Sixteen inert legacy Edge deployments remain physically registered.
+Verified 2026-10-30 Asia/Bangkok. **Two Price Edge Workers**, five core `fwios` tables, one identity view, six SQL functions, five active Cron registrations. The old 87-table archive was permanently deleted on user instruction without backup. Sixteen retired Edge slugs remain inert HTTP 410 deployments; their separate deletion is tracked by GitHub issue #104.
 
-## Supported functionality
+## Supported scope
 
-CoinGecko native USD quotes for active BTC, DOGE, ETH, HBAR, SOL and XRP holdings + Frankfurter USD/THB FX → Supabase `fwios.market_observations` → `price-sheet-sync-v1` → Investment Portfolio Tracker Google Sheet tab `_Market_Data` → existing `Price Data` and `Holdings` formulas. Holdings symbols are read from Sheet; transactions, holdings, cost basis, accounting and overrides remain exclusively in Google Sheet.
+CoinGecko native USD Crypto, Alpha Vantage unadjusted US Stock regular close for holdings listed OPEN in Google Sheet (MSFT, NVDA, TLN, TTWO), and Frankfurter USD/THB FX. Prices persist in `fwios.market_observations` and update the Investment Portfolio Tracker `_Market_Data`. Google Sheet alone owns Transactions, Holdings quantities, cost basis, manual overrides and portfolio computations. No scanner, research, valuation, portfolio accounting backend or trading; `auto_trade=false`.
 
-Stock discovery, scanner, historical stock EOD ingestion, research, thesis, valuation, scoring, portfolio MTM, account ledger and automated trading are out of scope. `auto_trade=false`. No future roadmap.
+## Deployed workers
 
-## Final database state
+- `price-market-refresh-v1` v4: CRYPTO / FX / US_STOCK_EOD collection; USD provider close date must match current New York market session. Nonpositive, stale, mixed or unknown quotes fail closed. Key remains in Supabase Vault.
+- `price-sheet-sync-v1` v3: six Crypto rows + FX, and Stock EOD rows **only** when the new observation has certified `price_only_stock_eod` provenance. Old unverified stock rows are protected.
 
-- The user **explicitly authorized permanent deletion without backup** of the retired archive. They performed the SQL Editor operation manually. Live read-only verification confirmed `to_regnamespace('fwios_legacy_archive_20261029') IS NULL` and **zero archived tables**. The 87 retired tables and their 58 historical portfolio transactions / 29 source IDs, 1,590 historical Stock daily-close rows and 19,608 lineage links cannot be restored from that removed schema. **No backup was created for this deletion.**
-- After archive removal, seven former archival trigger functions were dropped in live Supabase using `DROP FUNCTION ... RESTRICT` with preflight protections (migration: `retire_last_7_legacy_trigger_functions_v1`). `fwios` now contains **five tables**, **one identity view** and exactly **six remaining SQL functions**.
-- Six remaining functions: `ensure_market_observation_v1`, `market_observation_append_only_guard_v1`, `market_observation_type_v1`, `pr5_native_usd_price_shadow_v1`, `pr7_native_usd_price_read_v1`, `resolve_instrument_id_v1`. The append-only trigger remains attached to `fwios.market_observations`.
-- `fwios.market_observations` and instrument identity tables were **not deleted**. They remain the approved canonical price data. The prior count was 20,427 before the latest post-cleanup refresh; the count grows on successful observations.
-- The retired database object removal is permanent. Git preserves **source and migration history**, not the deleted production database rows.
+## Active schedules (New York local time; daylight-saving safe)
 
-## Cron and Edge Functions
-
-| Cron | Mode | Active destination |
+| Job | Time | Purpose |
 | --- | --- | --- |
-| #14 | Crypto native USD | `price-market-refresh-v1` v2 |
-| #15 | USD/THB FX | `price-market-refresh-v1` v2 |
-| #16 | Sheet sync | `price-sheet-sync-v1` v2 |
+| #14 | 17:10 daily | Crypto collection |
+| #15 | 17:10 weekdays | FX |
+| #16 | 17:20 daily | Existing Crypto/FX Sheet sync |
+| #17 | 19:00 weekdays | New US Stock EOD collector |
+| #18 | 19:30 weekdays | New follow-up Sheet sync |
 
-Only these three registered Cron jobs remain. Their inherited names mention portfolio/stock but **their commands invoke price-only workers**. The naturally scheduled post-cutover Crypto / FX / Sheet cycle was independently verified on 2026-10-30 Bangkok (HTTP 200 across all three; six Crypto observations, one FX and Sheet readback PASS).
+The EOD job runs 06:00 or 07:00 next morning Bangkok; Sheet follow-up 06:30 or 07:30 depending on US daylight saving. On weekends or US market holidays the collector does not invent a quote.
 
-**Sixteen obsolete Edge slugs are still deployed** as HTTP 410 tombstones. These do not run the former logic, but physical deletion requires an authorized dashboard or CLI operator because the connected Supabase plugin exposes deploy/list/get, not delete. See `decommission/RETIRED_EDGE_FUNCTION_REMOVAL.md`. Do **not** delete the two supported price-only workers.
+## Verification and current blocker
 
-## Post-removal verification
+- Both workers deployed, new jobs #17/#18 present and active; **first naturally scheduled EOD run has not yet happened**.
+- Existing Crypto/FX collector dry runs passed HTTP 200 (#11982/#11983). Sheet Worker dry run passed HTTP 200, `crypto_count=6` and `stock_count=0` (#11985).
+- Real Sheet Sync after deploy passed HTTP 200 (#11986), six Crypto prices updated, Google Sheet write/readback verified, no portfolio writes. Four historic Stock rows remained unchanged (last close dated 2026-10-28).
+- **US Stock EOD is not yet confirmed operational.** The current Alpha Vantage key returned daily quota rejection `ALPHA_VANTAGE_DAILY_RATE_LIMIT` (HTTP 503, #11984). No new Stock observations were inserted. Scheduled job #17 will attempt the next eligible session; success depends on restored shared API quota and current-session source data. Do not claim US stock prices are updating until a full EOD + Sheet cycle returns HTTP 200 and four certified stock rows have refreshed.
+- After schedule activation, read-only SQL regression **29/29 PASS**. Supabase security remains fail-closed.
 
-After the user deleted the schema and the seven obsolete functions were removed, `price-market-refresh-v1` ran again with Crypto HTTP **200**, 6/6 USD observations written and zero portfolio writes (response 11978); FX HTTP **200**, one observation written and zero portfolio writes (response 11979). `price-sheet-sync-v1` wrote the six Crypto rows/FX and verified Google Sheet readback HTTP **200**, zero database writes (response 11980). Four existing Stock rows in `_Market_Data` are **frozen historical Sheet values, not live quotes**; they were not overwritten.
-
-Live read-only SQL regression **27/27 PASS**, updated to require deleted archive and legacy routines absent, five price tables and six price functions intact. Latest Supabase Security Advisor: no warning findings; five informational `rls_enabled_no_policy` entries for service-access-only tables.
-
-## Source and applied-migration accuracy
-
-GitHub PR #100 merged the clean two-worker source to `main`, removed 187 out-of-scope files from the current source tree and preserved the old Git history. This follow-up updates the post-deletion documentation, regression test and final seven-function cleanup migration. **Do not replay previously applied migrations as an initial database bootstrap.**
-
-**Remaining cleanup:** Physical de-registration of 16 inactive HTTP 410 Edge deployments, not further SQL schema deletion. Data loss from the user-authorized no-backup archive deletion must not be described as recoverable.
+Source: PR #105. To verify post-close run: check `cron.job_run_details` and actual `net._http_response` status for #17/#18, `fwios.market_observations` current session `REGULAR_CLOSE` for all held Stock symbols, and Sheet readback. Cron 'succeeded' alone only indicates dispatch.

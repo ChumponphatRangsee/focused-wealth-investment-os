@@ -1,11 +1,21 @@
-# Asset Price Data Service v1.0.0
+# Asset Price Data Service v1.1.0
 
-**Production scope:** CoinGecko native USD Crypto prices + Frankfurter USD/THB FX → Supabase `fwios.market_observations` → Google Sheet Investment Portfolio Tracker `_Market_Data`. Google Sheet exclusively owns Holdings, Transactions, cost basis and portfolio accounting. No scanner/research/valuation/decision/stock ingest or trading. `auto_trade=false`.
+Production scope: CoinGecko Crypto USD, Alpha Vantage **US Stock unadjusted daily close** and Frankfurter USD/THB FX → Supabase `fwios.market_observations` → Investment Portfolio Tracker Google Sheet `_Market_Data`.
 
-Only two supported workers: `price-market-refresh-v1` (Crypto/FX, v2) and `price-sheet-sync-v1` (Google Sheet price/FX readback, v2). Cron #14 Crypto, #15 FX and #16 Sheet Sync are the **only three active jobs**. Both natural scheduled cycle and post-cleanup manual end-to-end Crypto 6/6 / FX / Sheet write-readback have passed (HTTP 200).
+Google Sheet alone owns Holdings, Transactions, cost basis and Portfolio calculations. No Scanner, Research, Valuation, automated trading or other legacy workflows. `auto_trade=false`.
 
-**Database cleanup:** `fwios` now has **five price/identity tables**, **one identity view**, **six SQL functions**. The historical 87-table archive was permanently deleted **at the user's explicit direction without a backup**; seven orphaned functions were then retired using `RESTRICT`. Existing six Crypto prices continue updating. The four Sheet Stock quote rows are frozen historical values, not live stock prices.
+## Production
 
-**Remaining:** Sixteen old Edge Function deployments still exist, but their handlers return HTTP 410 and do not execute retired legacy workflows. See [manual Edge decommission steps](decommission/RETIRED_EDGE_FUNCTION_REMOVAL.md). The connected Supabase app cannot delete these physical deployments; do **not** delete the two supported price-only workers.
+Two active supported Edge Functions:
+- `price-market-refresh-v1` **v4**: Crypto, FX and US_STOCK_EOD for OPEN held stock symbols, currently MSFT, NVDA, TLN, TTWO. Alpha Vantage `TIME_SERIES_DAILY` supplies raw `4. close`; require current NY session date, store certified provenance and fail closed on stale/quota error.
+- `price-sheet-sync-v1` **v3**: Crypto prices, USD/THB FX and only collector-certified Stock EOD prices; protects all unverified historical Stock rows and verifies Sheet readback.
 
-See [system contract](contracts/system-contract.yaml), [live production status](docs/CURRENT_STATUS.md), [pipeline and tests](docs/PRICE_PIPELINE.md), and [historical deletion receipt](decommission/USER_AUTHORIZED_ARCHIVE_REMOVAL_RECEIPT.md). Source history is preserved in Git; deleted database rows are not. Supabase migrations under `supabase/migrations` are already-applied receipts, not a fresh-database bootstrap. No credentials in Git.
+Five live Crons: #14 Crypto 17:10 New York every day, #15 FX weekdays 17:10, #16 Crypto/FX Sheet 17:20 daily; **#17 US Stock EOD 19:00 NY weekdays** and **#18 stock Sheet follow-up 19:30 NY weekdays**. Timezone guard handles DST and UTC day rollover.
+
+**Current EOD status: scheduled but no successful stock refresh yet.** Alpha Vantage returned `ALPHA_VANTAGE_DAILY_RATE_LIMIT` (HTTP 503) on provider test. Zero stock writes. Existing MSFT/NVDA/TLN/TTWO rows in Sheet retain old 2026-10-28 closing prices. The new job will attempt the next session, but provider quota and timely data must succeed before fresh stock prices appear.
+
+Crypto/FX collector dry-run passed HTTP 200; real Sheet sync passed HTTP 200, Crypto6+FX updated, Stock0, Sheet readback PASS. Updated live SQL regression 29/29 PASS.
+
+Database retained: 5 price tables, 1 view, 6 SQL functions. The 87-table legacy archive was permanently removed manually at user request without backup. Sixteen retired Edge Functions remain inert HTTP 410 until manual deletion: [Issue #104](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/104). Do not delete the two active price-only workers.
+
+See [current live status](docs/CURRENT_STATUS.md), [pipeline](docs/PRICE_PIPELINE.md), [system contract](contracts/system-contract.yaml).

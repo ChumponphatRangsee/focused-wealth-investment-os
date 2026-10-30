@@ -1,48 +1,44 @@
-# Price Pipeline & Operations — v1.0.0
-
-**Scope:** Crypto USD/THB FX observations, Supabase storage and Google Sheet synchronization only. No stock ingest, scanner, research, valuation, trading or future roadmap. `auto_trade=false`.
+# Price Pipeline v1.1.0 — held US Stock EOD + Crypto + USD/THB FX
 
 ```text
-Google Sheet Holdings (OPEN Crypto symbols; read-only)
-     ├── CoinGecko native USD quotes
-     └── Frankfurter USD/THB FX
-                 ↓
-Supabase fwios.market_observations
-                 ↓
-price-sheet-sync-v1
-                 ↓
-Google Sheet _Market_Data (Crypto rows + FX only)
-                 ↓
-Price Data / Holdings formulas
+Google Sheet Holdings (OPEN positions; read only)
+  ├─ Crypto BTC/DOGE/ETH/HBAR/SOL/XRP → CoinGecko native USD
+  ├─ US Stock MSFT/NVDA/TLN/TTWO → Alpha Vantage TIME_SERIES_DAILY raw 4.close
+  └─ FX USD/THB → Frankfurter
+           ↓
+   fwios.market_observations
+           ↓
+   price-sheet-sync-v1
+           ↓
+   Google Sheet _Market_Data → Price Data → Holdings
 ```
 
-### Active schedule
+Google Sheet owns transaction ledger, holdings, cost basis and calculations. No Stock Scanner, company research, valuations, decisions or trades. `auto_trade=false`.
 
-| Job | Mode | Worker |
-| --- | --- | --- |
-| #14 | CRYPTO, 6 supported assets | `price-market-refresh-v1` v2 |
-| #15 | USD/THB FX | `price-market-refresh-v1` v2 |
-| #16 | Sheet write + readback | `price-sheet-sync-v1` v2 |
+## US stock close contract
 
-Job names inherited from the old system are misleading. Verify their *commands*. Scheduled cycle on 2026-10-30 04:10/04:20 Bangkok returned HTTP 200 and persisted / read back the current prices.
+US session regular close is 16:00 America/New_York (13:00 on designated half-days). Fetch current **unadjusted** EOD close, no live/after-hours or adjusted-close substitution. Alpha Vantage `TIME_SERIES_DAILY` returns session dates and `4. close`. Keep the provider key private in Supabase Vault; stored `source_url` deliberately has **no API key**.
 
-### Invariants
+At 19:00 US Eastern on weekdays (DST protected, 06:00/07:00 next day Bangkok), collector reads Sheet Holdings and fetches EOD for unique OPEN Stock tickers, currently MSFT/NVDA/TLN/TTWO. Reject invalid key, bad source identity, nonpositive prices, missing close, mixed sessions; when the current NY session is not available (holiday/slow publication), **skip without writing**, never mislabel a previous day's close as current. All observations persist atomically through `fwios.ensure_market_observation_v1` as `REGULAR_CLOSE`, USD, `ALPHA_VANTAGE_PRICE`, `source_tier='A'`, `market_status='CLOSED'`, and provenance `price_only_stock_eod=true`. `observed_at` is the real collection time, not an invented 16:00 exchange timestamp. Duplicate reruns are idempotent on observation key.
 
-- Asset list: OPEN Crypto symbols from Sheet Holdings (read-only), supported BTC/DOGE/ETH/HBAR/SOL/XRP only. No portfolio quantities or transactions are persisted in Supabase.
-- CoinGecko positive native USD quotes, provider timestamp no more than 2 hours old.
-- Frankfurter USD/THB positive rate, source date no more than 5 days old; THB conversions remain spreadsheet formulas.
-- Store source, provider, timestamps, session date and provenance via `fwios.ensure_market_observation_v1`. Read quotes via `fwios.pr7_native_usd_price_read_v1` and `fwios.pr5_native_usd_price_shadow_v1`.
-- Vault-backed automation token; HTTP header authentication, not URL parameter. Never commit tokens or credentials.
-- Sheet sync updates only the six Crypto prices plus FX; protects existing four frozen stock prices, quantities, transactions, manual overrides, cost-basis and formulas. Readback must pass; no Portfolio writes. `auto_trade=false`.
+19:30 New York weekday Sheet follow-up syncs ONLY EOD rows bearing that collector provenance and eligible native USD close status; if no certified new stock observation exists, preserve frozen Stock rows. Crypto+FX sync (#16) remains daily at 17:20 Eastern. Keep existing per-row USD/THB formula and readback. Never clear ranges or touch Transactions, cost basis or manual overrides.
 
-### Current production schema
+**Potential provider limits:** Alpha Vantage lists 25 free requests/day; four held stocks require four API calls per run. Any unrelated use of the same Vault API key contributes to that shared allowance. Additional held symbols must honor the 15-symbol cap or use a different appropriately licensed plan.
 
-`fwios` contains only the tables `asset_entities`, `instruments`, `instrument_symbols`, `instrument_identifiers`, `market_observations`; one `v_instrument_identity_current` view, six SQL functions. The 87-table historical `fwios_legacy_archive_20261029` was **permanently dropped by user action without backup** on 2026-10-30. Seven now-orphaned SQL functions were removed via an applied migration. Do not refer to archived data as available.
+## Existing schedules
 
-Only three Cron registrations remain active. Two supported Edge deployments remain. Sixteen retired ones still serve inert HTTP 410 and require Dashboard/CLI physical deletion.
+- Cron #14 Crypto (17:10 ET); #15 FX (17:10 ET, weekdays); #16 Sheet Sync (17:20 ET).
+- New Stock EOD and follow-up Sheet jobs were **installed live** as Cron #17 and #18 via `20261030120000_schedule_held_us_stock_eod_v1.sql` on 2026-10-30. The source-validation gate was passed, but Alpha Vantage quota has not yet allowed a successful same-session price response.
+- Run a real post-close EOD test and verify the date, symbols, canonical observations, Google Sheet readback and formula integrity before certifying production.
 
-### Verification receipts
+## Security and retention
 
-Natural scheduled 2026-10-30 cycle: HTTP 200 for CRYPTO (#11970), FX (#11971), Sheet (#11972). After permanent archival deletion and routine cleanup: direct CRYPTO (#11978) HTTP 200 6/6; FX (#11979) HTTP 200 one observation; Sheet (#11980) HTTP 200 with six Crypto/FX readback PASS and zero Portfolio/DB accounting writes. Updated read-only production SQL regression 27/27 PASS.
+The live Price Service retains 5 `fwios` tables, 1 view and 6 required routines. Legacy archive was user-deleted with no backup; do not try to resurrect legacy SQL or 16 retired Edge endpoints (HTTP 410). Provider credentials and server-to-server auth token remain in Vault. Only two active Edge Worker source directories are allowed.
 
-When diagnosing future schedules, inspect `cron.job_run_details` and **actual** `net._http_response` statuses, observation timestamp/provenance, and Sheet readback. Cron `succeeded` alone does not establish successful HTTP response.
+## 2026-10-30 production deployment receipt
+
+`price-market-refresh-v1` **v4** deployed with US_STOCK_EOD; `price-sheet-sync-v1` **v3** deployed with stock-only-if-certified safeguards. Five active Cron jobs: #14/#15/#16 existing and **#17 at 19:00 New York weekdays** / **#18 at 19:30 NY weekdays** newly added.
+
+Authenticated Crypto+FX dry runs HTTP 200. Sheet Worker dry-run HTTP 200 with 6 Crypto, 0 certified Stock. Real Sheet Sync HTTP 200 (#11986), Crypto updated, readback verified, four old Stock quotes untouched. SQL regression **29/29 PASS**.
+
+**Unresolved provider gate:** Alpha Vantage returned HTTP 503 / `ALPHA_VANTAGE_DAILY_RATE_LIMIT` (#11984). No new US Stock observation has yet been written. Existing 2026-10-28 Stock close prices remain until the first successful daily EOD. Automatic schedule will attempt the next eligible market session, but success is unverified. Provider quota is shared with any other Alpha Vantage use of the Vault key.

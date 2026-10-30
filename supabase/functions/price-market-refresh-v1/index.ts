@@ -193,6 +193,105 @@ async function fxRefresh(dry:boolean){
  if(!o?.[0]?.observation_id)throw new Error("FX_SAVE_FAILED");
  return {source:"FRANKFURTER_FX",day,database_writes:1,dry_run:false};
 }
+
+function newYorkClock(now: Date) {
+ const parts = new Intl.DateTimeFormat("en-US", {
+  timeZone:"America/New_York", year:"numeric", month:"2-digit",
+  day:"2-digit", hour:"2-digit", minute:"2-digit", hourCycle:"h23",
+  weekday:"short"
+ }).formatToParts(now);
+ const get=(type:string)=>parts.find(x=>x.type===type)?.value || "";
+ return {day:get("year")+"-"+get("month")+"-"+get("day"),
+  hour:Number(get("hour")),minute:Number(get("minute")),
+  weekday:get("weekday")};
+}
+type StockEodRow={symbol:string;close:number;session_date:string};
+async function stockCloseRefresh(dry:boolean){
+ const ny=newYorkClock(new Date());
+ if(["Sat","Sun"].includes(ny.weekday)){
+  return {source:"ALPHA_VANTAGE_PRICE",skipped:true,reason:"US_MARKET_WEEKEND",
+   session_date:ny.day,database_writes:0,dry_run:dry};
+ }
+ if(ny.hour<18){
+  return {source:"ALPHA_VANTAGE_PRICE",skipped:true,reason:"EOD_COLLECTION_BEFORE_18_ET",
+   session_date:ny.day,database_writes:0,dry_run:dry};
+ }
+ const credential=await vaultSecret("fwios_google_sheets_service_account_json");
+ if(!credential)throw new Error("GOOGLE_CREDENTIAL_MISSING");
+ const token=await getGoogleAccessToken(JSON.parse(credential));
+ const holdings=parseLiveHoldings(await readLiveHoldings(token));
+ const symbols=[...new Set(holdings.filter(x=>x.asset_class==="Stock")
+  .map(x=>x.asset_symbol))].sort();
+ if(symbols.length===0)return {source:"ALPHA_VANTAGE_PRICE",skipped:true,
+  reason:"NO_OPEN_STOCK_HOLDINGS",asset_count:0,database_writes:0,dry_run:dry};
+ if(symbols.length>15)throw new Error("STOCK_UNIVERSE_OVER_FREE_API_CAP");
+ // Official Alpha Vantage API is queried only from the protected Edge runtime.
+ // Never persist or return its key or the query URL with key embedded.
+ const apiKey=await vaultSecret("ALPHA_VANTAGE_API_KEY");
+ if(!apiKey||apiKey.trim().length<8)throw new Error("ALPHA_VANTAGE_KEY_MISSING");
+ const rows:StockEodRow[]=[];
+ for(const symbol of symbols){
+  const url=new URL("https://www.alphavantage.co/query");
+  url.searchParams.set("function","TIME_SERIES_DAILY");
+  url.searchParams.set("symbol",symbol);
+  url.searchParams.set("outputsize","compact");
+  url.searchParams.set("apikey",apiKey);
+  // Do not include the private URL in any log, error, provenance or response.
+  const data=await jsonFetch(url.toString());
+  if(data?.Note||data?.Information||data?.["Error Message"]){
+   // Sanitize provider rejection without returning raw provider message or credentials.
+   const why=String(data.Note||data.Information||data["Error Message"]).toLowerCase();
+   const code=/limit|quota|frequency|requests per day|api calls/.test(why)
+     ?"ALPHA_VANTAGE_DAILY_RATE_LIMIT"
+     :/invalid|demo|not valid|unknown key/.test(why)
+     ?"ALPHA_VANTAGE_KEY_REJECTED"
+     :/premium|subscription|plan|upgrade/.test(why)
+     ?"ALPHA_VANTAGE_PLAN_RESTRICTED":"ALPHA_VANTAGE_PROVIDER_REJECTED";
+   throw new Error(code);
+  }
+  const meta=String(data?.["Meta Data"]?.["2. Symbol"]||"").toUpperCase();
+  if(meta!==symbol)throw new Error("STOCK_EOD_SYMBOL_MISMATCH_"+symbol);
+  const series=data?.["Time Series (Daily)"];
+  if(!series||typeof series!=="object"||Array.isArray(series))
+   throw new Error("STOCK_EOD_RESPONSE_MISSING_"+symbol);
+  const days=Object.keys(series).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)
+    && x<=ny.day).sort().reverse();
+  const day=days[0]||"";
+  const close=Number(series?.[day]?.["4. close"]);
+  if(!day||!(close>0)||!Number.isFinite(close)||close>10000000)
+   throw new Error("STOCK_EOD_CLOSE_INVALID_"+symbol);
+  rows.push({symbol,close,session_date:day});
+ }
+ // Never backdate a stale/previous-day quote as a fresh US closing price.
+ const allCurrent=rows.every(x=>x.session_date===ny.day);
+ if(!allCurrent){
+  return {source:"ALPHA_VANTAGE_PRICE",asset_count:rows.length,
+   symbols,available_sessions:[...new Set(rows.map(x=>x.session_date))],
+   expected_session:ny.day,skipped:true,reason:"CURRENT_SESSION_EOD_NOT_AVAILABLE",
+   database_writes:0,dry_run:dry};
+ }
+ if(dry)return {source:"ALPHA_VANTAGE_PRICE",asset_count:rows.length,
+  symbols,session_date:ny.day,close_kind:"UNADJUSTED",database_writes:0,dry_run:true};
+ // One SQL statement so all held symbols commit together or none commit.
+ // Observed_at is the actual collection time; provider reports only the session DATE.
+ const tickers=rows.map(x=>x.symbol),closes=rows.map(x=>x.close);
+ const metadata=JSON.stringify({price_only:true,price_only_stock_eod:true,
+  provider_function:"TIME_SERIES_DAILY",close_kind:"UNADJUSTED",
+  source_session_date:ny.day});
+ const saved=await sql!`select x.symbol,fwios.ensure_market_observation_v1(
+  fwios.resolve_instrument_id_v1(x.symbol,'Stock',null,null),
+  'REGULAR_CLOSE',x.close,'USD',${ny.day}::date,now(),'CLOSED',
+  'ALPHA_VANTAGE_PRICE','A','https://www.alphavantage.co/query',
+  'PASS',${metadata}::jsonb,null,null
+ ) observation_id
+ from unnest(${tickers}::text[],${closes}::numeric[]) AS x(symbol,close)`;
+ if(saved.length!==rows.length||saved.some((x:any)=>!x.observation_id))
+  throw new Error("STOCK_EOD_DATABASE_PERSISTENCE_MISMATCH");
+ return {source:"ALPHA_VANTAGE_PRICE",asset_count:rows.length,symbols,
+  session_date:ny.day,close_kind:"UNADJUSTED",
+  database_writes:rows.length,dry_run:false};
+}
+
 Deno.serve(async(req:Request)=>{
  if(req.method!=="POST")return new Response("Method Not Allowed",{status:405});
  if(!sql)return Response.json({ok:false,error:"DB_UNAVAILABLE"},{status:503});
@@ -200,9 +299,9 @@ Deno.serve(async(req:Request)=>{
  if(!want||got.length<32||!safeEqual(got,want))return new Response("Unauthorized",{status:401});
  let b:any={};try{b=await req.json()}catch{}
  const mode=String(b?.mode||"").toUpperCase(),dry=b?.dry_run===true;
- if(!["CRYPTO","FX"].includes(mode))return Response.json({ok:false,error:"INVALID_MODE"},{status:400});
+ if(!["CRYPTO","FX","US_STOCK_EOD"].includes(mode))return Response.json({ok:false,error:"INVALID_MODE"},{status:400});
  try{
-  const x=mode==="CRYPTO"?await cryptoRefresh(dry):await fxRefresh(dry);
+  const x=mode==="CRYPTO"?await cryptoRefresh(dry):mode==="FX"?await fxRefresh(dry):await stockCloseRefresh(dry);
   return Response.json({ok:true,worker:"price-market-refresh-v1",mode,...x,portfolio_writes:0,auto_trade:false});
  }catch(e){return Response.json({ok:false,worker:"price-market-refresh-v1",mode,error:String(e instanceof Error?e.message:e).slice(0,200)},{status:503});}
 });
