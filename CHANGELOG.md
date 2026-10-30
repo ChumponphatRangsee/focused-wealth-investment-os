@@ -1,5 +1,13 @@
 # Changelog — Asset Price Data Service
 
+## 2026-10-30 — Three-table price identity consolidation (Production applied)
+
+- Removed two redundant FWIOS price-identity tables: `asset_entities` and `instrument_identifiers`; preserved all 70 entity attributes under `instruments.metadata.retired_entity` and continued the original 70 instrument UUIDs/symbol mappings.
+- Replaced the identity view's entity join with `instruments.metadata` projection, retaining existing columns and names. `market_observations` retained, no canonical price records rekeyed or deleted.
+- Production now **3 tables, 1 view, 6 SQL routines, 5 Crons**. Live SQL regression **36/36 PASS**; post-cleanup Crypto/FX writes and `_Market_Data` Sheet readback all HTTP 200 with zero portfolio mutations.
+- US Stock EOD API quota still limits fresh close collection; 16 inactive Legacy Edge deployments still pending physical deletion.
+
+
 ## 1.1.0 — 2026-10-30: Daily US Stock EOD deployed and scheduled (first quote pending)
 
 - Add Alpha Vantage daily unadjusted close to the two supported price-only workers for OPEN Stock symbols from Google Sheet. Four held symbols initially: MSFT, NVDA, TLN, TTWO.

@@ -14,8 +14,8 @@ Five live Crons: #14 Crypto 17:10 New York every day, #15 FX weekdays 17:10, #16
 
 **Current EOD status: scheduled but no successful stock refresh yet.** Alpha Vantage returned `ALPHA_VANTAGE_DAILY_RATE_LIMIT` (HTTP 503) on provider test. Zero stock writes. Existing MSFT/NVDA/TLN/TTWO rows in Sheet retain old 2026-10-28 closing prices. The new job will attempt the next session, but provider quota and timely data must succeed before fresh stock prices appear.
 
-Crypto/FX collector dry-run passed HTTP 200; real Sheet sync passed HTTP 200, Crypto6+FX updated, Stock0, Sheet readback PASS. Updated live SQL regression 29/29 PASS.
+Crypto/FX collector dry-run passed HTTP 200; real Sheet sync passed HTTP 200, Crypto6+FX updated, Stock0, Sheet readback PASS. After identity cleanup, updated live SQL regression **36/36 PASS**. Post-cleanup real Crypto/FX collection and Google Sheet write/readback all HTTP 200.
 
-Database retained: 5 price tables, 1 view, 6 SQL functions. The 87-table legacy archive was permanently removed manually at user request without backup. Sixteen retired Edge Functions remain inert HTTP 410 until manual deletion: [Issue #104](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/104). Do not delete the two active price-only workers.
+Database now has **3 price tables** (`instruments`, `instrument_symbols`, `market_observations`), 1 identity view and 6 SQL functions. The 70 formerly separate Entity records were retained inside `instruments.metadata.retired_entity`; their identity UUIDs and all existing price observations remain intact. The 70 legacy seed-only identifier entries and the redundant entity table were retired using RESTRICT. The 87-table legacy archive was permanently removed manually at user request without backup. Sixteen retired Edge Functions remain inert HTTP 410 until manual deletion: [Issue #104](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/104). Do not delete the two active price-only workers.
 
 See [current live status](docs/CURRENT_STATUS.md), [pipeline](docs/PRICE_PIPELINE.md), [system contract](contracts/system-contract.yaml).
