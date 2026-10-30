@@ -164,7 +164,7 @@ async function cryptoRefresh(dry:boolean){
  });
  if(dry)return {source:"COINGECKO",asset_count:rows.length,symbols:names,database_writes:0,dry_run:true};
  for(const x of rows){
-   const meta={price_only:true,provider_last_updated_at:x.ts,source_url:"https://api.coingecko.com/api/v3/simple/price"};
+   const meta=JSON.stringify({price_only:true,provider_last_updated_at:x.ts,source_url:"https://api.coingecko.com/api/v3/simple/price"});
    const o=await sql!`select fwios.ensure_market_observation_v1(
      fwios.resolve_instrument_id_v1(${x.symbol},'Crypto',null,null),
      'LIVE_QUOTE',${x.usd},'USD',${x.day}::date,${x.at}::timestamptz,
@@ -186,7 +186,7 @@ async function fxRefresh(dry:boolean){
     and provenance_status='PASS' and instrument_id is not null
   order by observed_at desc limit 1`;
  if(!ids.length)throw new Error("FX_INSTRUMENT_MISSING");
- const meta={price_only:true,source_url:url,quote_date:day};
+ const meta=JSON.stringify({price_only:true,source_url:url,quote_date:day});
  const o=await sql!`select fwios.ensure_market_observation_v1(
     ${ids[0].instrument_id}::uuid,'FX',${rate},'THB',${day}::date,now(),'FX',
     'FRANKFURTER_FX','B',${url},'PASS',${meta}::jsonb,'USD','THB') observation_id`;
