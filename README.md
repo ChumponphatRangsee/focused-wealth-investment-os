@@ -1,11 +1,16 @@
-# Asset Price Data Service v1.0.0
+# Asset Price Data Service — v1.1.0 (US Stock EOD Extension)
 
-**Production scope:** CoinGecko native USD Crypto prices + Frankfurter USD/THB FX → Supabase `fwios.market_observations` → Google Sheet Investment Portfolio Tracker `_Market_Data`. Google Sheet exclusively owns Holdings, Transactions, cost basis and portfolio accounting. No scanner/research/valuation/decision/stock ingest or trading. `auto_trade=false`.
+**Scope:** Daily CoinGecko native USD Crypto, **US Stock regular-session unadjusted closing prices** (Alpha Vantage `TIME_SERIES_DAILY`, held symbols from Google Sheet only), Frankfurter USD/THB FX → Supabase `fwios.market_observations` → Google Sheet `_Market_Data`. The Sheet remains authoritative for transactions, holdings, cost basis, manual overrides and portfolio calculations. No research, scanner, valuation, automatic trading or stock discovery; `auto_trade=false`.
 
-Only two supported workers: `price-market-refresh-v1` (Crypto/FX, v2) and `price-sheet-sync-v1` (Google Sheet price/FX readback, v2). Cron #14 Crypto, #15 FX and #16 Sheet Sync are the **only three active jobs**. Both natural scheduled cycle and post-cleanup manual end-to-end Crypto 6/6 / FX / Sheet write-readback have passed (HTTP 200).
+## Workers
+- `price-market-refresh-v1`: CRYPTO, FX and new US_STOCK_EOD collection; validates close-date and source credentials, saves the four currently held US Stocks without synthetic quote timestamps or adjusted prices.
+- `price-sheet-sync-v1`: writes six Crypto symbols, certified new stock closing prices and FX metadata; refuses to overwrite unverified historic Stock rows, checks price/formula readback.
+- Existing three Crons #14 Crypto, #15 FX and #16 Crypto/FX Sheet Sync remain. The proposed new schedules are **19:00 New York time** for US EOD and **19:30** for stock Sheet Sync, weekdays, with timezone/DST guards. See SQL migration `20261030120000_schedule_held_us_stock_eod_v1.sql`.
 
-**Database cleanup:** `fwios` now has **five price/identity tables**, **one identity view**, **six SQL functions**. The historical 87-table archive was permanently deleted **at the user's explicit direction without a backup**; seven orphaned functions were then retired using `RESTRICT`. Existing six Crypto prices continue updating. The four Sheet Stock quote rows are frozen historical values, not live stock prices.
+**Deployment note:** Code and migration may be merged separately from live deployment. Until Stock EOD provider validation and schedule activation are explicitly confirmed in `docs/CURRENT_STATUS.md`, do not claim stock price refresh is live.
 
-**Remaining:** Sixteen old Edge Function deployments still exist, but their handlers return HTTP 410 and do not execute retired legacy workflows. See [manual Edge decommission steps](decommission/RETIRED_EDGE_FUNCTION_REMOVAL.md). The connected Supabase app cannot delete these physical deployments; do **not** delete the two supported price-only workers.
+Current holdings observed in Sheet: MSFT, NVDA, TLN and TTWO, plus six Crypto symbols. Pre-extension historical US stock rows in Sheet reflect the 2026-10-28 close; never recast them as a new session.
 
-See [system contract](contracts/system-contract.yaml), [live production status](docs/CURRENT_STATUS.md), [pipeline and tests](docs/PRICE_PIPELINE.md), and [historical deletion receipt](decommission/USER_AUTHORIZED_ARCHIVE_REMOVAL_RECEIPT.md). Source history is preserved in Git; deleted database rows are not. Supabase migrations under `supabase/migrations` are already-applied receipts, not a fresh-database bootstrap. No credentials in Git.
+Database: five `fwios` tables, one identity view and six price functions. The old 87-table archive was permanently deleted without backup by explicit user direction on 2026-10-30. Sixteen old inactive Edge tombstones return HTTP 410 and await manual physical deletion. Only two active Price Worker endpoints are supported.
+
+See [current production status](docs/CURRENT_STATUS.md), [pipeline](docs/PRICE_PIPELINE.md), [contract](contracts/system-contract.yaml), and [Edge cleanup issue](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/104).

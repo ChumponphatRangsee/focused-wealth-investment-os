@@ -1,9 +1,8 @@
-ASSET-PRICE-CONTRACT-1.0.0
-version=1.0.0
-scope=CRYPTO_FX_SUPABASE_GOOGLE_SHEETS
+ASSET-PRICE-CONTRACT-1.1.0
+version=1.1.0
+scope=CRYPTO_US_STOCK_EOD_FX_SUPABASE_GOOGLE_SHEETS
 updated=2026-10-30
-runtime_migration=price_only_scheduled_and_post_archive_e2e_verified
+runtime_migration=us_stock_eod_extension_pending_live_validation
 legacy_archive_tables=0
-legacy_sql_functions=0
-remaining_retired_edge_deployments=16
-no_backup_archive_deletion_user_authorized=true
+price_core_tables=5
+price_core_functions=6

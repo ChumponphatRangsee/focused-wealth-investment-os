@@ -39,3 +39,11 @@ Live read-only SQL regression **27/27 PASS**, updated to require deleted archive
 GitHub PR #100 merged the clean two-worker source to `main`, removed 187 out-of-scope files from the current source tree and preserved the old Git history. This follow-up updates the post-deletion documentation, regression test and final seven-function cleanup migration. **Do not replay previously applied migrations as an initial database bootstrap.**
 
 **Remaining cleanup:** Physical de-registration of 16 inactive HTTP 410 Edge deployments, not further SQL schema deletion. Data loss from the user-authorized no-backup archive deletion must not be described as recoverable.
+
+## US Stock EOD extension candidate — 2026-10-30
+
+**User selected one regular-session US Stock closing price per day, after the New York market closes.** Four open Stock symbols read from Sheet are MSFT, NVDA, TLN and TTWO. Existing Sheet values reflect 2026-10-28 close and remain unchanged until a verified EOD quote is collected.
+
+This section records **candidate source changes** in branch `feat/price-us-stock-eod-20261030`: extend price-market-refresh-v1 with `US_STOCK_EOD` mode using the Vault's existing `ALPHA_VANTAGE_API_KEY`; append `REGULAR_CLOSE` with explicit price-only provenance and current NY session date; extend the existing Sheet worker to sync only collector-certified stock closes, preserving all other stock rows. Add two weekday post-close Crons at 19:00 and 19:30 America/New_York with DST guard.
+
+**Do not interpret this proposal as live stock-refresh activation** until subsequent validated runtime receipts explicitly say the code was deployed, the provider key succeeded, the schedules were installed and the full Google Sheet readback passed. Existing Crypto/FX/Sheet schedule is retained and unchanged.
