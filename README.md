@@ -1,5 +1,9 @@
 # Asset Price Data Service v1.1.0
 
+**Latest production asset universe (2026-10-30):** exactly ten active identities: four OPEN-held US stocks **MSFT, NVDA, TLN, TTWO** and six Crypto **BTC, DOGE, ETH, HBAR, SOL, XRP**. User-directed permanent database cleanup removed 60 unheld stock instruments, their 60 symbol mappings, and 1,789 historical market observation rows (20,441 → 18,652 before post-cleanup new price data). The 10 retained instruments, their historical prices, five Crons, six SQL routines and three price tables remain intact. The price-only Sheet still owns holdings/transactions/cost basis.
+
+
+
 Production scope: CoinGecko Crypto USD, Alpha Vantage **US Stock unadjusted daily close** and Frankfurter USD/THB FX → Supabase `fwios.market_observations` → Investment Portfolio Tracker Google Sheet `_Market_Data`.
 
 Google Sheet alone owns Holdings, Transactions, cost basis and Portfolio calculations. No Scanner, Research, Valuation, automated trading or other legacy workflows. `auto_trade=false`.
@@ -14,8 +18,8 @@ Five live Crons: #14 Crypto 17:10 New York every day, #15 FX weekdays 17:10, #16
 
 **Current EOD status: scheduled but no successful stock refresh yet.** Alpha Vantage returned `ALPHA_VANTAGE_DAILY_RATE_LIMIT` (HTTP 503) on provider test. Zero stock writes. Existing MSFT/NVDA/TLN/TTWO rows in Sheet retain old 2026-10-28 closing prices. The new job will attempt the next session, but provider quota and timely data must succeed before fresh stock prices appear.
 
-Crypto/FX collector dry-run passed HTTP 200; real Sheet sync passed HTTP 200, Crypto6+FX updated, Stock0, Sheet readback PASS. After identity cleanup, updated live SQL regression **36/36 PASS**. Post-cleanup real Crypto/FX collection and Google Sheet write/readback all HTTP 200.
+Crypto/FX collector dry-run passed HTTP 200; real Sheet sync passed HTTP 200, Crypto6+FX updated, Stock0, Sheet readback PASS. Following the permanent unheld-stock cleanup, updated live SQL regression **44/44 PASS**. Post-cleanup real Crypto/FX collection and Google Sheet write/readback all HTTP 200.
 
-Database now has **3 price tables** (`instruments`, `instrument_symbols`, `market_observations`), 1 identity view and 6 SQL functions. The 70 formerly separate Entity records were retained inside `instruments.metadata.retired_entity`; their identity UUIDs and all existing price observations remain intact. The 70 legacy seed-only identifier entries and the redundant entity table were retired using RESTRICT. The 87-table legacy archive was permanently removed manually at user request without backup. Sixteen retired Edge Functions remain inert HTTP 410 until manual deletion: [Issue #104](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/104). Do not delete the two active price-only workers.
+Database now has **3 price tables** (`instruments`, `instrument_symbols`, `market_observations`), 1 identity view and 6 SQL functions. The 70 formerly separate Entity records were retained inside `instruments.metadata.retired_entity`; their identity UUIDs and all existing price observations remain intact. The 70 legacy seed-only identifier entries and the redundant entity table were retired using RESTRICT. The 87-table legacy archive was permanently removed manually at user request without backup. All 16 obsolete Edge deployments were manually deleted and confirmed absent; only the two supported price workers remain. Do not delete the two active price-only workers.
 
 See [current live status](docs/CURRENT_STATUS.md), [pipeline](docs/PRICE_PIPELINE.md), [system contract](contracts/system-contract.yaml).
