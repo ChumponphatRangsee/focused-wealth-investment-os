@@ -1,14 +1,13 @@
 # Changelog — Asset Price Data Service
 
-## 1.0.0 — 2026-10-30: Operational price-only cutover verified
+## 2026-10-30 — Permanent legacy database retirement
 
-- Verified naturally scheduled Crypto/FX/Sheet sync: all three Edge HTTP responses 200, Crypto 6/6, FX 1/1, Sheet readback PASS and no Portfolio writes.
-- Reduced production `fwios` to five canonical price/identity tables, one view and 13 routines. Quarantined 87 historical tables in private legacy archive without deleting accounting history; unscheduled seven inactive jobs, keeping only #14/#15/#16.
-- Retired legacy SQL functions/views; 16 old Edge slugs deployed as HTTP 410 responses. Pinned former archive-only trigger search_path.
-- Removed 187 out-of-scope tracked source/CI/test/migration files from the current working tree, with Git history retained and retirement receipt. Replaced inactive CI with price-only source checks.
-- **Do not claim permanent data cleanup:** 87 historical tables retained, no independently verified database dump/restore on current Free tier.
+- User explicitly authorized deletion of the unused 87-table archived schema without backup and executed removal manually through Supabase SQL Editor. Confirmed schema absent and 5 production price tables preserved. Former archival data no longer recoverable from the deleted schema.
+- Retired the seven remaining orphaned SQL trigger functions via production `DROP FUNCTION ... RESTRICT` migration; six essential price/identity functions remain. Price schema: **5 tables + 1 view + 6 functions**.
+- Re-ran production Crypto 6/6, FX 1/1 and Google Sheet readback: all HTTP 200, zero Portfolio writes. Updated SQL regression **27/27 PASS**; Security Advisor has INFO-only no-policy notices.
+- Physical cleanup of sixteen inert 410 Edge deployments still requires authorized Dashboard/CLI action; the app connector does not offer deletion.
 
-## 1.0.0 — 2026-10-29: Documentation scope reset
+## 2026-10-30 — Source retirement and price-only cutover
 
-- Restrict product contract to native Crypto USD + USD/THB FX → Supabase → Google Sheet.
-- Remove obsolete investment roadmap, thesis/valuation/decision and portfolio accounting scope.
+- Verified natural scheduled Crypto/FX/Sheet E2E, HTTP 200. Removed 187 out-of-scope files from the current Git tree with Git history preserved.
+- Merged PR #100 to `main`, leaving only price workers, scoped CI and source/migration receipts.
