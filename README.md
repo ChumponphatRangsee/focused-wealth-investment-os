@@ -1,16 +1,21 @@
-# Asset Price Data Service — v1.1.0 (US Stock EOD Extension)
+# Asset Price Data Service v1.1.0
 
-**Scope:** Daily CoinGecko native USD Crypto, **US Stock regular-session unadjusted closing prices** (Alpha Vantage `TIME_SERIES_DAILY`, held symbols from Google Sheet only), Frankfurter USD/THB FX → Supabase `fwios.market_observations` → Google Sheet `_Market_Data`. The Sheet remains authoritative for transactions, holdings, cost basis, manual overrides and portfolio calculations. No research, scanner, valuation, automatic trading or stock discovery; `auto_trade=false`.
+Production scope: CoinGecko Crypto USD, Alpha Vantage **US Stock unadjusted daily close** and Frankfurter USD/THB FX → Supabase `fwios.market_observations` → Investment Portfolio Tracker Google Sheet `_Market_Data`.
 
-## Workers
-- `price-market-refresh-v1`: CRYPTO, FX and new US_STOCK_EOD collection; validates close-date and source credentials, saves the four currently held US Stocks without synthetic quote timestamps or adjusted prices.
-- `price-sheet-sync-v1`: writes six Crypto symbols, certified new stock closing prices and FX metadata; refuses to overwrite unverified historic Stock rows, checks price/formula readback.
-- Existing three Crons #14 Crypto, #15 FX and #16 Crypto/FX Sheet Sync remain. The proposed new schedules are **19:00 New York time** for US EOD and **19:30** for stock Sheet Sync, weekdays, with timezone/DST guards. See SQL migration `20261030120000_schedule_held_us_stock_eod_v1.sql`.
+Google Sheet alone owns Holdings, Transactions, cost basis and Portfolio calculations. No Scanner, Research, Valuation, automated trading or other legacy workflows. `auto_trade=false`.
 
-**Deployment note:** Code and migration may be merged separately from live deployment. Until Stock EOD provider validation and schedule activation are explicitly confirmed in `docs/CURRENT_STATUS.md`, do not claim stock price refresh is live.
+## Production
 
-Current holdings observed in Sheet: MSFT, NVDA, TLN and TTWO, plus six Crypto symbols. Pre-extension historical US stock rows in Sheet reflect the 2026-10-28 close; never recast them as a new session.
+Two active supported Edge Functions:
+- `price-market-refresh-v1` **v4**: Crypto, FX and US_STOCK_EOD for OPEN held stock symbols, currently MSFT, NVDA, TLN, TTWO. Alpha Vantage `TIME_SERIES_DAILY` supplies raw `4. close`; require current NY session date, store certified provenance and fail closed on stale/quota error.
+- `price-sheet-sync-v1` **v3**: Crypto prices, USD/THB FX and only collector-certified Stock EOD prices; protects all unverified historical Stock rows and verifies Sheet readback.
 
-Database: five `fwios` tables, one identity view and six price functions. The old 87-table archive was permanently deleted without backup by explicit user direction on 2026-10-30. Sixteen old inactive Edge tombstones return HTTP 410 and await manual physical deletion. Only two active Price Worker endpoints are supported.
+Five live Crons: #14 Crypto 17:10 New York every day, #15 FX weekdays 17:10, #16 Crypto/FX Sheet 17:20 daily; **#17 US Stock EOD 19:00 NY weekdays** and **#18 stock Sheet follow-up 19:30 NY weekdays**. Timezone guard handles DST and UTC day rollover.
 
-See [current production status](docs/CURRENT_STATUS.md), [pipeline](docs/PRICE_PIPELINE.md), [contract](contracts/system-contract.yaml), and [Edge cleanup issue](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/104).
+**Current EOD status: scheduled but no successful stock refresh yet.** Alpha Vantage returned `ALPHA_VANTAGE_DAILY_RATE_LIMIT` (HTTP 503) on provider test. Zero stock writes. Existing MSFT/NVDA/TLN/TTWO rows in Sheet retain old 2026-10-28 closing prices. The new job will attempt the next session, but provider quota and timely data must succeed before fresh stock prices appear.
+
+Crypto/FX collector dry-run passed HTTP 200; real Sheet sync passed HTTP 200, Crypto6+FX updated, Stock0, Sheet readback PASS. Updated live SQL regression 29/29 PASS.
+
+Database retained: 5 price tables, 1 view, 6 SQL functions. The 87-table legacy archive was permanently removed manually at user request without backup. Sixteen retired Edge Functions remain inert HTTP 410 until manual deletion: [Issue #104](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/issues/104). Do not delete the two active price-only workers.
+
+See [current live status](docs/CURRENT_STATUS.md), [pipeline](docs/PRICE_PIPELINE.md), [system contract](contracts/system-contract.yaml).
