@@ -78,8 +78,15 @@ excluded:
 legacy_runtime_notice:
   archive_tables_remaining: 0
   archive_deleted_no_backup_by_user_instruction: true
-  production_price_tables: 5
+  production_price_tables: 3
   production_price_functions: 6
+  price_identity_reduced_to_three_tables: true
+  retired_identity_tables: [asset_entities, instrument_identifiers]
+  preserved_entity_metadata_count: 70
+  canonical_instrument_uuid_preserved: true
+  price_observation_history_preserved: true
+  post_identity_cleanup_sql_assertions_passed: 36
+  post_identity_cleanup_crypto_fx_sheet_e2e: pass
   retired_legacy_edge_deployments_still_present: 16
   active_price_edge_functions: [price-market-refresh-v1, price-sheet-sync-v1]
   active_cron_ids: [14,15,16,17,18]

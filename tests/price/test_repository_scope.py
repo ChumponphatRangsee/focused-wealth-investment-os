@@ -50,6 +50,15 @@ class PriceContractScope(unittest.TestCase):
         self.assertIn("price-market-refresh-v1",cron)
         self.assertIn("price-sheet-sync-v1",cron)
 
+    def test_three_table_schema_contract_is_declared(self):
+        contract = (ROOT / "contracts" / "system-contract.yaml").read_text(encoding="utf-8")
+        migration = ROOT / "supabase" / "migrations" / "20261030140000_reduce_price_identity_to_three_tables_v1.sql"
+        sql_regression = ROOT / "tests" / "price" / "test_price_only_decommission_phase2_20261029.sql"
+        self.assertTrue(migration.is_file())
+        self.assertIn("production_price_tables: 3", contract)
+        self.assertIn("metadata->'retired_entity'", sql_regression.read_text(encoding="utf-8"))
+        self.assertIn("count(*)=3", sql_regression.read_text(encoding="utf-8"))
+
     def test_only_current_migration_receipts(self):
         files = [p.name for p in (ROOT / "supabase" / "migrations").glob("*.sql")]
         self.assertTrue(files)

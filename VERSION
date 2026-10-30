@@ -8,5 +8,10 @@ price_sheet_sync_version=3
 stock_provider_status=ALPHA_VANTAGE_DAILY_RATE_LIMIT
 active_cron_jobs=14,15,16,17,18
 legacy_archive_tables=0
-price_core_tables=5
+price_core_tables=3
 price_core_functions=6
+
+price_identity_migration=reduce_price_identity_to_three_tables_v1
+identity_entities_preserved=70
+post_identity_cleanup_regression=36_of_36_pass
+post_identity_cleanup_crypto_fx_sheet_e2e=pass
