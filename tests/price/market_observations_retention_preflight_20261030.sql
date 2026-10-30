@@ -50,7 +50,9 @@ WITH selected AS (
         OR coalesce(r.raw_payload->>'price_only','false')='true'
         OR coalesce(r.raw_payload->>'price_only_stock_eod','false')='true'
         THEN 'KEEP_PROTECTED'
-      WHEN jsonb_typeof(r.raw_payload) IS DISTINCT FROM 'object'\n        THEN 'MANUAL_REVIEW_JSON_PAYLOAD'\n      WHEN r.created_at >= now()-interval '14 days'
+      WHEN jsonb_typeof(r.raw_payload) IS DISTINCT FROM 'object'
+        THEN 'MANUAL_REVIEW_JSON_PAYLOAD'
+      WHEN r.created_at >= now()-interval '14 days'
         THEN 'KEEP_RECENT'
       WHEN r.provider IN ('COINGECKO','TWELVE_DATA_FX','TWELVE_DATA_QUOTE')
         AND r.per_day_rank=1 THEN 'KEEP_DAILY_SAMPLE'
