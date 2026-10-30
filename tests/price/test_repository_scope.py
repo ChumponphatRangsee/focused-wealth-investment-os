@@ -36,7 +36,7 @@ class PriceContractScope(unittest.TestCase):
         self.assertIn("TIME_SERIES_DAILY",collector)
         self.assertIn('["4. close"]',collector)
         self.assertIn("ALPHA_VANTAGE_API_KEY",collector)
-        self.assertIn("STOCK_EOD_PROVIDER_RATE_LIMIT_OR_KEY_RESTRICTION",collector)
+        self.assertIn("ALPHA_VANTAGE_DAILY_RATE_LIMIT",collector)
         self.assertIn("price_only_stock_eod",collector)
         self.assertIn('from unnest(',collector)
         self.assertIn("stockValues",sheet)
