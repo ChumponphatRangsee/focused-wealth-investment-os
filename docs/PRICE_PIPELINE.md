@@ -49,6 +49,10 @@ The historical private archive `fwios_legacy_archive_20261029` contains **87** p
 
 CoinGecko CRYPTO direct live execution **6/6 HTTP 200**, Frankfurter FX **1/1 HTTP 200**, each with zero reported portfolio writes. Then `price-sheet-sync-v1` v2 **HTTP 200**, six Crypto prices and the FX cells written/read back successfully, four historical stock rows preserved, no database ledger writes. A final Sheet sync after the ledger/Cron isolation also returned **HTTP 200 and readback verified**. Checked ten `Price Data` asset prices and `Holdings` formula cells had no errors. SQL regression **27/27 PASS**.
 
-These are manual live E2E receipts. **No naturally scheduled post-cutover run has yet been independently verified**. Check Cron job run details, actual Edge responses, source timestamps, stored observations, Sheet readback and read-only formula consumers after the scheduled job window. A Cron `succeeded` status alone may only confirm the HTTP request was queued.
+These are manual live E2E receipts. **The naturally scheduled 2026-10-30 Asia/Bangkok run HAS been independently verified**. Check Cron job run details, actual Edge responses, source timestamps, stored observations, Sheet readback and read-only formula consumers after the scheduled job window. A Cron `succeeded` status alone may only confirm the HTTP request was queued.
 
 Do not delete archival transaction/market history until independent recoverability is proven. Review GitHub [PR #100](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/100) against current live migration history before merging or applying code.
+
+## Natural schedule receipt — 2026-10-30
+
+#14/#15 04:10 Bangkok and #16 04:20 Bangkok: `cron.job_run_details` confirmed dispatch, `net._http_response` #11970/#11971/#11972 returned HTTP 200, with 6 CoinGecko observations and one Frankfurter FX observation committed, and Google Sheet Crypto+FX readback successful. Only source prices were refreshed; four Stock historical rows remained frozen. Supabase Free plan: **do not drop the 87-table historical archive without a separately verified external logical backup and restore**. Source tree has only the two dedicated price workers; prior code is preserved in Git history.

@@ -1,11 +1,14 @@
 # Changelog — Asset Price Data Service
 
-## 1.0.0 — 2026-10-29: Documentation reset
+## 1.0.0 — 2026-10-30: Operational price-only cutover verified
 
-- Replaced the former investment/research/scanner/valuation project identity with **Crypto + USD/THB FX price ingestion, Supabase observation storage and Google Sheet synchronization**.
-- Rewrote README, AGENTS, System Contract, Current Status, and created the sole active Price Pipeline runbook.
-- Removed obsolete legacy Roadmap, architecture handovers, Research/Thesis, Technical Screening, Valuation, Decision and Portfolio policy documents from the current Git tree.
-- Removed all proposed future roadmap items from current documentation.
-- **Documentation release only:** database/code clean-up remains incomplete. New price-only workers have passed manual live E2E readback; old stock EOD and other DB objects are still present. See Current Status.
+- Verified naturally scheduled Crypto/FX/Sheet sync: all three Edge HTTP responses 200, Crypto 6/6, FX 1/1, Sheet readback PASS and no Portfolio writes.
+- Reduced production `fwios` to five canonical price/identity tables, one view and 13 routines. Quarantined 87 historical tables in private legacy archive without deleting accounting history; unscheduled seven inactive jobs, keeping only #14/#15/#16.
+- Retired legacy SQL functions/views; 16 old Edge slugs deployed as HTTP 410 responses. Pinned former archive-only trigger search_path.
+- Removed 187 out-of-scope tracked source/CI/test/migration files from the current working tree, with Git history retained and retirement receipt. Replaced inactive CI with price-only source checks.
+- **Do not claim permanent data cleanup:** 87 historical tables retained, no independently verified database dump/restore on current Free tier.
 
-Historical investment project information is retained in prior Git commits, not current documentation.
+## 1.0.0 — 2026-10-29: Documentation scope reset
+
+- Restrict product contract to native Crypto USD + USD/THB FX → Supabase → Google Sheet.
+- Remove obsolete investment roadmap, thesis/valuation/decision and portfolio accounting scope.

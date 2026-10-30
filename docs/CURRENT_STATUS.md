@@ -33,7 +33,7 @@ Old inactive Crons #2, #5, #6, #7, #8, #9, #10 were **unscheduled**. The names o
 - `price-sheet-sync-v1` v2: **HTTP 200 / six Crypto rows updated / Google Sheet readback PASS / 0 database writes**. Tested again after ledger quarantine and Cron unscheduling, also HTTP 200 and readback PASS.
 - Google Sheet still has six live Crypto price rows and four preserved historic Stock rows; ten `Price Data` asset prices were positive, and the checked `Price Data` and `Holdings` ranges had **zero formula errors**. Verified FX provider: `FRANKFURTER_FX`.
 - Updated read-only SQL regression: **27/27 PASS**.
-- **The next naturally scheduled post-cutover #14/#15/#16 round has NOT been independently verified**; no claim of scheduled continuity or a complete long-running provider quota audit.
+- **The naturally scheduled post-cutover #14/#15/#16 round on 2026-10-30 Asia/Bangkok has been independently verified**; no claim of scheduled continuity or a complete long-running provider quota audit.
 
 ## Applied cleanup migrations and review
 
@@ -49,6 +49,14 @@ The previous price collector and sheet worker cutover migrations had already bee
 
 ## Explicit remaining limits
 
-The 87 historical tables remain physically in the same Supabase database, not externally backed up. Several preserved legacy trigger routines remain in `fwios`. The private `system_state_legacy_archive_v1` table still has RLS disabled; direct `anon`/`authenticated` permissions did not permit archive schema USAGE at audit, but a security/policy decision is outstanding. Natural scheduled execution and longer-term API quota behaviour still need verification.
+The 87 historical tables remain physically in the same Supabase database, not externally backed up. Several preserved legacy trigger routines remain in `fwios`. The private `system_state_legacy_archive_v1` table still has RLS disabled; direct `anon`/`authenticated` permissions did not permit archive schema USAGE at audit, but a security/policy decision is outstanding. The first naturally scheduled run was verified; longer-term API quota behaviour still needs verification.
 
 Do not assert **Full Cleanup** until all required legacy-object retention and recoverability decisions are complete and scheduled Crypto + FX → Supabase → Google Sheet continues working.
+
+## Verified naturally scheduled cycle — 2026-10-30 Asia/Bangkok
+
+Cron #14 and #15 ran at **04:10** local (2026-10-29 21:10 UTC), each enqueued one request. Actual `net._http_response` IDs **11970** (Crypto) and **11971** (FX) reported HTTP 200, native USD Crypto 6/6 and FX 1/1, **zero portfolio writes**. Cron #16 ran at **04:20** local, response ID **11972** HTTP 200, six Crypto rows synced and readback verified, zero database writes. Matching `fwios.market_observations` rows and the live Google Sheet prices/FX were independently checked. The second UTC-hour schedule passes returned zero rows intentionally due to the New York 17:10/17:20 clock guard.
+
+Current Supabase organization tier is **Free**; it must not be presumed to have managed daily backups. Archive size ~31 MB, **87 tables**. No complete external logical SQL dump or test restore was produced during this cleanup, so permanent `DROP SCHEMA ... CASCADE` or historical data deletion is blocked. The original 187 obsolete repo files were retired from the active Git tree and remain recoverable in Git history. The old 16 deployed Edge slugs remain HTTP 410 tombstones because the available Supabase connector does not support physical function deletion.
+
+Security: `normalize_architecture_system_state_write_v1` has its legacy trigger `search_path` pinned to `pg_catalog, pg_temp` by `pin_archive_trigger_search_path_v1`. See live Security Advisor for any remaining advisories.

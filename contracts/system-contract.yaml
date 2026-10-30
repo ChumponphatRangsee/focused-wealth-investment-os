@@ -77,7 +77,7 @@ legacy_runtime_notice:
   provider_auth_tables: retained_in_private_archive_not_used_by_price_service
   unreconciled_portfolio_ledger: 58_records_preserved_in_private_archive_pending_independent_backup
   live_price_only_manual_test: pass
-  next_scheduled_price_only_run_verified: false
+  next_scheduled_price_only_run_verified: true
   live_cleanup_latest: '2026-10-29'
   production_price_tables: 5
   preserved_legacy_archive_tables: 87
@@ -87,4 +87,6 @@ legacy_runtime_notice:
   regression_assertions: 27
   manual_post_cleanup_e2e: pass
   full_cleanup_complete: false
+  full_cleanup_blocker: no_independently_verified_backup_of_87_private_archive_tables
+  source_scope_reduced_to_two_price_workers: true
   read_current_status: docs/CURRENT_STATUS.md
