@@ -4,7 +4,7 @@ contract:
   title: Asset Price Data Service
   date: "2026-10-30"
   timezone: Asia/Bangkok
-  status: us_stock_eod_extension_code_ready_pending_provider_and_live_schedule_verification
+  status: us_stock_eod_deployed_scheduled_provider_rate_limit
   auto_trade: false
 objective:
   purpose: collect_validate_store_and_sync_held_asset_prices
@@ -56,12 +56,12 @@ workers:
   market_collector:
     edge_function: price-market-refresh-v1
     modes: [CRYPTO, FX, US_STOCK_EOD]
-    scheduled_job_ids: [14, 15]
-    us_stock_schedule: "19:00 America/New_York Monday-Friday (new job planned)"
+    scheduled_job_ids: [14, 15, 17]
+    us_stock_schedule: "19:00 America/New_York Monday-Friday, active Cron 17"
   sheet_price_sync:
     edge_function: price-sheet-sync-v1
-    scheduled_job_id: 16
-    us_stock_followup: "19:30 America/New_York Monday-Friday (new job planned)"
+    scheduled_job_ids: [16, 18]
+    us_stock_followup: "19:30 America/New_York Monday-Friday, active Cron 18"
   require_server_authentication: true
 excluded:
   - stock_discovery
@@ -82,6 +82,10 @@ legacy_runtime_notice:
   production_price_functions: 6
   retired_legacy_edge_deployments_still_present: 16
   active_price_edge_functions: [price-market-refresh-v1, price-sheet-sync-v1]
-  preceding_verified_cron_ids: [14,15,16]
-  us_stock_extension_production_activation: pending
+  active_cron_ids: [14,15,16,17,18]
+  us_stock_extension_production_activation: scheduled_first_eod_success_pending
+  stock_provider_dry_run: ALPHA_VANTAGE_DAILY_RATE_LIMIT
+  stock_data_written: false
+  post_deploy_sheet_readback: pass
+  sql_regression_passed: 29
   read_current_status: docs/CURRENT_STATUS.md
