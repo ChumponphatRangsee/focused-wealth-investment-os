@@ -1,6 +1,10 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
-Verified 2026-10-30 Asia/Bangkok. **Two Price Edge Workers**, three core `fwios` tables, one identity view, six SQL functions, five active Cron registrations. The old 87-table archive was permanently deleted on user instruction without backup. Sixteen retired Edge slugs remain inert HTTP 410 deployments; their separate deletion is tracked by GitHub issue #104.
+**Latest 2026-10-30 cleanup receipt:** User authorized permanent deletion of 60 US Stock identities not OPEN-held in Google Sheet and their **1,789** associated price observations. Migration `purge_unheld_60_us_stocks_and_observations_v1` completed in a transaction; stock/crypto remaining: **4/6** (10 instrument identities, 10 symbol mappings). 20,441 observations before deletion; 18,652 after deletion (18,659 after live E2E refresh). Original append-only trigger re-enabled. Updated SQL test **44/44 PASS**. Crypto+FX write and Google Sheet readback E2E HTTP 200. All 16 deprecated Edge deployments already removed from Supabase by user, verified only two price workers. This historical purge is permanent and no backup of deleted rows was produced by the migration.
+
+
+
+Verified 2026-10-30 Asia/Bangkok. **Two Price Edge Workers**, three core `fwios` tables, one identity view, six SQL functions, five active Cron registrations. The old 87-table archive was permanently deleted on user instruction without backup. All 16 retired Edge deployments were deleted manually by the user; live Supabase inventory confirms only the two supported price workers remain.
 
 ## Supported scope
 
@@ -41,4 +45,4 @@ Read-only postflight: 70 instrument identities and symbol mappings preserved, **
 
 Post-migration direct E2E: `price-market-refresh-v1` CRYPTO (request 11989) HTTP **200**, 6 new live USD Crypto observation writes and zero portfolio writes; FX (11990) HTTP **200**, 1 Frankfurter USD/THB observation and zero portfolio writes. `price-sheet-sync-v1` (11991) HTTP **200**, six Crypto quotes plus shared USD/THB FX written to `_Market_Data`, **write/readback verified**, `stock_count=0`, no database or portfolio writes. Historic unverified Stock rows remain protected. This confirms active core pipeline works with only three SQL tables.
 
-**US Stock EOD provider issue is independent and still open:** The last verified Alpha Vantage dry-run was rate-limited. The scheduled stock job remains registered; no new successful US stock EOD quote was confirmed by this cleanup. Issue #106 tracks EOD provider completion. The 16 inactive HTTP 410 Edge deployments still await manual deletion under issue #104.
+**US Stock EOD provider issue is independent and still open:** The last verified Alpha Vantage dry-run was rate-limited. The scheduled stock job remains registered; no new successful US stock EOD quote was confirmed by this cleanup. Issue #106 tracks EOD provider completion. All 16 inactive Edge deployments were removed by the user and verified absent from Supabase.

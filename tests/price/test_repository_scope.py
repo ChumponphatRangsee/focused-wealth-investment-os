@@ -59,6 +59,18 @@ class PriceContractScope(unittest.TestCase):
         self.assertIn("metadata->'retired_entity'", sql_regression.read_text(encoding="utf-8"))
         self.assertIn("count(*)=3", sql_regression.read_text(encoding="utf-8"))
 
+    def test_held_asset_only_purge_is_explicit_and_trigger_restored(self):
+        path = ROOT / "supabase" / "migrations" / "20261030160000_purge_unheld_60_us_stocks_and_observations_v1.sql"
+        sql = path.read_text(encoding="utf-8")
+        self.assertIn("ARRAY['MSFT','NVDA','TLN','TTWO']", sql)
+        self.assertIn("ARRAY['BTC','DOGE','ETH','HBAR','SOL','XRP']", sql)
+        self.assertIn("deleted_prices<>1789", sql)
+        self.assertIn("deleted_instruments<>60", sql)
+        self.assertIn("ENABLE TRIGGER market_observations_append_only", sql)
+        self.assertIn("PRICE_ONLY_POST_PURGE_VALIDATION_FAILED", sql)
+        self.assertIn("COMMIT;", sql)
+        self.assertNotIn("CASCADE", sql)
+
     def test_only_current_migration_receipts(self):
         files = [p.name for p in (ROOT / "supabase" / "migrations").glob("*.sql")]
         self.assertTrue(files)
