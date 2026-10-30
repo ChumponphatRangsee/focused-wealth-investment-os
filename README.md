@@ -17,6 +17,6 @@ Production schema `fwios` contains **5 tables, 1 view and 13 functions**. Histor
 
 ## Repository layout
 
-`contracts/system-contract.yaml`, `docs/CURRENT_STATUS.md`, `docs/PRICE_PIPELINE.md` define the current system. `tests/price/` contains read-only production SQL assertions and offline source checks. `supabase/migrations/20261029*.sql` and `20261030*.sql` are **already-applied historical cutover/cleanup receipts**; they do **not** constitute a clean database bootstrap. Consult `decommission/SOURCE_RETIREMENT_RECEIPT.md` for retired source file inventory and Git recovery.
+`contracts/system-contract.yaml`, `docs/CURRENT_STATUS.md`, `docs/PRICE_PIPELINE.md` define the current system. `tests/price/` contains read-only production SQL assertions and offline source checks. `supabase/migrations/20261029*.sql` and `20261030*.sql` are **already-applied historical cutover/cleanup receipts**; they do **not** constitute a clean database bootstrap. Consult `decommission/SOURCE_RETIREMENT_RECEIPT.md` for retired source file inventory/Git recovery, and `decommission/SECURE_LEGACY_BACKUP_PROCEDURE.md` for the independent backup and test-restore requirements before irreversible archive deletion.
 
 Avoid replaying applied migrations. No secrets in Git; credentials stay in Supabase Vault. `auto_trade=false`.
