@@ -1,6 +1,6 @@
 # Current Live Status — Asset Price Data Service v1.0.0
 
-**Verified 2026-10-29 (Asia/Bangkok)**. This document reflects the production read-only inspection, live migrations and end-to-end tests performed after the FWIOS scope reset. Contract: `ASSET-PRICE-CONTRACT-1.0.0`. **This is NOT a Full Cleanup certification**: historical objects remain intentionally quarantined in a private schema, legacy source code still awaits PR review, and a naturally scheduled post-cutover cycle has not yet been independently verified.
+**Verified 2026-10-30 (Asia/Bangkok)**. The live price-only cutover, naturally scheduled cycle, source retirement, Security Advisor and manual post-deploy E2E were inspected. Contract: `ASSET-PRICE-CONTRACT-1.0.0`. **Not a certification of irreversible Full Cleanup**: 87 historic tables remain quarantined in a private schema without a verified external backup; 16 old Edge slugs remain inert 410 deployments.
 
 ## Only supported functionality
 
@@ -45,11 +45,11 @@ Existing live migration history includes:
 - `20261029103602_archive_historical_portfolio_ledger_v1`: moved 4 ledger/support tables without losing the 58 historical transactions.
 - `20261029103659_unschedule_retired_legacy_crons_v1`: removed 7 inactive legacy Cron registrations.
 
-The previous price collector and sheet worker cutover migrations had already been executed; **do not replay migrations purely because corresponding files appear on an unmerged PR**. New migration files and updated tests are recorded on [PR #100](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/100), which remains Draft. `main` was reset by merged PR #101. Merge only after reviewing source and migration history versus live state; do not restore old docs.
+The previous price collector and sheet worker cutover migrations were already executed in production; **do not replay migrations merely because files exist in Git**. Source, migration receipts and tests were reviewed and are recorded on [PR #100](https://github.com/ChumponphatRangsee/focused-wealth-investment-os/pull/100). Historical SQL removed from the active tree remains recoverable in Git history, but a fresh database deployment requires a separately verified schema bootstrap.
 
 ## Explicit remaining limits
 
-The 87 historical tables remain physically in the same Supabase database, not externally backed up. Several preserved legacy trigger routines remain in `fwios`. The private `system_state_legacy_archive_v1` table still has RLS disabled; direct `anon`/`authenticated` permissions did not permit archive schema USAGE at audit, but a security/policy decision is outstanding. The first naturally scheduled run was verified; longer-term API quota behaviour still needs verification.
+The 87 historical tables remain physically in the same Supabase database, not externally backed up. Several preserved legacy trigger routines remain in `fwios`. RLS has been enabled on the remaining archival state table; all 92 app/archive tables have RLS enabled and the archive grants no schema USAGE to `anon` or `authenticated`. The first naturally scheduled run was verified; longer-term API quota behaviour has not been exhaustively audited.
 
 Do not assert **Full Cleanup** until all required legacy-object retention and recoverability decisions are complete and scheduled Crypto + FX → Supabase → Google Sheet continues working.
 
@@ -59,4 +59,11 @@ Cron #14 and #15 ran at **04:10** local (2026-10-29 21:10 UTC), each enqueued on
 
 Current Supabase organization tier is **Free**; it must not be presumed to have managed daily backups. Archive size ~31 MB, **87 tables**. No complete external logical SQL dump or test restore was produced during this cleanup, so permanent `DROP SCHEMA ... CASCADE` or historical data deletion is blocked. The original 187 obsolete repo files were retired from the active Git tree and remain recoverable in Git history. The old 16 deployed Edge slugs remain HTTP 410 tombstones because the available Supabase connector does not support physical function deletion.
 
-Security: `normalize_architecture_system_state_write_v1` has its legacy trigger `search_path` pinned to `pg_catalog, pg_temp` by `pin_archive_trigger_search_path_v1`. See live Security Advisor for any remaining advisories.
+Security: `normalize_architecture_system_state_write_v1` has its legacy trigger `search_path` pinned to `pg_catalog, pg_temp` by `pin_archive_trigger_search_path_v1`. The latest Security Advisor returned only informational `rls_enabled_no_policy` findings for service-only tables; there were no remaining WARN findings.
+
+## Post-source-cleanup CI and live deployment — 2026-10-30
+
+- GitHub has only two active Price Edge Worker sources; 187 retired source files are recoverable in Git history. New price-only workflow passed Python scope checks and Deno TypeScript checks.
+- `price-market-refresh-v1` **v2 deployed** with explicit JSON serialization for PostgreSQL provenance. Following deployment: authenticated Crypto and FX dry runs HTTP 200, full live collectors HTTP 200 (Crypto six USD observations / FX one THB observation / zero Portfolio writes), and full Sheet Sync HTTP 200 with readback PASS. Six Crypto and four preserved Stock rows remained in `_Market_Data`; checked Price Data and Holdings ranges had no formula errors. Manual response IDs 11973–11977.
+- Archive-only trigger search_path warning fixed; archival state RLS enabled. All app and archival tables now have RLS enabled with no client archive access. The 27/27 read-only SQL regression checks remain passing.
+- The executable recovery prerequisites are documented in `decommission/SECURE_LEGACY_BACKUP_PROCEDURE.md`. The external backup/restore was NOT executed. **No permanent archive deletion.**
