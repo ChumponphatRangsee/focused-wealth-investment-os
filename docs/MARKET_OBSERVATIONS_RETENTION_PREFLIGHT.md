@@ -9,19 +9,20 @@
 - Provider sources of current table: CoinGecko LIVE_QUOTE 13,338; Twelve Data FX 2,572; Twelve Data stock LIVE_QUOTE 2,486; all other sources together 263.
 - Live current canonical read `fwios.pr7_native_usd_price_read_v1` selected 10/10 observation UUIDs, and all 10 match `_Market_Data` observation IDs (2026-10-30 readback).
 - `market_observations_append_only` trigger is enabled. Zero inbound PostgreSQL FKs **does not** prove zero downstream dependencies. The Sheet and Edge code explicitly use `observation_id`.
-- `raw_payload` is not uniformly object-shaped: 858 COINGECKO rows and 4 FRANKFURTER_FX rows are JSONB **strings**, while other newer/old records are JSONB objects. Do not equate `raw_payload->>'price_only'` null with safe-to-delete. Protect current references and provider/type regardless.
+- `raw_payload` is not uniformly object-shaped: 858 COINGECKO rows and 4 FRANKFURTER_FX rows are JSONB **strings**, while other newer/old records are JSONB objects. Do not equate `raw_payload->>'price_only'` null with safe-to-delete. In the tightened 2026-10-30 policy, any non-object JSONB payload not already protected is MANUAL_REVIEW_JSON_PAYLOAD, never an archive candidate. Protect current references and provider/type regardless.
 - **EOD blocker:** Cron #17 and #18 are scheduled but had no natural run at preflight time. Certified price-only Stock EOD observations = 0, Alpha Vantage recent test HTTP 503 quota error; four Sheet Stock rows were still from session 2026-10-28. See issue #106.
 
 ## Classification simulation, not deletion authority
 
-Read-only report file: `tests/price/market_observations_retention_preflight_20261030.sql`.
+Read-only report file: `tests/price/market_observations_retention_preflight_20261030.sql`. Repeatable projection assertions: `tests/price/test_market_observations_retention_projection_20261030.sql` (21/21 PASS against live 2026-10-30 data, SQL SELECT/CTE only; no isolated physical branch or DELETE test).
 
 | Rule bucket | 2026-10-30 count | Meaning |
 |---|---:|---|
 | `KEEP_PROTECTED` | 234 | Selected canonical UUIDs, every REGULAR_CLOSE, provider ALPHA_VANTAGE_PRICE / FRANKFURTER_FX, explicit price-only provenance |
-| `KEEP_RECENT` | 1,711 | Other rows created within 14 days |
+| `KEEP_RECENT` | 1,021 | Other object-payload rows created within 14 days |
 | `KEEP_DAILY_SAMPLE` | 256 | Latest row by asset/provider/type/session for older CoinGecko/Twelve Data streams |
-| `ARCHIVE_REVIEW_ONLY` | 16,445 | Older superseded intraday candidates; NOT verified safe to purge |
+| `ARCHIVE_REVIEW_ONLY` | 16,283 | Older superseded object-payload intraday candidates; NOT verified safe to purge |
+| `MANUAL_REVIEW_JSON_PAYLOAD` | 852 | JSONB strings or non-objects not covered by other protected rules: cannot trust direct JSONB flag extraction |
 | `MANUAL_REVIEW` | 13 | Anything not covered |
 | **TOTAL** | **18,659** | Classification changes as `now()` advances |
 
@@ -46,4 +47,4 @@ Do not interpret duplicate-in-day intraday observations as byte-identical duplic
 
 ## Rollout receipt
 
-As of this document: read-only SQL simulation completed, 10 canonical references reconciled to Sheet, EOD not certified, **no data deletion, no trigger toggling, no schema changes, no scheduled job changes**.
+As of this document: read-only SQL simulation completed, 10 canonical references reconciled to Sheet, 21/21 retention-projection assertions PASS (including latest FX, 10 prices/IDs, and fallback history), 44/44 existing Price Service regressions PASS, EOD not certified, **no data deletion, no trigger toggling, no schema changes, no scheduled job changes**.
