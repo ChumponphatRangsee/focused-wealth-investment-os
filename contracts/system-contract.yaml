@@ -86,6 +86,9 @@ legacy_runtime_notice:
   active_cron_ids: [14, 15, 16]
   regression_assertions: 27
   manual_post_cleanup_e2e: pass
+  archive_state_table_rls_enabled: true
+  price_market_collector_live_version: 2
+  scheduled_price_pipeline_verified_date: '2026-10-30'
   full_cleanup_complete: false
   full_cleanup_blocker: no_independently_verified_backup_of_87_private_archive_tables
   source_scope_reduced_to_two_price_workers: true
