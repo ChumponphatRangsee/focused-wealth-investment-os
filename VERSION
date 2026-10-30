@@ -13,5 +13,15 @@ price_core_functions=6
 
 price_identity_migration=reduce_price_identity_to_three_tables_v1
 identity_entities_preserved=70
-post_identity_cleanup_regression=36_of_36_pass
+post_identity_cleanup_regression=44_of_44_pass
 post_identity_cleanup_crypto_fx_sheet_e2e=pass
+
+current_instruments=10
+current_us_stocks=MSFT,NVDA,TLN,TTWO
+current_crypto=BTC,DOGE,ETH,HBAR,SOL,XRP
+removed_unheld_us_stocks=60
+removed_stock_price_observations=1789
+post_purge_observations_before_new_collection=18652
+post_purge_observations_after_e2e=18659
+legacy_edge_deployments_remaining=0
+unheld_stock_purge_migration=purge_unheld_60_us_stocks_and_observations_v1
