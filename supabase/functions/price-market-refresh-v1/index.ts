@@ -225,6 +225,33 @@ async function stockCloseRefresh(dry:boolean){
  if(symbols.length===0)return {source:"ALPHA_VANTAGE_PRICE",skipped:true,
   reason:"NO_OPEN_STOCK_HOLDINGS",asset_count:0,database_writes:0,dry_run:dry};
  if(symbols.length>15)throw new Error("STOCK_UNIVERSE_OVER_FREE_API_CAP");
+ // Avoid redundant provider requests on repeat invocations or a manual dry run.
+ // Protect partial certified sessions: do not mix old and newly fetched rows.
+ const already=await sql!`select distinct s.symbol from fwios.market_observations o
+  join fwios.instrument_symbols s on s.instrument_id=o.instrument_id
+  where s.active=true and s.is_primary=true and s.symbol=any(${symbols}::text[])
+    and o.session_date=${ny.day}::date and o.observation_type='REGULAR_CLOSE'
+    and o.market_status='CLOSED' and o.provider='ALPHA_VANTAGE_PRICE'
+    and o.source_tier='A' and o.value_currency='USD' and o.provenance_status='PASS'
+    and o.observation_value>0 and o.raw_payload->>'price_only_stock_eod'='true'`;
+ const certified=new Set(already.map((x:any)=>String(x.symbol).toUpperCase()));
+ if(certified.size===symbols.length)return {
+  source:"ALPHA_VANTAGE_PRICE",asset_count:symbols.length,symbols,session_date:ny.day,
+  skipped:true,reason:"EOD_SESSION_ALREADY_CERTIFIED",
+  provider_requests_attempted:0,database_writes:0,dry_run:dry
+ };
+ if(certified.size>0)return {
+  source:"ALPHA_VANTAGE_PRICE",skipped:true,
+  reason:"INCOMPLETE_CERTIFIED_SESSION_REQUIRES_REVIEW",
+  expected_count:symbols.length,certified_count:certified.size,
+  session_date:ny.day,provider_requests_attempted:0,database_writes:0,dry_run:dry
+ };
+ // Dry-run is a quota-free preflight, NOT a source EOD validation.
+ if(dry)return {
+  source:"ALPHA_VANTAGE_PRICE",asset_count:symbols.length,symbols,
+  expected_session:ny.day,skipped:true,reason:"PREFLIGHT_NO_PROVIDER_REQUEST",
+  provider_called:false,provider_requests_attempted:0,database_writes:0,dry_run:true
+ };
  // Official Alpha Vantage API is queried only from the protected Edge runtime.
  // Never persist or return its key or the query URL with key embedded.
  const apiKey=await vaultSecret("ALPHA_VANTAGE_API_KEY");
@@ -237,7 +264,14 @@ async function stockCloseRefresh(dry:boolean){
   url.searchParams.set("outputsize","compact");
   url.searchParams.set("apikey",apiKey);
   // Do not include the private URL in any log, error, provenance or response.
-  const data=await jsonFetch(url.toString());
+  let data:any;
+  try {data=await jsonFetch(url.toString());}
+  catch(e) {
+   // HTTP 429 is a provider-side limit. Never retry automatically.
+   if(e instanceof Error && e.message==="PROVIDER_HTTP_429")
+    throw new Error("ALPHA_VANTAGE_RATE_LIMIT");
+   throw e;
+  }
   if(data?.Note||data?.Information||data?.["Error Message"]){
    // Sanitize provider rejection without returning raw provider message or credentials.
    const why=String(data.Note||data.Information||data["Error Message"]).toLowerCase();
@@ -289,7 +323,7 @@ async function stockCloseRefresh(dry:boolean){
   throw new Error("STOCK_EOD_DATABASE_PERSISTENCE_MISMATCH");
  return {source:"ALPHA_VANTAGE_PRICE",asset_count:rows.length,symbols,
   session_date:ny.day,close_kind:"UNADJUSTED",
-  database_writes:rows.length,dry_run:false};
+  provider_requests_attempted:rows.length,database_writes:rows.length,dry_run:false};
 }
 
 Deno.serve(async(req:Request)=>{
