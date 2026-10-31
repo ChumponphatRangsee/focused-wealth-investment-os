@@ -48,7 +48,6 @@ class StockEodQuotaGuardContract(unittest.TestCase):
         self.assertIn("from unnest(", STOCK)
         self.assertIn('provider_function:"TIME_SERIES_DAILY"', STOCK)
         self.assertIn("price_only_stock_eod:true", STOCK)
-        self.assertIn('source_tier', STOCK.lower() if False else 'source_tier')  # query provenance
 
     def test_no_new_legacy_or_portfolio_mutations(self):
         self.assertNotIn("DELETE FROM", STOCK.upper())
