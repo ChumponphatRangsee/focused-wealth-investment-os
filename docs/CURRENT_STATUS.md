@@ -1,5 +1,14 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
+## 2026-10-31 production remediation — EOD API quota protection (PR #110)
+
+- **Root operational blocker remains:** first natural held-US-stock Cron #17 at 2026-10-30 19:00 America/New_York dispatched, but **actual** `net._http_response` #12000 was HTTP **503** with `ALPHA_VANTAGE_DAILY_RATE_LIMIT`. Cron #18 at 19:30 ET returned HTTP **200** (#12001) but `stock_count=0` — **US Stock EOD E2E FAIL**, despite successful dispatch and crypto sync.
+- **Fix merged & deployed:** PR #110 merged to `main`, `price-market-refresh-v1` **v5** deployed 2026-10-31 Asia/Bangkok. When the exact current NY session already has certified `price_only_stock_eod` closes for all OPEN-held stock symbols, skip Alpha Vantage entirely; any partial certified set fails closed with zero requests; `US_STOCK_EOD dry_run=true` is now a **quota-free structural preflight** and cannot prove provider availability. HTTP 429 is explicitly sanitized as `ALPHA_VANTAGE_RATE_LIMIT`.
+- **Safe production smoke:** `net._http_response` #12002 HTTP **200** `US_MARKET_WEEKEND`, `database_writes=0`, `portfolio_writes=0`, `auto_trade=false`; this did **not** query Alpha Vantage. GitHub CI Python contract tests + Deno typecheck **PASS**; post-deploy SQL regression **44/44 PASS**.
+- **Postflight:** 10 instruments, 10 symbol mappings, **18,666** market observations, append-only trigger enabled, all five Crons active, only two Edge workers. Google Sheet `_Market_Data` and `Price Data` still preserve old Stock session **2026-10-28** for MSFT/NVDA/TLN/TTWO; latest USDTHB **33.73**, Holdings OPEN stocks intact, no portfolio accounting writes or Sheet modifications by this remediation.
+- **Unresolved external dependency:** Alpha Vantage free key limits 25/day **shared across callers**. Current credentials were already present since 2026-09-11; FWIOS only has one scheduled stock EOD collector daily and cannot infer external key usage or reset a provider quota. A fresh dedicated/key-plan with sufficient quota may be necessary (store only in Vault; never include key in repo/logs). Do not claim EOD success until a real eligible market session returns Collector HTTP 200, `database_writes=4`, 4 current-session certified observations and Sheet Sync HTTP 200 with `stock_count=4`. Next expected US session 2026-11-02; post-DST Bangkok times 2026-11-03 **07:00 collector / 07:30 sync**. Issue #106 remains open.
+
+
 **Latest 2026-10-30 cleanup receipt:** User authorized permanent deletion of 60 US Stock identities not OPEN-held in Google Sheet and their **1,789** associated price observations. Migration `purge_unheld_60_us_stocks_and_observations_v1` completed in a transaction; stock/crypto remaining: **4/6** (10 instrument identities, 10 symbol mappings). 20,441 observations before deletion; 18,652 after deletion (18,659 after live E2E refresh). Original append-only trigger re-enabled. Updated SQL test **44/44 PASS**. Crypto+FX write and Google Sheet readback E2E HTTP 200. All 16 deprecated Edge deployments already removed from Supabase by user, verified only two price workers. This historical purge is permanent and no backup of deleted rows was produced by the migration.
 
 
@@ -12,7 +21,7 @@ CoinGecko native USD Crypto, Alpha Vantage unadjusted US Stock regular close for
 
 ## Deployed workers
 
-- `price-market-refresh-v1` v4: CRYPTO / FX / US_STOCK_EOD collection; USD provider close date must match current New York market session. Nonpositive, stale, mixed or unknown quotes fail closed. Key remains in Supabase Vault.
+- `price-market-refresh-v1` v5 (PR #110): CRYPTO / FX / US_STOCK_EOD collection; USD provider close date must match current New York market session. Nonpositive, stale, mixed or unknown quotes fail closed. Key remains in Supabase Vault.
 - `price-sheet-sync-v1` v3: six Crypto rows + FX, and Stock EOD rows **only** when the new observation has certified `price_only_stock_eod` provenance. Old unverified stock rows are protected.
 
 ## Active schedules (New York local time; daylight-saving safe)
@@ -29,7 +38,7 @@ The EOD job runs 06:00 or 07:00 next morning Bangkok; Sheet follow-up 06:30 or 0
 
 ## Verification and current blocker
 
-- Both workers deployed, new jobs #17/#18 present and active; **first naturally scheduled EOD run has not yet happened**.
+- Both workers deployed, jobs #17/#18 active; **first natural 2026-10-30 EOD run failed provider quota (actual HTTP 503 #12000); Sheet follow-up HTTP 200 #12001 but stock_count=0**. See the 2026-10-31 remediation status above.
 - Existing Crypto/FX collector dry runs passed HTTP 200 (#11982/#11983). Sheet Worker dry run passed HTTP 200, `crypto_count=6` and `stock_count=0` (#11985).
 - Real Sheet Sync after deploy passed HTTP 200 (#11986), six Crypto prices updated, Google Sheet write/readback verified, no portfolio writes. Four historic Stock rows remained unchanged (last close dated 2026-10-28).
 - **US Stock EOD is not yet confirmed operational.** The current Alpha Vantage key returned daily quota rejection `ALPHA_VANTAGE_DAILY_RATE_LIMIT` (HTTP 503, #11984). No new Stock observations were inserted. Scheduled job #17 will attempt the next eligible session; success depends on restored shared API quota and current-session source data. Do not claim US stock prices are updating until a full EOD + Sheet cycle returns HTTP 200 and four certified stock rows have refreshed.
