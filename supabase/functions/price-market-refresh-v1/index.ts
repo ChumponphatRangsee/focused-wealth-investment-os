@@ -227,7 +227,7 @@ async function stockCloseRefresh(dry:boolean){
  if(symbols.length>15)throw new Error("STOCK_UNIVERSE_OVER_FREE_API_CAP");
  // Avoid redundant provider requests on repeat invocations or a manual dry run.
  // Protect partial certified sessions: do not mix old and newly fetched rows.
- const already=await sql`select distinct s.symbol from fwios.market_observations o
+ const already=await sql!`select distinct s.symbol from fwios.market_observations o
   join fwios.instrument_symbols s on s.instrument_id=o.instrument_id
   where s.active=true and s.is_primary=true and s.symbol=any(${symbols}::text[])
     and o.session_date=${ny.day}::date and o.observation_type='REGULAR_CLOSE'
