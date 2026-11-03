@@ -3,6 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 COLLECTOR = (ROOT / "supabase/functions/price-market-refresh-v1/index.ts").read_text()
+GUARDS = (ROOT / "supabase/functions/price-market-refresh-v1/twelve-eod-guards.ts").read_text()
 SYNC = (ROOT / "supabase/functions/price-sheet-sync-v1/index.ts").read_text()
 QUOTA = (ROOT / "supabase/migrations/20261103100000_price_provider_quota_ledger_v1.sql").read_text()
 SCHEDULE = (ROOT / "supabase/migrations/20261103103000_schedule_twelve_eod_fallback_v1.sql").read_text()
@@ -54,8 +55,9 @@ class QuotaAndFallbackContract(unittest.TestCase):
                          'source:"TWELVE_DATA"','"REGULAR_CLOSE"','price_only_stock_eod:true',
                          "raw_payload->>'price_only_stock_eod'='true'"):
             with self.subTest(required=required):
-                self.assertIn(required.replace('"REGULAR_CLOSE"',"'REGULAR_CLOSE'"),COLLECTOR)
-        self.assertIn('data.values.find((v:any)=>String(v?.datetime||"").slice(0,10)===day)',COLLECTOR)
+                self.assertIn(required.replace('"REGULAR_CLOSE"',"'REGULAR_CLOSE'"),COLLECTOR+"\n"+GUARDS)
+        self.assertIn('parseTwelveDailyEod(data,symbol,day)',COLLECTOR)
+        self.assertIn('sessions[0]!==day',GUARDS)
         self.assertIn("from unnest(",COLLECTOR)
         self.assertIn('"TWELVE_STOCK_EOD_FALLBACK"',COLLECTOR)
 
