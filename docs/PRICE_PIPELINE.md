@@ -2,6 +2,11 @@
 
 ## Current live architecture (verified 2026-11-03)
 
+### Legacy cleanup receipt — 2026-11-03
+
+The live Stock price read model is now **EOD-only**: verified `TWELVE_DATA` / `ALPHA_VANTAGE_PRICE` `REGULAR_CLOSE` rows. Historical `TWELVE_DATA_QUOTE` live-quote support was retired and its rows were permanently removed with the other retired providers. The cleanup deleted **5,113** retired provider observations and **19,004** run-history rows from retired Cron IDs while preserving the 10 current asset price reads exactly. `fwios.market_observation_type_v1` and `instruments.legacy_seed_key` were also removed. Current schema remains 3 canonical price tables, 1 identity view and now **5** `fwios` functions; `fwios_quota` remains separate and unchanged.
+
+
 Google Sheet OPEN Holdings → Alpha Vantage `TIME_SERIES_DAILY` EOD 19:00 ET → **Twelve Data `/time_series?interval=1day&adjust=none` fallback 01:55 ET on next NY weekday if no certified EOD** → atomic 4/4 `fwios.market_observations` → Google Sheet `_Market_Data` via Sheet Worker at 19:30 ET / 02:10 ET → existing Price Data and Holdings formulas. The fallback is **live**. On 2026-11-03 Twelve Data returned 2026-11-02 closes for MSFT/NVDA/TLN/TTWO; Collector HTTP 200 `database_writes=4` (#12017) and Sheet HTTP 200 `stock_count=4`, `sheet_write_readback_verified=true` (#12018). Crypto CoinGecko and FX Frankfurter routines unchanged.
 
 The private `fwios_quota.api_call_ledger` reserves each provider's full stock batch atomically before HTTP. The first live Twelve run used 4 calls and all ended `SUCCESS`. The existing 5 Cron jobs are retained. No automatic trading or portfolio accounting writes. The latest Source of Truth is `docs/CURRENT_STATUS.md` (not the historical deployment notes below).

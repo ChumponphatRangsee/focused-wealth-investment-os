@@ -71,6 +71,19 @@ class PriceContractScope(unittest.TestCase):
         self.assertIn("COMMIT;", sql)
         self.assertNotIn("CASCADE", sql)
 
+    def test_legacy_cleanup_is_explicit_guarded_and_non_cascade(self):
+        path = ROOT / "supabase" / "migrations" / "20261103170000_cleanup_retired_price_data_and_cron_history_v1.sql"
+        sql = path.read_text(encoding="utf-8")
+        self.assertIn("LEGACY_CLEANUP_PRICE_READ_MODEL_CHANGED", sql)
+        self.assertIn("DISABLE TRIGGER market_observations_append_only", sql)
+        self.assertIn("ENABLE TRIGGER market_observations_append_only", sql)
+        self.assertIn("TWELVE_DATA_QUOTE", sql)
+        self.assertIn("DELETE FROM cron.job_run_details", sql)
+        self.assertIn("DROP FUNCTION fwios.market_observation_type_v1(text,text) RESTRICT", sql)
+        self.assertIn("DROP COLUMN legacy_seed_key RESTRICT", sql)
+        self.assertIn("COMMIT;", sql)
+        self.assertNotIn("CASCADE", sql)
+
     def test_only_current_migration_receipts(self):
         files = [p.name for p in (ROOT / "supabase" / "migrations").glob("*.sql")]
         self.assertTrue(files)

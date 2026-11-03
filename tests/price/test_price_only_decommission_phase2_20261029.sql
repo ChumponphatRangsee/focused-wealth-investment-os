@@ -23,7 +23,7 @@ WITH tests(test_name,passed) AS (
  UNION ALL SELECT '21_PRICE_SCHEMA_MINIMAL',(SELECT count(*)=3 FROM pg_class WHERE relnamespace='fwios'::regnamespace AND relkind IN ('r','p'))
  UNION ALL SELECT '22_ZERO_ARCHIVE_RELATIONS',(SELECT count(*)=0 FROM pg_class WHERE relnamespace=to_regnamespace('fwios_legacy_archive_20261029') AND relkind IN ('r','p'))
  UNION ALL SELECT '23_PRICE_IDENTITY_VIEW_RETAINED',(SELECT count(*)=1 FROM pg_class WHERE relnamespace='fwios'::regnamespace AND relkind IN ('v','m') AND relname='v_instrument_identity_current')
- UNION ALL SELECT '24_ONLY_SIX_PRICE_FUNCTIONS_REMAIN',(SELECT count(*)=6 FROM pg_proc WHERE pronamespace='fwios'::regnamespace)
+ UNION ALL SELECT '24_ONLY_FIVE_PRICE_FUNCTIONS_REMAIN',(SELECT count(*)=5 FROM pg_proc WHERE pronamespace='fwios'::regnamespace)
  UNION ALL SELECT '25_OBSOLETE_SNAPSHOT_TRIGGER_GONE',(SELECT to_regprocedure('fwios.immutable_snapshot_guard_v1()') IS NULL)
  UNION ALL SELECT '26_SEVEN_LEGACY_SQL_ROUTINES_GONE',(SELECT count(*)=0 FROM pg_proc WHERE pronamespace='fwios'::regnamespace AND proname = ANY(ARRAY['immutable_snapshot_guard_v1','lineage_append_only_guard_v1','normalize_architecture_system_state_write_v1','sync_market_daily_close_observation_v1','sync_market_price_quote_observation_v1','sync_market_price_snapshot_observation_v1','thesis_memory_append_only_guard_v1']))
  UNION ALL SELECT '27_ONLY_FIVE_CRON_REGISTRATIONS',(SELECT count(*)=5 FROM cron.job)
@@ -50,5 +50,9 @@ WITH tests(test_name,passed) AS (
  UNION ALL SELECT '42_APPEND_ONLY_TRIGGER_RE_ENABLED',(SELECT count(*)=1 FROM pg_trigger WHERE tgrelid='fwios.market_observations'::regclass AND tgname='market_observations_append_only' AND tgenabled='O')
  UNION ALL SELECT '43_NO_PRICE_ORPHANS',(SELECT count(*)=0 FROM fwios.market_observations o LEFT JOIN fwios.instruments i ON i.instrument_id=o.instrument_id WHERE i.instrument_id IS NULL)
  UNION ALL SELECT '44_TEN_PRICE_INSTRUMENT_LINKS',(SELECT count(DISTINCT instrument_id)=10 FROM fwios.market_observations)
+ UNION ALL SELECT '45_RETIRED_PROVIDER_ROWS_GONE',(SELECT count(*)=0 FROM fwios.market_observations WHERE provider IN ('TWELVE_DATA_FX','TWELVE_DATA_QUOTE','FWIOS_DAILY_CLOSE_SYNC','GOOGLE_SHEETS_MARKET_SEED','TWELVE_DATA_DAILY_CLOSE_FALLBACK','StockAnalysis','Yahoo Finance'))
+ UNION ALL SELECT '46_RETIRED_CRON_RUN_HISTORY_GONE',(SELECT count(*)=0 FROM cron.job_run_details d WHERE NOT EXISTS(SELECT 1 FROM cron.job j WHERE j.jobid=d.jobid))
+ UNION ALL SELECT '47_LEGACY_SEED_KEY_COLUMN_GONE',(SELECT count(*)=0 FROM information_schema.columns WHERE table_schema='fwios' AND table_name='instruments' AND column_name='legacy_seed_key')
+ UNION ALL SELECT '48_DEAD_OBSERVATION_TYPE_MAPPER_GONE',(SELECT to_regprocedure('fwios.market_observation_type_v1(text,text)') IS NULL)
 )
 SELECT test_name,CASE WHEN passed IS TRUE THEN 'PASS' ELSE 'FAIL' END result FROM tests ORDER BY test_name;
