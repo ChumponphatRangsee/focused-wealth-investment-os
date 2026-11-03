@@ -206,10 +206,19 @@ async function loadPricePayload(googleToken:string) {
    Number.isFinite(Number(q.price_usd))&&Number(q.price_usd)>0)
   .map(({symbol,q})=>({symbol,provider:String(q.provider),observation_id:String(q.observation_id),
     price_usd:Number(q.price_usd)}));
- const fxRows=await sql!`select observation_value::numeric fx_rate,provider,observation_id,observed_at,session_date,provenance_status
-    from fwios.market_observations where observation_type='FX' and value_currency='THB'
-      and provenance_status='PASS' and observation_value>0
-    order by observed_at desc,created_at desc limit 1`;
+ const fxRows=await sql!`select o.observation_value::numeric fx_rate,o.provider,o.observation_id,
+      o.observed_at,o.session_date,o.provenance_status
+    from fwios.market_observations o
+    join fwios.instrument_symbols s on s.instrument_id=o.instrument_id
+      and s.active=true and s.valid_to is null and s.is_primary=true
+      and s.symbol='USDTHB' and s.venue='FX' and s.symbol_namespace='FX_PAIR'
+    join fwios.instruments i on i.instrument_id=o.instrument_id
+      and i.asset_class='FX' and i.instrument_type='CURRENCY_PAIR' and i.lifecycle_status='ACTIVE'
+    where o.observation_type='FX' and o.value_currency='THB'
+      and o.fx_base_currency='USD' and o.fx_quote_currency='THB'
+      and o.provider='FRANKFURTER_FX' and o.source_tier='B'
+      and o.provenance_status='PASS' and o.observation_value>0
+    order by o.observed_at desc,o.created_at desc limit 1`;
  if(!fxRows.length)throw new Error("USDTHB_FX_MISSING");
  const fx=fxRows[0];
  if(new Date(String(fx.observed_at)).getTime()<Date.now()-1000*60*60*120)throw new Error("USDTHB_FX_STALE");

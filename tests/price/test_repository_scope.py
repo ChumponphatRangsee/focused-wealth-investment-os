@@ -116,6 +116,27 @@ class PriceContractScope(unittest.TestCase):
         self.assertNotIn("DELETE FROM fwios.market_observations\n  WHERE observed_at", sql)
         self.assertNotIn("CASCADE", sql)
 
+    def test_usdthb_fx_identity_cutover_is_explicit(self):
+        migration = ROOT / "supabase" / "migrations" / "20261103210000_usdthb_fx_identity_v1.sql"
+        collector = (ROOT / "supabase" / "functions" / "price-market-refresh-v1" / "index.ts").read_text(encoding="utf-8")
+        sheet = (ROOT / "supabase" / "functions" / "price-sheet-sync-v1" / "index.ts").read_text(encoding="utf-8")
+        sql = migration.read_text(encoding="utf-8")
+        self.assertIn("'FX','CURRENCY_PAIR','FRANKFURTER','THB','ACTIVE'", sql)
+        self.assertIn("'USDTHB','FX','FX_PAIR'", sql)
+        self.assertIn("fx_identity_normalization_seed", sql)
+        self.assertIn("FX_IDENTITY_LEGACY_ROWS_MUTATED", sql)
+        self.assertIn("FX_IDENTITY_NATIVE_USD_READ_CHANGED", sql)
+        self.assertNotIn("DISABLE TRIGGER market_observations_append_only", sql)
+        self.assertNotIn("DELETE FROM fwios.market_observations", sql)
+        self.assertIn("'USDTHB','FX','FX','FX_PAIR'", collector)
+        self.assertIn("FX_IDENTITY_MISSING", collector)
+        fx_block = collector[collector.index("async function fxRefresh"):collector.index("function newYorkClock")]
+        self.assertNotIn("order by observed_at desc limit 1", fx_block)
+        self.assertIn("s.symbol='USDTHB'", sheet)
+        self.assertIn("i.asset_class='FX'", sheet)
+        self.assertIn("o.fx_base_currency='USD'", sheet)
+        self.assertIn("o.fx_quote_currency='THB'", sheet)
+
     def test_cron_job_run_details_retention_is_guarded(self):
         path = ROOT / "supabase" / "migrations" / "20261103190000_cron_job_run_details_retention_v1.sql"
         sql = path.read_text(encoding="utf-8")
