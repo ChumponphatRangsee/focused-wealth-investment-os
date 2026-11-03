@@ -12,7 +12,7 @@ class StockEodQuotaGuardContract(unittest.TestCase):
         self.assertLess(STOCK.index("if(certified.size===symbols.length)"), key)
         self.assertLess(STOCK.index("if(certified.size>0)"), key)
         self.assertLess(STOCK.index("if(dry)return {"), key)
-        self.assertLess(key, STOCK.index("await alphaDailyFetch(url.toString())"))
+        self.assertLess(key, STOCK.index("await withReservedProviderCall("))
         self.assertIn('reason:"PREFLIGHT_NO_PROVIDER_REQUEST"', STOCK)
         self.assertIn("provider_called:false", STOCK)
         self.assertIn("provider_requests_attempted:0", STOCK)
@@ -22,7 +22,7 @@ class StockEodQuotaGuardContract(unittest.TestCase):
             "o.session_date=${ny.day}::date",
             "o.observation_type='REGULAR_CLOSE'",
             "o.market_status='CLOSED'",
-            "o.provider='ALPHA_VANTAGE_PRICE'",
+            "o.provider in ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')",
             "o.source_tier='A'",
             "o.value_currency='USD'",
             "o.provenance_status='PASS'",
