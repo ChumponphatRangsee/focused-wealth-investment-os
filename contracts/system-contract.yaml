@@ -138,6 +138,17 @@ operational_retention:
     minute_window_seconds: 60
     batch_identity_persists_beyond_quota_window: true
     purge_requires_idempotency_redesign_first: true
+  pg_net_http_response:
+    mode: built_in_ttl
+    pg_net_version_verified: "0.20.4"
+    ttl_hours: 6
+    ttl_source: default
+    custom_cleanup: false
+    table_persistence: unlogged
+    durable_audit: false
+    direct_system_table_mutation_forbidden: true
+    ttl_change_requires_system_parameter_privilege: true
+    current_postgres_can_set_ttl: false
 
 active_provider_fallback:
   pull_request: 112
