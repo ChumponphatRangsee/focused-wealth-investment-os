@@ -1,5 +1,13 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
+
+## 2026-11-03 Twelve Data EOD fallback + private quota ledger — PR #112 (DRAFT, not activated)
+
+- **Production activation status:** NOT YET LIVE. GitHub draft PR #112 contains quota-gated Alpha/Twelve collector code, certified Twelve Sheet readback support, and an optional existing-Cron (#17/#18) schedule migration. None of the new collector or Sheet Worker code, fallback modes, or Cron scheduling changes have been deployed. Current Production Market Worker **v10** source equals existing `main` (no Twelve probe mode); Sheet Worker **v4** remains unchanged. A prior temporary no-write probe invocation was denied before it reached Twelve Data, so the live key/plan/response semantics **remain unverified**.
+- **Operational quota schema staged in Production:** Applied migration `price_provider_quota_ledger_v1` in dedicated **private** `fwios_quota` schema (1 table, 4 functions), separate from the three `fwios` core price tables. This is **inert until workers opt in**. No exposed anon/authenticated schema usage, no service_role table read; no raw provider keys stored. An isolated PL/pgSQL exception-subtransaction test validated atomic 4-slot reservation, duplicate rejection, minute budget refusal, provider dispatch/result recording, daily cooldown, and cancellation of precisely 3 never-dispatched slots, with automatic rollback; ledger row count remained **0**, five Crons still active and no certified EOD rows added. No Holdings/Transactions/Cost Basis/Portfolio Accounting changes.
+- **Open release gates:** Twelve Data 4-stock no-write live entitlement confirmation (`adjust=none`, USD, `America/New_York`, exact trading session), concurrent-invocation tests, post-midnight fallback dry-run with zero provider calls, CI, a controlled real 4/4 EOD plus Google Sheet certification. Twelve Data historical EOD begins only after midnight ET on the next trading day; do **not** use 19:00 ET Twelve fallback. The existing Cron schedule should not be changed until all gates pass. Existing Issue #106 remains open.
+
+
 ## 2026-11-03 production fix — provider diagnostics and STALE stock Sheet metadata (PR #111)
 
 - **Code and deployment:** PR #111 merged, GitHub CI Python contract tests and Deno typecheck PASS. Live `price-market-refresh-v1` **v8** and `price-sheet-sync-v1` **v4**, runtime source matches `main`; 2 Edge workers only, 5 Crons still active. No migration, schema/cron/legacy/backend/trading changes.
