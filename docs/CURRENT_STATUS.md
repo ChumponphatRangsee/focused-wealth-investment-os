@@ -1,5 +1,15 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
+
+## 2026-11-03 legacy database cleanup — Production PASS (PR #113)
+
+- **User-authorized permanent cleanup applied:** removed **5,113** retired `fwios.market_observations` rows from providers no longer produced by the live pipeline: `TWELVE_DATA_FX` 2,572, `TWELVE_DATA_QUOTE` 2,486, `FWIOS_DAILY_CLOSE_SYNC` 40, `GOOGLE_SHEETS_MARKET_SEED` 10, `TWELVE_DATA_DAILY_CLOSE_FALLBACK` 3, `StockAnalysis` 1 and `Yahoo Finance` 1. Canonical observations decreased **18,689 → 13,576**; all 10 held instruments still retain linked price history.
+- **Read-model retirement:** removed stale Stock live-quote support for `TWELVE_DATA_QUOTE` from `pr5_native_usd_price_shadow_v1`. The migration snapshot the exact price/status/provider/session/observation UUID for all 10 current assets before and after this code change and failed closed on any difference. Post-cleanup reads are unchanged: crypto remains CoinGecko and Stock remains Twelve Data/Alpha verified EOD.
+- **Schema cleanup:** dropped unused `fwios.market_observation_type_v1(text,text)`; `fwios` now has **5 functions**. Removed unused `fwios.instruments.legacy_seed_key` and its unique constraint/index. `entity_id` and `metadata.retired_entity` were deliberately retained because `v_instrument_identity_current` still uses them.
+- **Cron history cleanup:** deleted **19,004** `cron.job_run_details` rows belonging to retired Cron IDs. Current jobs 14–18 remain active and their **109** current run receipts are retained. Supabase documents that pg_cron does not automatically prune historical run details and recommends cleaning unnecessary rows.
+- **Safety/verification:** the append-only observation trigger was disabled only inside an exclusive-lock deletion window and restored before commit. No `CASCADE`, no current Provider/API key/Cron/Edge Function changes, no Google Sheet or portfolio accounting mutation. Postflight: retired provider rows=0, retired Cron logs=0, active Cron jobs=5, legacy seed column=0, append-only trigger enabled=1. Production regression expanded and passed **48/48**.
+
+
 ## 2026-11-03 production E2E PASS — Twelve Data unadjusted EOD fallback + Quota Guard (PR #112)
 
 - **Live integration:** Authenticated post-New York-midnight Twelve Data fallback ran via Cron #17 at **01:55 EST** (**13:55 Bangkok**) on 2026-11-03. pg_net response **#12017 HTTP 200**: `mode=TWELVE_STOCK_EOD_FALLBACK`, `asset_count=4`, `session_date=2026-11-02`, `provider_requests_attempted=4`, `database_writes=4`, `portfolio_writes=0`, `auto_trade=false`. Four private quota ledger rows show `TWELVE_DATA` `SUCCESS` (one per ticker) with no API key exposure.
