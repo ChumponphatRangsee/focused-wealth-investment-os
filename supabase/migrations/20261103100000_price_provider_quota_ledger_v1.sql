@@ -109,7 +109,7 @@ REVOKE ALL ON FUNCTION fwios_quota.complete_eod_call_v1(text,text,text,text,text
 -- Return only never-dispatched reservations. Unknown or dispatched requests must count.
 CREATE OR REPLACE FUNCTION fwios_quota.cancel_eod_undispatched_v1(
  p_provider text,p_key_alias text,p_batch_id text)
-RETURNS integer LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,fwios_quota AS $
+RETURNS integer LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,fwios_quota AS $quota$
 DECLARE v_count integer;
 BEGIN
  UPDATE fwios_quota.api_call_ledger
@@ -118,7 +118,7 @@ BEGIN
     AND batch_id=p_batch_id AND state='RESERVED';
  GET DIAGNOSTICS v_count=ROW_COUNT;
  RETURN v_count;
-END;$;
+END;$quota$;
 REVOKE ALL ON FUNCTION fwios_quota.cancel_eod_undispatched_v1(text,text,text)
  FROM PUBLIC,anon,authenticated,service_role;
 
