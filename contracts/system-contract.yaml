@@ -79,7 +79,7 @@ legacy_runtime_notice:
   archive_tables_remaining: 0
   archive_deleted_no_backup_by_user_instruction: true
   production_price_tables: 3
-  production_price_functions: 6
+  production_price_functions: 5
   price_identity_reduced_to_three_tables: true
   retired_identity_tables: [asset_entities, instrument_identifiers]
   preserved_entity_metadata_count: 10
@@ -94,7 +94,7 @@ legacy_runtime_notice:
   stock_provider_dry_run: twelve_fallback_real_http_200_4_of_4
   stock_data_written: true
   post_deploy_sheet_readback: pass
-  sql_regression_passed: 44
+  sql_regression_passed: 48
   held_instrument_count: 10
   open_stock_symbols: [MSFT, NVDA, TLN, TTWO]
   open_crypto_symbols: [BTC, DOGE, ETH, HBAR, SOL, XRP]
@@ -103,6 +103,17 @@ legacy_runtime_notice:
   unheld_stock_price_observations_deleted: 1789
   observations_after_purge_before_e2e: 18652
   post_purge_crypto_fx_sheet_e2e: pass
+  legacy_cleanup_2026_11_03:
+    authorized_by_user: true
+    retired_provider_observations_deleted: 5113
+    retired_cron_run_logs_deleted: 19004
+    observations_after_cleanup: 13576
+    legacy_seed_key_column_removed: true
+    market_observation_type_v1_removed: true
+    twelve_data_quote_read_support_removed: true
+    append_only_trigger_restored: true
+    current_price_read_model_unchanged_for_10_assets: true
+    regression_passed: 48
   read_current_status: docs/CURRENT_STATUS.md
 active_provider_fallback:
   pull_request: 112
