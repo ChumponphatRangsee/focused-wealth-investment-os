@@ -284,7 +284,7 @@ async function stockCloseRefresh(dry:boolean){
   join fwios.instrument_symbols s on s.instrument_id=o.instrument_id
   where s.active=true and s.is_primary=true and s.symbol=any(${symbols}::text[])
     and o.session_date=${ny.day}::date and o.observation_type='REGULAR_CLOSE'
-    and o.market_status='CLOSED' and o.provider='ALPHA_VANTAGE_PRICE'
+    and o.market_status='CLOSED' and o.provider in ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')
     and o.source_tier='A' and o.value_currency='USD' and o.provenance_status='PASS'
     and o.observation_value>0 and o.raw_payload->>'price_only_stock_eod'='true'`;
  const certified=new Set(already.map((x:any)=>String(x.symbol).toUpperCase()));
@@ -309,6 +309,9 @@ async function stockCloseRefresh(dry:boolean){
  // Never persist or return its key or the query URL with key embedded.
  const apiKey=await vaultSecret("ALPHA_VANTAGE_API_KEY");
  if(!apiKey||apiKey.trim().length<8)throw new Error("ALPHA_VANTAGE_KEY_MISSING");
+ const {gate,batch,key}=await reserveEod("ALPHA_VANTAGE_PRICE",ny.day,symbols);
+ if(!gate.allowed)return {source:"ALPHA_VANTAGE_PRICE",skipped:true,reason:"QUOTA_GUARD_"+gate.reason,
+  provider_requests_attempted:0,database_writes:0,dry_run:false};
  const rows:StockEodRow[]=[];
  for(const symbol of symbols){
   const url=new URL("https://www.alphavantage.co/query");
@@ -318,7 +321,7 @@ async function stockCloseRefresh(dry:boolean){
   url.searchParams.set("apikey",apiKey);
   // Do not include the private URL in any log, error, provenance or response.
   let data:any;
-  try {data=await alphaDailyFetch(url.toString());}
+  try {data=await withReservedProviderCall("ALPHA_VANTAGE_PRICE",key,batch,symbol,()=>alphaDailyFetch(url.toString()));}
   catch(e) {
    // Safe operational diagnostic: reason, symbol and attempted-call position only.
    const code=e instanceof Error?e.message:"ALPHA_VANTAGE_PROVIDER_UNKNOWN";
@@ -367,6 +370,121 @@ async function stockCloseRefresh(dry:boolean){
   provider_requests_attempted:rows.length,database_writes:rows.length,dry_run:false};
 }
 
+
+// Private quota ledger is not a price store. All external API calls require an atomic reservation.
+type EodProvider="ALPHA_VANTAGE_PRICE"|"TWELVE_DATA";
+function quotaKey(p:EodProvider){return p==="TWELVE_DATA"?"TWELVE_DATA_API_KEY":"ALPHA_VANTAGE_API_KEY";}
+async function reserveEod(p:EodProvider,day:string,symbols:string[]){
+ const key=quotaKey(p),batch="EOD_V1:"+p+":"+day;
+ const rows=await sql!`select fwios_quota.reserve_eod_batch_v1(${p},${key},${batch},${day}::date,${symbols}::text[]) gate`;
+ const gate=rows[0]?.gate||{allowed:false,reason:"QUOTA_RESERVATION_FAILED"};
+ return {gate,batch,key};
+}
+async function withReservedProviderCall<T>(p:EodProvider,key:string,batch:string,symbol:string,work:()=>Promise<T>):Promise<T>{
+ const started=await sql!`select fwios_quota.mark_eod_dispatched_v1(${p},${key},${batch},${symbol}) ok`;
+ if(started[0]?.ok!==true)throw new Error("QUOTA_DISPATCH_NOT_RESERVED");
+ let value:T;
+ try { value=await work(); }
+ catch(e){
+  const msg=e instanceof Error?e.message:"PROVIDER_UNKNOWN";
+  const code=/^[A-Z0-9_]{3,110}$/.test(msg)?msg:"PROVIDER_REJECTED";
+  const state=/(TIMEOUT|NETWORK_ERROR)/.test(code)?"UNKNOWN":"PROVIDER_REJECTED";
+  await sql!`select fwios_quota.complete_eod_call_v1(${p},${key},${batch},${symbol},${state},${code}) ok`;
+  throw e;
+ }
+ const completed=await sql!`select fwios_quota.complete_eod_call_v1(${p},${key},${batch},${symbol},${"SUCCESS"},${null}::text) ok`;
+ if(completed[0]?.ok!==true)throw new Error("QUOTA_COMPLETION_FAILED");
+ return value;
+}
+
+function previousNyBusinessDay(ny:{day:string;weekday:string}){
+ if(["Sat","Sun"].includes(ny.weekday))return null;
+ const date=new Date(ny.day+"T12:00:00Z");
+ date.setUTCDate(date.getUTCDate()-(ny.weekday==="Mon"?3:1));
+ return date.toISOString().slice(0,10);
+}
+// Twelve Data US historical EOD is published after NY midnight on the next trading day.
+async function twelveDailyFetch(uri:string):Promise<any>{
+ const c=new AbortController(),timer=setTimeout(()=>c.abort(),18000);
+ let res:Response,body:string;
+ try {res=await fetch(uri,{headers:{Accept:"application/json"},signal:c.signal});body=await res.text();}
+ catch(e){throw new Error(e instanceof Error&&e.name==="AbortError"?"TWELVE_DATA_TIMEOUT":"TWELVE_DATA_NETWORK_ERROR");}
+ finally{clearTimeout(timer);}
+ if(res.status===429)throw new Error("TWELVE_DATA_RATE_LIMIT");
+ if(!res.ok)throw new Error("TWELVE_DATA_HTTP_"+res.status);
+ let data:any;try{data=JSON.parse(body)}catch{throw new Error("TWELVE_DATA_NON_JSON_RESPONSE");}
+ if(data?.status==="error"||typeof data?.code==="number"&&Number(data.code)>=400){
+  const message=String(data?.message||"").toLowerCase();
+  if(/limit|credit|quota|too many|rate/.test(message)||Number(data?.code)===429)throw new Error("TWELVE_DATA_RATE_LIMIT");
+  if(/apikey|api key|invalid|unauthori/.test(message))throw new Error("TWELVE_DATA_KEY_REJECTED");
+  if(/plan|premium|subscription|access/.test(message))throw new Error("TWELVE_DATA_PLAN_RESTRICTED");
+  throw new Error("TWELVE_DATA_PROVIDER_REJECTED");
+ }
+ if(!Array.isArray(data?.values)||typeof data?.meta!=="object")throw new Error("TWELVE_DATA_MALFORMED_EOD");
+ return data;
+}
+
+async function twelveFallbackRefresh(dry:boolean){
+ const ny=newYorkClock(new Date());
+ // Never treat the 00:00-01:14 ET interval as published EOD.
+ if(["Sat","Sun"].includes(ny.weekday)||ny.hour<1||ny.hour>2)
+  return {source:"TWELVE_DATA",skipped:true,reason:"TWELVE_EOD_OUTSIDE_RELEASE_WINDOW",database_writes:0,dry_run:dry};
+ const day=previousNyBusinessDay(ny);
+ if(!day)throw new Error("TWELVE_EOD_SESSION_INVALID");
+ const credential=await vaultSecret("fwios_google_sheets_service_account_json");
+ if(!credential)throw new Error("GOOGLE_CREDENTIAL_MISSING");
+ const googleToken=await getGoogleAccessToken(JSON.parse(credential));
+ const holdings=parseLiveHoldings(await readLiveHoldings(googleToken));
+ const symbols=[...new Set(holdings.filter(x=>x.asset_class==="Stock").map(x=>x.asset_symbol))].sort();
+ if(!symbols.length)return {source:"TWELVE_DATA",skipped:true,reason:"NO_OPEN_STOCK_HOLDINGS",database_writes:0,dry_run:dry};
+ if(symbols.length>15)throw new Error("STOCK_UNIVERSE_OVER_FREE_API_CAP");
+ // A full certified session from either provider needs no more API requests.
+ const certifiedRows=await sql!`select distinct s.symbol from fwios.market_observations o
+  join fwios.instrument_symbols s on s.instrument_id=o.instrument_id
+  where s.active=true and s.is_primary=true and s.symbol=any(${symbols}::text[])
+   and o.session_date=${day}::date and o.observation_type='REGULAR_CLOSE'
+   and o.market_status='CLOSED' and o.provider in ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')
+   and o.source_tier='A' and o.value_currency='USD' and o.provenance_status='PASS'
+   and o.observation_value>0 and o.raw_payload->>'price_only_stock_eod'='true'`;
+ const certified=new Set(certifiedRows.map((x:any)=>String(x.symbol).toUpperCase()));
+ if(certified.size===symbols.length)return {source:"TWELVE_DATA",skipped:true,reason:"EOD_SESSION_ALREADY_CERTIFIED",session_date:day,provider_requests_attempted:0,database_writes:0,dry_run:dry};
+ if(certified.size>0)return {source:"TWELVE_DATA",skipped:true,reason:"INCOMPLETE_CERTIFIED_SESSION_REQUIRES_REVIEW",certified_count:certified.size,provider_requests_attempted:0,database_writes:0,dry_run:dry};
+ if(dry)return {source:"TWELVE_DATA",skipped:true,reason:"PREFLIGHT_NO_PROVIDER_REQUEST",expected_session:day,asset_count:symbols.length,symbols,provider_requests_attempted:0,database_writes:0,dry_run:true};
+ const apiKey=await vaultSecret("TWELVE_DATA_API_KEY");
+ if(!apiKey||apiKey.trim().length<8)throw new Error("TWELVE_DATA_KEY_MISSING");
+ const {gate,batch,key}=await reserveEod("TWELVE_DATA",day,symbols);
+ if(!gate.allowed)return {source:"TWELVE_DATA",skipped:true,reason:"QUOTA_GUARD_"+gate.reason,provider_requests_attempted:0,database_writes:0,dry_run:false};
+ const rows:StockEodRow[]=[];
+ for(const symbol of symbols){
+  const url=new URL("https://api.twelvedata.com/time_series");
+  for(const [k,v] of Object.entries({symbol,interval:"1day",outputsize:"4",adjust:"none",apikey:apiKey}))url.searchParams.set(k,v);
+  let data:any;
+  try{data=await withReservedProviderCall("TWELVE_DATA",key,batch,symbol,()=>twelveDailyFetch(url.toString()));}
+  catch(e){const code=e instanceof Error?e.message:"TWELVE_DATA_UNKNOWN";throw new Error(code+"_SYMBOL_"+symbol+"_ATTEMPT_"+(rows.length+1));}
+  if(String(data.meta?.symbol||"").toUpperCase()!==symbol||String(data.meta?.currency||"").toUpperCase()!=="USD")
+   throw new Error("TWELVE_DATA_SYMBOL_CURRENCY_MISMATCH_"+symbol);
+  if(String(data.meta?.exchange_timezone||"")!=="America/New_York")
+   throw new Error("TWELVE_DATA_EXCHANGE_TIMEZONE_MISMATCH_"+symbol);
+  const candidate=data.values.find((v:any)=>String(v?.datetime||"").slice(0,10)===day);
+  const close=Number(candidate?.close);
+  if(!(close>0)||!Number.isFinite(close)||close>10000000)
+   return {source:"TWELVE_DATA",skipped:true,reason:"CURRENT_SESSION_EOD_NOT_AVAILABLE",expected_session:day,provider_requests_attempted:rows.length+1,database_writes:0,dry_run:false};
+  rows.push({symbol,close,session_date:day});
+ }
+ const tickers=rows.map(r=>r.symbol),closes=rows.map(r=>r.close);
+ const metadata=JSON.stringify({price_only:true,price_only_stock_eod:true,provider_function:"time_series",
+  adjustment:"none",close_kind:"UNADJUSTED",source_session_date:day});
+ const saved=await sql!`select x.symbol,fwios.ensure_market_observation_v1(
+  fwios.resolve_instrument_id_v1(x.symbol,'Stock',null,null),
+  'REGULAR_CLOSE',x.close,'USD',${day}::date,now(),'CLOSED',
+  'TWELVE_DATA','A','https://api.twelvedata.com/time_series',
+  'PASS',${metadata}::jsonb,null,null
+ ) observation_id from unnest(${tickers}::text[],${closes}::numeric[]) AS x(symbol,close)`;
+ if(saved.length!==rows.length||saved.some((x:any)=>!x.observation_id))throw new Error("STOCK_EOD_DATABASE_PERSISTENCE_MISMATCH");
+ return {source:"TWELVE_DATA",asset_count:rows.length,symbols,session_date:day,
+  provider_requests_attempted:rows.length,close_kind:"UNADJUSTED",database_writes:rows.length,dry_run:false};
+}
+
 Deno.serve(async(req:Request)=>{
  if(req.method!=="POST")return new Response("Method Not Allowed",{status:405});
  if(!sql)return Response.json({ok:false,error:"DB_UNAVAILABLE"},{status:503});
@@ -374,9 +492,10 @@ Deno.serve(async(req:Request)=>{
  if(!want||got.length<32||!safeEqual(got,want))return new Response("Unauthorized",{status:401});
  let b:any={};try{b=await req.json()}catch{}
  const mode=String(b?.mode||"").toUpperCase(),dry=b?.dry_run===true;
- if(!["CRYPTO","FX","US_STOCK_EOD"].includes(mode))return Response.json({ok:false,error:"INVALID_MODE"},{status:400});
+ if(!["CRYPTO","FX","US_STOCK_EOD","TWELVE_STOCK_EOD_FALLBACK"].includes(mode))return Response.json({ok:false,error:"INVALID_MODE"},{status:400});
  try{
-  const x=mode==="CRYPTO"?await cryptoRefresh(dry):mode==="FX"?await fxRefresh(dry):await stockCloseRefresh(dry);
+  const x=mode==="CRYPTO"?await cryptoRefresh(dry):mode==="FX"?await fxRefresh(dry):
+   mode==="TWELVE_STOCK_EOD_FALLBACK"?await twelveFallbackRefresh(dry):await stockCloseRefresh(dry);
   return Response.json({ok:true,worker:"price-market-refresh-v1",mode,...x,portfolio_writes:0,auto_trade:false});
  }catch(e){return Response.json({ok:false,worker:"price-market-refresh-v1",mode,error:String(e instanceof Error?e.message:e).slice(0,200)},{status:503});}
 });
