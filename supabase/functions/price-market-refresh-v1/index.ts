@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import {parseTwelveDailyEod,previousNyBusinessDay,twelveFallbackWindow,type StockEodRow} from "./twelve-eod-guards.ts";
 import postgres from "npm:postgres@3.4.3";
 const dbUrl=Deno.env.get("SUPABASE_DB_URL");
 const sql=dbUrl?postgres(dbUrl,{prepare:false,max:1}):null;
@@ -258,7 +259,7 @@ async function alphaDailyFetch(uri:string):Promise<any> {
  return data;
 }
 
-type StockEodRow={symbol:string;close:number;session_date:string};
+
 async function stockCloseRefresh(dry:boolean){
  const ny=newYorkClock(new Date());
  if(["Sat","Sun"].includes(ny.weekday)){
@@ -406,12 +407,6 @@ async function withReservedProviderCall<T>(p:EodProvider,key:string,batch:string
  return value;
 }
 
-function previousNyBusinessDay(ny:{day:string;weekday:string}){
- if(["Sat","Sun"].includes(ny.weekday))return null;
- const date=new Date(ny.day+"T12:00:00Z");
- date.setUTCDate(date.getUTCDate()-(ny.weekday==="Mon"?3:1));
- return date.toISOString().slice(0,10);
-}
 // Twelve Data US historical EOD is published after NY midnight on the next trading day.
 async function twelveDailyFetch(uri:string):Promise<any>{
  const c=new AbortController(),timer=setTimeout(()=>c.abort(),18000);
@@ -438,7 +433,7 @@ async function twelveDailyFetch(uri:string):Promise<any>{
 async function twelveFallbackRefresh(dry:boolean){
  const ny=newYorkClock(new Date());
  // Never treat the 00:00-01:14 ET interval as published EOD.
- if(["Sat","Sun"].includes(ny.weekday)||ny.hour!==1||ny.minute<15)
+ if(!twelveFallbackWindow(ny))
   return {source:"TWELVE_DATA",skipped:true,reason:"TWELVE_EOD_OUTSIDE_RELEASE_WINDOW",database_writes:0,dry_run:dry};
  const day=previousNyBusinessDay(ny);
  if(!day)throw new Error("TWELVE_EOD_SESSION_INVALID");
@@ -477,19 +472,7 @@ async function twelveFallbackRefresh(dry:boolean){
   try {
    row=await withReservedProviderCall("TWELVE_DATA",key,batch,symbol,async()=>{
     const data=await twelveDailyFetch(url.toString());
-    if(String(data.meta?.symbol||"").toUpperCase()!==symbol||String(data.meta?.currency||"").toUpperCase()!=="USD")
-     throw new Error("TWELVE_DATA_SYMBOL_CURRENCY_MISMATCH");
-    if(String(data.meta?.exchange_timezone||"")!=="America/New_York")
-     throw new Error("TWELVE_DATA_EXCHANGE_TIMEZONE_MISMATCH");
-    const sessions=data.values.map((v:any)=>String(v?.datetime||"").slice(0,10))
-     .filter((v:string)=>/^\d{4}-\d{2}-\d{2}$/.test(v)).sort().reverse();
-    if(sessions[0]!==day||sessions.filter((v:string)=>v===day).length!==1)
-     throw new Error("TWELVE_DATA_SESSION_NOT_READY");
-    const candidate=data.values.find((v:any)=>String(v?.datetime||"").slice(0,10)===day);
-    const close=Number(candidate?.close);
-    if(!(close>0)||!Number.isFinite(close)||close>10000000)
-     throw new Error("TWELVE_DATA_SESSION_NOT_READY");
-    return {symbol,close,session_date:day};
+    return parseTwelveDailyEod(data,symbol,day);
    });
   }catch(e){
    const code=e instanceof Error?e.message:"TWELVE_DATA_UNKNOWN";
