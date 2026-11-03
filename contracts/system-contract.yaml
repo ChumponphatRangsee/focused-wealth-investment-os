@@ -89,7 +89,9 @@ legacy_runtime_notice:
   post_identity_cleanup_crypto_fx_sheet_e2e: pass
   retired_legacy_edge_deployments_still_present: 0
   active_price_edge_functions: [price-market-refresh-v1, price-sheet-sync-v1]
-  active_cron_ids: [14,15,16,17,18]
+  active_cron_ids: [14,15,16,17,18,19]
+  price_service_cron_ids: [14,15,16,17,18]
+  operational_maintenance_cron_ids: [19]
   us_stock_extension_production_activation: twelve_fallback_e2e_pass_2026_11_03
   stock_provider_dry_run: twelve_fallback_real_http_200_4_of_4
   stock_data_written: true
@@ -115,6 +117,21 @@ legacy_runtime_notice:
     current_price_read_model_unchanged_for_10_assets: true
     regression_passed: 48
   read_current_status: docs/CURRENT_STATUS.md
+operational_retention:
+  cron_job_run_details:
+    live: true
+    job_id: 19
+    job_name: fwios-cron-run-details-retention-v1
+    schedule_gmt: "15 3 * * *"
+    retention_days: 30
+    cutoff_column: end_time
+    preserves_null_end_time_rows: true
+    archive_before_delete: false
+    applies_to_all_cron_jobs: true
+    existing_price_jobs_14_18_unchanged: true
+  market_observations_retention_applies: false
+  quota_ledger_policy: undecided
+
 active_provider_fallback:
   pull_request: 112
   rollout_state: production_live_e2e_pass_2026_11_03
