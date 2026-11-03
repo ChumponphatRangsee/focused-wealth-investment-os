@@ -1,6 +1,15 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
 
+## 2026-11-03 quota-ledger retention decision — RETAIN / no automatic prune
+
+- **Decision:** `fwios_quota.api_call_ledger` is retained indefinitely for now; no scheduled DELETE/retention Cron is added.
+- Live preflight found only **4 rows / 64 KiB total relation size**, all from one successful Twelve Data batch for session 2026-11-02. There are **0 unresolved calls**, **0 active cooldowns**, and no rows older than 30/90/180/365 days.
+- The quota algorithm itself reads only the recent **60-second** and **24-hour** windows plus active `blocked_until`, but the table also provides durable provider-call audit evidence and enforces deterministic old-session duplicate protection through batch identity.
+- Current deterministic batch IDs use `EOD_V1:<provider>:<session_date>`. Deleting old ledger rows would eventually allow an old batch identity to be reserved again, weakening that protection even though the canonical price history remains append-only.
+- Measured average row size is about **168 bytes**. At four provider-call rows per normal stock session this is roughly **1,008 rows/year**; even a conservative two-provider worst case is about **2,016 rows/year** and ~0.34 MB/year of raw tuple payload before indexes. Storage pressure does not justify destructive retention now.
+- Any future purge must first redesign or preserve permanent batch/idempotency evidence, then re-evaluate audit requirements. This decision does not change the 24-hour quota calculation, provider limits, credentials, price data, Cron jobs, Google Sheet accounting or trading behavior.
+
 ## 2026-11-03 operational log retention — Production PASS (PR #115)
 
 - **30-day pg_cron retention is live.** Migration `cron_job_run_details_retention_v1` created Cron **#19 `fwios-cron-run-details-retention-v1`** at **03:15 GMT daily (10:15 Asia/Bangkok)**.
@@ -36,11 +45,11 @@
 - Supabase-managed schemas such as `auth`, `storage`, `realtime`, `extensions`, `graphql_public`, and `supabase_migrations` are platform infrastructure and should not be treated as FWIOS legacy data.
 
 ### Recommended next task for the next chat
-Decide whether `fwios_quota.api_call_ledger` needs a **separate retention/audit policy**.
-- Do not reuse the pg_cron 30-day rule automatically; provider-call receipts may need a longer audit window for quota, incident and provenance analysis.
-- Keep `fwios.market_observations` outside operational-log retention; it is canonical business price history.
-- Before any quota-ledger write, inspect current row volume, growth rate, provider/session coverage and the minimum history required for quota debugging.
-- Cron retention is already complete and live as job #19; preserve jobs 14–18 and the new maintenance job unless a later guarded migration intentionally changes them.
+Review the remaining **operational HTTP receipt retention**, starting with `net._http_response`, before adding any custom cleanup.
+- First verify current pg_net retention/configuration and actual live row volume; do not assume it behaves like pg_cron.
+- Preserve enough HTTP receipts to diagnose provider/Edge failures and correlate Cron dispatches with actual responses.
+- Keep `fwios.market_observations` permanently outside operational-log retention.
+- Keep `fwios_quota.api_call_ledger` unpruned unless batch/idempotency evidence is redesigned first.
 
 ### New-chat starting point
 Read, in order:
