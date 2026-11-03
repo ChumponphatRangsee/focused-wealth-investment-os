@@ -95,6 +95,22 @@ class PriceContractScope(unittest.TestCase):
         self.assertIn("COMMIT;", sql)
         self.assertNotIn("CASCADE", sql)
 
+    def test_legacy_coingecko_thb_purge_is_exact_guarded_and_not_age_based(self):
+        path = ROOT / "supabase" / "migrations" / "20261103200000_purge_legacy_coingecko_thb_v1.sql"
+        sql = path.read_text(encoding="utf-8")
+        self.assertIn("value_currency='THB'", sql)
+        self.assertIn("provider='COINGECKO'", sql)
+        self.assertIn("observation_type='LIVE_QUOTE'", sql)
+        self.assertIn("<> 12462", sql)
+        self.assertIn("target_deleted <> 12462", sql)
+        self.assertIn("DISABLE TRIGGER market_observations_append_only", sql)
+        self.assertIn("ENABLE TRIGGER market_observations_append_only", sql)
+        self.assertIn("LEGACY_COINGECKO_THB_CURRENT_READ_CHANGED", sql)
+        self.assertIn("LEGACY_COINGECKO_THB_ACTIVE_HISTORY_CHANGED", sql)
+        self.assertIn("ARRAY[14,15,16,17,18,19]", sql)
+        self.assertNotIn("DELETE FROM fwios.market_observations\n  WHERE observed_at", sql)
+        self.assertNotIn("CASCADE", sql)
+
     def test_cron_job_run_details_retention_is_guarded(self):
         path = ROOT / "supabase" / "migrations" / "20261103190000_cron_job_run_details_retention_v1.sql"
         sql = path.read_text(encoding="utf-8")
