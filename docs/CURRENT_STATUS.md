@@ -1,6 +1,51 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
 
+## 2026-11-03 session handoff — ready for new chat
+
+### Completed in this session
+- Production price pipeline upgraded and verified with **Alpha Vantage primary + Twelve Data EOD fallback**. PR #112 merged to `main`; current Stock EOD fallback is live and fail-closed.
+- Verified live Twelve Data batch for **2026-11-02**: MSFT 507.12, NVDA 202.059998, TLN 332.98999, TTWO 192.10001 USD; Collector and Google Sheet readback both passed.
+- Existing Cron jobs retained. Stock flow: Alpha at **19:00 New York**, Twelve fallback at **01:55 next New York weekday**, Sheet follow-up at **02:10**.
+- Private `fwios_quota` quota ledger is active for provider-call reservation/accounting; current quota guard and concurrency tests pass.
+- Legacy database cleanup completed in Production and merged via PR #113:
+  - deleted **5,113** retired provider observations;
+  - deleted **19,004** run-history rows from retired Cron jobs;
+  - removed stale `TWELVE_DATA_QUOTE` read support;
+  - dropped unused `fwios.market_observation_type_v1(text,text)`;
+  - removed unused `fwios.instruments.legacy_seed_key` and its unique constraint/index.
+- Current canonical state after cleanup: **3 `fwios` tables, 1 identity view, 5 `fwios` functions, 13,576 market observations, 10 current assets, 5 active Cron jobs**. Append-only observation trigger remains enabled.
+- Production regression after cleanup: **48/48 PASS**. Current price reads for all 10 assets were preserved exactly through the cleanup.
+- No automatic trading and no direct writes to Transactions, Cost Basis, Holdings quantities, Manual Overrides, or portfolio accounting.
+
+### Current schemas that matter
+- `fwios`: canonical instrument identity + price observations/read model.
+- `fwios_quota`: operational API quota ledger.
+- `cron`: current scheduled jobs and run receipts.
+- `net`: pg_net HTTP dispatch/response receipts.
+- `vault`: API keys and service credentials.
+- Supabase-managed schemas such as `auth`, `storage`, `realtime`, `extensions`, `graphql_public`, and `supabase_migrations` are platform infrastructure and should not be treated as FWIOS legacy data.
+
+### Recommended next task for the next chat
+Design and implement a **retention policy for operational logs**, starting with `cron.job_run_details`.
+- Recommended starting policy: keep roughly **30 days** of current Cron run history and automatically prune older rows.
+- Do **not** apply this retention to `fwios.market_observations`; price history is business data, not disposable operational logging.
+- Consider a separate retention policy for `fwios_quota.api_call_ledger` only after deciding how much provider-call audit history is required.
+- Implement retention through a guarded migration / scheduled maintenance job, preserve current jobs 14–18, and add regression checks so active-run diagnostics remain available.
+- Verify against current Supabase/pg_cron behavior before implementation; pg_cron does not automatically clean historical `job_run_details`.
+
+### New-chat starting point
+Read, in order:
+1. `docs/CURRENT_STATUS.md`
+2. `contracts/system-contract.yaml`
+3. `docs/PRICE_PIPELINE.md`
+4. current GitHub `main`
+5. live Supabase state before any write
+
+The next chat should treat this section as the latest handoff unless newer production receipts are added above it.
+
+
+
 ## 2026-11-03 legacy database cleanup — Production PASS (PR #113)
 
 - **User-authorized permanent cleanup applied:** removed **5,113** retired `fwios.market_observations` rows from providers no longer produced by the live pipeline: `TWELVE_DATA_FX` 2,572, `TWELVE_DATA_QUOTE` 2,486, `FWIOS_DAILY_CLOSE_SYNC` 40, `GOOGLE_SHEETS_MARKET_SEED` 10, `TWELVE_DATA_DAILY_CLOSE_FALLBACK` 3, `StockAnalysis` 1 and `Yahoo Finance` 1. Canonical observations decreased **18,689 → 13,576**; all 10 held instruments still retain linked price history.
