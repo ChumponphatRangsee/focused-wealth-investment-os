@@ -42,7 +42,7 @@ WITH tests(test_name,passed) AS (
  UNION ALL SELECT '34_NVIDIA_ENTITY_NAME_PRESERVED',(SELECT entity_name='NVIDIA Corporation' FROM fwios.v_instrument_identity_current WHERE asset_symbol='NVDA')
  UNION ALL SELECT '35_STOCK_SYMBOL_RESOLVES',(SELECT fwios.resolve_instrument_id_v1('NVDA','Stock',NULL,NULL) IS NOT NULL)
  UNION ALL SELECT '36_CRYPTO_SYMBOL_RESOLVES',(SELECT fwios.resolve_instrument_id_v1('BTC','Crypto',NULL,NULL) IS NOT NULL)
- UNION ALL SELECT '37_TEN_HELD_ASSETS_PLUS_ONE_FX_IDENTITY',(SELECT count(*)=11 FROM fwios.instruments AND (SELECT count(*) FROM fwios.instruments WHERE asset_class IN('Stock','Crypto'))=10 AND (SELECT count(*) FROM fwios.instruments WHERE asset_class='FX' AND instrument_type='CURRENCY_PAIR')=1)
+ UNION ALL SELECT '37_TEN_HELD_ASSETS_PLUS_ONE_FX_IDENTITY',(SELECT (SELECT count(*) FROM fwios.instruments)=11 AND (SELECT count(*) FROM fwios.instruments WHERE asset_class IN('Stock','Crypto'))=10 AND (SELECT count(*) FROM fwios.instruments WHERE asset_class='FX' AND instrument_type='CURRENCY_PAIR')=1)
  UNION ALL SELECT '38_FOUR_HELD_US_STOCKS_ONLY',(SELECT count(*)=4 FROM fwios.instruments WHERE asset_class='Stock')
  UNION ALL SELECT '39_SIX_OPEN_CRYPTOS_ONLY',(SELECT count(*)=6 FROM fwios.instruments WHERE asset_class='Crypto')
  UNION ALL SELECT '40_NO_RETIRED_STOCK_SYMBOL',(SELECT count(*)=0 FROM fwios.instrument_symbols WHERE symbol IN('ACN','CRWD','ADBE','NFLX'))
