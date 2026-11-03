@@ -3,7 +3,7 @@
 
 ## 2026-11-03 Twelve Data EOD fallback + private quota ledger — PR #112 (DRAFT, not activated)
 
-**2026-11-03 continuation:** Real two-session PostgreSQL 16 integration checks were added to GitHub CI (ephemeral PostgreSQL service) and **PASS**: same-batch only one session receives 4 slots, different batches cannot both exceed the per-minute budget, provider dispatch errors preserve spent quota, and access is private. Alpha Vantage response parsing now completes symbol/current-session/close validation *inside* the metered call before ledger `SUCCESS`. No Alpha/Twelve provider calls were made in these tests. US Friday closes become Twelve historical EOD eligible on **Monday at 01:15 ET** under the provider's next-trading-day policy, not on Saturday. **Live Twelve Data Key verification remains uncompleted**, and neither the Price Workers nor existing Cron schedules have been activated for fallback.
+**2026-11-03 continuation:** Real two-session PostgreSQL 16 integration checks were added to GitHub CI (ephemeral PostgreSQL service) and **PASS**: same-batch only one session receives 4 slots, different batches cannot both exceed the per-minute budget, provider dispatch errors preserve spent quota, and access is private. Alpha Vantage response parsing now completes symbol/current-session/close validation *inside* the metered call before ledger `SUCCESS`. No Alpha/Twelve provider calls were made in these tests. US Friday closes become Twelve historical EOD eligible on **Monday at 01:55 ET** under the provider's next-trading-day policy, not on Saturday. **Live Twelve Data Key verification remains uncompleted**, and neither the Price Workers nor existing Cron schedules have been activated for fallback.
 
 
 
