@@ -16,7 +16,7 @@ class ProviderDiagnosticsAndStockStaleness(unittest.TestCase):
                      "ALPHA_VANTAGE_NON_JSON_RESPONSE_CONTENT_",
                      "ALPHA_VANTAGE_UNEXPECTED_RESPONSE_OBJECT_"):
             with self.subTest(code=code): self.assertIn(code,COLLECTOR)
-        self.assertIn("await alphaDailyFetch(url.toString())",COLLECTOR)
+        self.assertIn("await withReservedProviderCall(",COLLECTOR)
         self.assertIn("rows.length+1",COLLECTOR)
         self.assertIn("if(r.status===429)",COLLECTOR)
         self.assertIn("r.headers.get(\"content-type\")",COLLECTOR)
@@ -29,14 +29,14 @@ class ProviderDiagnosticsAndStockStaleness(unittest.TestCase):
         self.assertLess(stock.index('reason:"PREFLIGHT_NO_PROVIDER_REQUEST"'),
                         stock.index('vaultSecret("ALPHA_VANTAGE_API_KEY")'))
         self.assertLess(stock.index('vaultSecret("ALPHA_VANTAGE_API_KEY")'),
-                        stock.index('await alphaDailyFetch(url.toString())'))
+                        stock.index('await withReservedProviderCall('))
         self.assertIn('raw_payload->>\'price_only_stock_eod\'=\'true\'',stock)
         self.assertIn("from unnest(",stock)
 
     def test_stale_stock_status_only_uses_protected_lineage(self):
         self.assertIn('q.status==="STALE"',SHEET)
         self.assertIn('q.quote_kind==="STOCK_REGULAR_CLOSE"',SHEET)
-        self.assertIn('q.provider==="ALPHA_VANTAGE_PRICE"',SHEET)
+        self.assertIn('q.provider==="ALPHA_VANTAGE_PRICE"||q.provider==="TWELVE_DATA"',SHEET)
         self.assertIn('STOCK_STALE_LINEAGE_MISMATCH_',SHEET)
         self.assertIn('String(record[8]||"")!==stale.observation_id',SHEET)
         self.assertIn('Number(record[3])!==stale.price_usd',SHEET)
