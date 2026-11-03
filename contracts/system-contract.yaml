@@ -116,6 +116,19 @@ legacy_runtime_notice:
     append_only_trigger_restored: true
     current_price_read_model_unchanged_for_10_assets: true
     regression_passed: 48
+  legacy_coingecko_thb_cleanup_2026_11_03:
+    authorized_by_user: true
+    provider: COINGECKO
+    observation_type: LIVE_QUOTE
+    value_currency: THB
+    deleted_rows: 12462
+    observations_after_cleanup: 1114
+    active_crypto_usd_rows_preserved: 900
+    active_stock_eod_rows_preserved: 205
+    active_fx_rows_preserved: 9
+    current_price_reads_unchanged: true
+    append_only_trigger_restored: true
+    age_based_retention: false
   read_current_status: docs/CURRENT_STATUS.md
 operational_retention:
   cron_job_run_details:
@@ -130,6 +143,11 @@ operational_retention:
     applies_to_all_cron_jobs: true
     existing_price_jobs_14_18_unchanged: true
   market_observations_retention_applies: false
+  market_observations_policy:
+    mode: active_architecture_history
+    age_based_prune: false
+    targeted_legacy_cleanup_requires_explicit_authorization: true
+    targeted_legacy_cleanup_requires_guarded_migration: true
   quota_ledger_policy:
     mode: retain_indefinitely
     automatic_prune: false
