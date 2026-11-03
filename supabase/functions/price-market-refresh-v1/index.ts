@@ -286,7 +286,10 @@ async function stockCloseRefresh(dry:boolean){
     and o.session_date=${ny.day}::date and o.observation_type='REGULAR_CLOSE'
     and o.market_status='CLOSED' and o.provider in ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')
     and o.source_tier='A' and o.value_currency='USD' and o.provenance_status='PASS'
-    and o.observation_value>0 and o.raw_payload->>'price_only_stock_eod'='true'`;
+    and o.observation_value>0 and o.raw_payload->>'price_only_stock_eod'='true'
+    and o.raw_payload->>'close_kind'='UNADJUSTED'
+    and ((o.provider='ALPHA_VANTAGE_PRICE' and o.raw_payload->>'provider_function'='TIME_SERIES_DAILY')
+      or (o.provider='TWELVE_DATA' and o.raw_payload->>'adjustment'='none'))`;
  const certified=new Set(already.map((x:any)=>String(x.symbol).toUpperCase()));
  if(certified.size===symbols.length)return {
   source:"ALPHA_VANTAGE_PRICE",asset_count:symbols.length,symbols,session_date:ny.day,
@@ -453,7 +456,10 @@ async function twelveFallbackRefresh(dry:boolean){
    and o.session_date=${day}::date and o.observation_type='REGULAR_CLOSE'
    and o.market_status='CLOSED' and o.provider in ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')
    and o.source_tier='A' and o.value_currency='USD' and o.provenance_status='PASS'
-   and o.observation_value>0 and o.raw_payload->>'price_only_stock_eod'='true'`;
+   and o.observation_value>0 and o.raw_payload->>'price_only_stock_eod'='true'
+    and o.raw_payload->>'close_kind'='UNADJUSTED'
+    and ((o.provider='ALPHA_VANTAGE_PRICE' and o.raw_payload->>'provider_function'='TIME_SERIES_DAILY')
+      or (o.provider='TWELVE_DATA' and o.raw_payload->>'adjustment'='none'))`;
  const certified=new Set(certifiedRows.map((x:any)=>String(x.symbol).toUpperCase()));
  if(certified.size===symbols.length)return {source:"TWELVE_DATA",skipped:true,reason:"EOD_SESSION_ALREADY_CERTIFIED",session_date:day,provider_requests_attempted:0,database_writes:0,dry_run:dry};
  if(certified.size>0)return {source:"TWELVE_DATA",skipped:true,reason:"INCOMPLETE_CERTIFIED_SESSION_REQUIRES_REVIEW",certified_count:certified.size,provider_requests_attempted:0,database_writes:0,dry_run:dry};
@@ -475,6 +481,10 @@ async function twelveFallbackRefresh(dry:boolean){
      throw new Error("TWELVE_DATA_SYMBOL_CURRENCY_MISMATCH");
     if(String(data.meta?.exchange_timezone||"")!=="America/New_York")
      throw new Error("TWELVE_DATA_EXCHANGE_TIMEZONE_MISMATCH");
+    const sessions=data.values.map((v:any)=>String(v?.datetime||"").slice(0,10))
+     .filter((v:string)=>/^\d{4}-\d{2}-\d{2}$/.test(v)).sort().reverse();
+    if(sessions[0]!==day||sessions.filter((v:string)=>v===day).length!==1)
+     throw new Error("TWELVE_DATA_SESSION_NOT_READY");
     const candidate=data.values.find((v:any)=>String(v?.datetime||"").slice(0,10)===day);
     const close=Number(candidate?.close);
     if(!(close>0)||!Number.isFinite(close)||close>10000000)
