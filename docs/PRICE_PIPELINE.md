@@ -1,5 +1,14 @@
 # Price Pipeline v1.1.0 — held US Stock EOD + Crypto + USD/THB FX
 
+## Current live architecture (verified 2026-11-03)
+
+Google Sheet OPEN Holdings → Alpha Vantage `TIME_SERIES_DAILY` EOD 19:00 ET → **Twelve Data `/time_series?interval=1day&adjust=none` fallback 01:55 ET on next NY weekday if no certified EOD** → atomic 4/4 `fwios.market_observations` → Google Sheet `_Market_Data` via Sheet Worker at 19:30 ET / 02:10 ET → existing Price Data and Holdings formulas. The fallback is **live**. On 2026-11-03 Twelve Data returned 2026-11-02 closes for MSFT/NVDA/TLN/TTWO; Collector HTTP 200 `database_writes=4` (#12017) and Sheet HTTP 200 `stock_count=4`, `sheet_write_readback_verified=true` (#12018). Crypto CoinGecko and FX Frankfurter routines unchanged.
+
+The private `fwios_quota.api_call_ledger` reserves each provider's full stock batch atomically before HTTP. The first live Twelve run used 4 calls and all ended `SUCCESS`. The existing 5 Cron jobs are retained. No automatic trading or portfolio accounting writes. The latest Source of Truth is `docs/CURRENT_STATUS.md` (not the historical deployment notes below).
+
+**Production provenance compatibility note:** Four initial 2026-11-02 Twelve EOD observations have `raw_payload` encoded as a JSONB string scalar by a bug in the first collector version. Their prices, provider, session and identity are valid. Do not mutate append-only observation history. Both Collector and Sheet Sync read and validate these via strict read-only JSONB normalization; future EOD rows use native `jsonb_build_object` metadata. See tests and status receipt for details.
+
+
 ```text
 Google Sheet Holdings (OPEN positions; read only)
   ├─ Crypto BTC/DOGE/ETH/HBAR/SOL/XRP → CoinGecko native USD
@@ -58,3 +67,45 @@ The authoritative Investment Portfolio Tracker Google Sheet `Holdings` was read 
 **Important for future new holdings:** the collector does not automatically create new instrument identities. If the user buys a stock absent from the surviving ten, register its canonical `instruments` and `instrument_symbols` entries safely before expecting price collection, or the worker will fail closed. This cleanup does not provide an automatic asset registration pathway.
 
 The US Stock EOD Alpha Vantage daily quota blocker is unrelated; do not claim a new Stock EOD price was successfully ingested yet.
+
+
+## Twelve Data EOD fallback — PR #112 (LIVE, 2026-11-03)
+
+**This section documents the active fail-closed behavior and historical release steps.**
+
+### Intended behavior
+- Current `US_STOCK_EOD` (Alpha Vantage) remains at 19:00 New York business-day time; the existing Atomic 4/4 USD closing-price validation and no-stale-backdating remain mandatory.
+- If not yet certified, `TWELVE_STOCK_EOD_FALLBACK` checks on the **next New York business day at 01:55 ET**, only after historical daily bars are expected to be published. For **Friday's** close this means **Monday at 01:55 ET**, not Saturday; Twelve Data explicitly describes availability on the next trading day. The date must be the previous New York weekday and must actually occur in the provider response. If a US market holiday means no bar for that target, **fail closed**; the current implementation does not invent a holiday calendar.
+- Provider Twelve Data `/time_series` uses `interval=1day`, `adjust=none`, currency USD, New York exchange timezone, latest unique session date and positive close. `parseTwelveDailyEod` validates this **inside** the provider-call receipt before it can be marked `SUCCESS` in the quota ledger. Neither parsed bar nor previous-session data is accepted without exact session match.
+- Price observation provenance uses `TWELVE_DATA`, source tier A, `REGULAR_CLOSE`, USD, `price_only_stock_eod=true`, `adjustment=none`, `close_kind=UNADJUSTED`. The Alpha/Twelve certified-observation guards check these markers, and Sheet Sync admits only strict provider/adjustment-specific certified observations. Existing crypto, FX, price formulas, and portfolio accounting must remain unchanged.
+
+### Private operational quota
+- `fwios_quota.api_call_ledger` and 4 SQL functions are already installed **but inert** in Production until the Price Worker is deployed with the new code. These are operational objects outside the 3 canonical `fwios` price tables. `anon`/`authenticated` cannot use the schema, and `service_role` cannot query the ledger.
+- Rolling 24h internal budget: Alpha 20 requests, Twelve 700 credits (conservative; external provider account usage is **unknown**). Minute batch checks: Alpha 4; Twelve 6. This is a local budget, **not** the provider's confirmed remaining credits.
+- Entire held-stock batch is reserved atomically before the first provider request. Only definitely `RESERVED` but not dispatched rows may be canceled. `DISPATCHED`, timeout `UNKNOWN`, rejected and completed requests conservatively consume the local budget.
+- A batch key is unique per provider and NY session; duplicate runs fail closed. An incomplete batch is not automatically retried under the same key. Do not bypass this by changing request IDs.
+
+### Manual no-write provider entitlement check
+
+The repository includes `tests/price/manual_twelve_provider_probe.ts`. This is an **opt-in operator tool**, **not** part of CI, Cron or the deployed Edge runtime. It only makes up to four read-only Twelve Data HTTP calls; it does **not** write Supabase, GitHub or Google Sheets. It will run only during 01:15–01:59 on a New York weekday, targeting the previous US weekday's EOD. For a Friday close, this is normally Monday at 01:55 ET. All four must pass exact session, symbol, USD and timezone checks.
+
+Set `TWELVE_DATA_API_KEY` securely in a local process environment (do not paste it into chat, code, GitHub or shell history), then run:
+
+```bash
+deno run --allow-env=TWELVE_DATA_API_KEY --allow-net=api.twelvedata.com \
+  tests/price/manual_twelve_provider_probe.ts
+```
+
+Expected safe output: `mode=READ_ONLY_MANUAL_NO_DATABASE_WRITES`, `all_valid=true`, `attempted=4`, one verified `VALID_EOD` per stock, plus numeric provider credit headers when supplied. The probe prints **no key, raw response or full request URL**. It intentionally stops on the first rejection or validation failure. This consumes up to four credits; do not loop or schedule the probe. **The agent has not run this script against the user's API key.** The command only typechecks as part of CI. Delete the locally set environment variable after finishing.
+
+### Release evidence and operational rollback checklist
+1. **Verified live:** The authenticated 2026-11-03 production Twelve EOD run validated all four symbols, USD currency, New York exchange timezone, `adjust=none`, and same 2026-11-02 session. Provider/key entitlement is proven by this successful batch; a separate no-write probe is optional. Never record the API key or query string.
+2. **Verified in GitHub CI:** Python contracts, Deno typecheck, 8 Deno fixture cases, and `tests/price/quota_postgres_integration.py` against a disposable PostgreSQL 16 service. Concurrent independent DB sessions verified a single winner for the same batch; separate batches cannot both reserve 4 slots against the same 4-request minute budget. Also tested cancellation of exactly never-dispatched slots, unreleased dispatched calls and private access. Production rollback SQL smoke previously passed. These tests use no provider requests.
+3. Confirm Supabase `fwios_quota` permissions and availability (1 table, 4 functions), and original source/cron drift expectations.
+4. Deploy only the current two Edge Workers **with every imported source file**. The Market Collector deployment must upload `index.ts`, **`twelve-eod-guards.ts`**, and `deno.json`; Sheet Sync must upload `index.ts` and `deno.json`. Keep the existing server-side automation-token authentication.
+5. With no provider traffic, test both `US_STOCK_EOD` and `TWELVE_STOCK_EOD_FALLBACK` in `dry_run=true` at an eligible New York window. Expected `provider_requests_attempted=0`, `database_writes=0` and `fwios_quota.api_call_ledger` unchanged.
+6. **Applied:** The guarded `20261103103000_schedule_twelve_eod_fallback_v1.sql` migration **altered existing Cron IDs 17 and 18** rather than creating new jobs. Ensure New York time guards invoke Alpha at 19:00 and Twelve at 01:55, and follow-up Sheet Sync at 19:30 and 02:10, with DST correctness.
+7. **Accepted 2026-11-03:** Provider returned all 4 **same-session** closes, Collector atomically created 4 EOD observations, and price-sheet-sync-v1 returned `stock_count=4` with exact readback. Regression remains 44/44 PASS; Holdings quantities, Transactions, Cost Basis, manual overrides, and account valuations must not change except as a direct consequence of verified new prices.
+
+### Rollback
+If deployment or certification fails, restore the original Worker sources from the tracked `main` reference preceding PR #112 and the prior Cron #17/#18 schedule/command snapshot. Leave the operational quota ledger **inert** and retained for audit; never hard-delete price history, mutate portfolio accounting, or claim provider availability without verification. Keep Issue #106 OPEN until EOD E2E PASS.

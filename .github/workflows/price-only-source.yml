@@ -8,7 +8,21 @@ permissions:
 jobs:
   price-service-contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
+    services:
+      quota_test_postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: quota_test
+          POSTGRES_DB: quota_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d quota_test"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,3 +37,12 @@ jobs:
         run: |
           deno check supabase/functions/price-market-refresh-v1/index.ts
           deno check supabase/functions/price-sheet-sync-v1/index.ts
+          deno check tests/price/manual_twelve_provider_probe.ts
+      - name: Run fixture-based Twelve Data EOD guards
+        run: deno test tests/price/test_twelve_eod_guards.ts
+      - name: Run real SQL quota concurrency tests in isolated PostgreSQL
+        env:
+          QUOTA_TEST_DATABASE_URL: postgresql://postgres:quota_test@localhost:5432/quota_test
+        run: |
+          python -m pip install "psycopg[binary]==3.2.9"
+          python tests/price/quota_postgres_integration.py -v

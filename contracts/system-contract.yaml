@@ -4,7 +4,7 @@ contract:
   title: Asset Price Data Service
   date: "2026-10-30"
   timezone: Asia/Bangkok
-  status: us_stock_eod_deployed_scheduled_provider_rate_limit
+  status: dual_provider_eod_fallback_production_e2e_pass_2026_11_03
   auto_trade: false
 objective:
   purpose: collect_validate_store_and_sync_held_asset_prices
@@ -55,13 +55,13 @@ google_sheet:
 workers:
   market_collector:
     edge_function: price-market-refresh-v1
-    modes: [CRYPTO, FX, US_STOCK_EOD]
+    modes: [CRYPTO, FX, US_STOCK_EOD, TWELVE_STOCK_EOD_FALLBACK]
     scheduled_job_ids: [14, 15, 17]
-    us_stock_schedule: "19:00 America/New_York Monday-Friday, active Cron 17"
+    us_stock_schedule: "19:00 Alpha Vantage and 01:55 following NY weekday Twelve Data, active Cron 17"
   sheet_price_sync:
     edge_function: price-sheet-sync-v1
     scheduled_job_ids: [16, 18]
-    us_stock_followup: "19:30 America/New_York Monday-Friday, active Cron 18"
+    us_stock_followup: "19:30 Alpha EOD and 02:10 Twelve EOD NY weekdays, active Cron 18"
   require_server_authentication: true
 excluded:
   - stock_discovery
@@ -90,9 +90,9 @@ legacy_runtime_notice:
   retired_legacy_edge_deployments_still_present: 0
   active_price_edge_functions: [price-market-refresh-v1, price-sheet-sync-v1]
   active_cron_ids: [14,15,16,17,18]
-  us_stock_extension_production_activation: scheduled_first_eod_success_pending
-  stock_provider_dry_run: ALPHA_VANTAGE_DAILY_RATE_LIMIT
-  stock_data_written: false
+  us_stock_extension_production_activation: twelve_fallback_e2e_pass_2026_11_03
+  stock_provider_dry_run: twelve_fallback_real_http_200_4_of_4
+  stock_data_written: true
   post_deploy_sheet_readback: pass
   sql_regression_passed: 44
   held_instrument_count: 10
@@ -104,3 +104,47 @@ legacy_runtime_notice:
   observations_after_purge_before_e2e: 18652
   post_purge_crypto_fx_sheet_e2e: pass
   read_current_status: docs/CURRENT_STATUS.md
+active_provider_fallback:
+  pull_request: 112
+  rollout_state: production_live_e2e_pass_2026_11_03
+  provider_fallback:
+    provider: TWELVE_DATA
+    endpoint: time_series
+    interval: 1day
+    adjustment: none
+    currency: USD
+    scheduled_fallback: next_ny_business_day_01_55_et
+    source_session: prior_ny_business_day
+    must_validate_all_held_stocks_before_atomic_insert: true
+    must_preserve_source_provenance: true
+  quota_control:
+    schema: fwios_quota
+    table: api_call_ledger
+    separate_from_three_canonical_price_tables: true
+    atomic_reservation_before_request: true
+    unique_batch_per_provider_session: true
+    allow_cancel_only_undispatched_requests: true
+    window: conservative_rolling_24_hours
+    provider_reported_remaining_is_not_inferred: true
+  production_acceptance:
+    collector_http: 200
+    collector_pg_net_response_id: 12017
+    collector_session: "2026-11-02"
+    collector_provider: TWELVE_DATA
+    collector_provider_requests: 4
+    collector_database_writes: 4
+    sheet_http: 200
+    sheet_pg_net_response_id: 12018
+    sheet_stock_count: 4
+    sheet_crypto_count: 6
+    sheet_readback_verified: true
+    quota_successful_requests: 4
+    sql_regression_passed: 44
+    raw_payload_legacy_string_normalization: read_only_compatibility
+    future_eod_raw_payload: typed_jsonb_object
+  remaining_monitoring:
+    - alpha_vantage_shared_key_daily_limit_still_unresolved
+    - twelve_provider_outcomes_and_eod_timeliness
+  no_legacy_worker_resurrection: true
+  no_unheld_stock_writes: true
+  auto_trade: false

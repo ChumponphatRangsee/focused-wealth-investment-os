@@ -74,7 +74,7 @@ class PriceContractScope(unittest.TestCase):
     def test_only_current_migration_receipts(self):
         files = [p.name for p in (ROOT / "supabase" / "migrations").glob("*.sql")]
         self.assertTrue(files)
-        self.assertTrue(all(name.startswith(("20261029", "20261030")) for name in files))
+        self.assertTrue(all(name.startswith(("20261029", "20261030", "20261103")) for name in files))
 
 if __name__ == "__main__":
     unittest.main()

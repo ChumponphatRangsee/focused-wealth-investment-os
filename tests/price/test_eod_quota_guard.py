@@ -12,7 +12,7 @@ class StockEodQuotaGuardContract(unittest.TestCase):
         self.assertLess(STOCK.index("if(certified.size===symbols.length)"), key)
         self.assertLess(STOCK.index("if(certified.size>0)"), key)
         self.assertLess(STOCK.index("if(dry)return {"), key)
-        self.assertLess(key, STOCK.index("await alphaDailyFetch(url.toString())"))
+        self.assertLess(key, STOCK.index("await withReservedProviderCall("))
         self.assertIn('reason:"PREFLIGHT_NO_PROVIDER_REQUEST"', STOCK)
         self.assertIn("provider_called:false", STOCK)
         self.assertIn("provider_requests_attempted:0", STOCK)
@@ -22,12 +22,12 @@ class StockEodQuotaGuardContract(unittest.TestCase):
             "o.session_date=${ny.day}::date",
             "o.observation_type='REGULAR_CLOSE'",
             "o.market_status='CLOSED'",
-            "o.provider='ALPHA_VANTAGE_PRICE'",
+            "o.provider in ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')",
             "o.source_tier='A'",
             "o.value_currency='USD'",
             "o.provenance_status='PASS'",
             "o.observation_value>0",
-            "o.raw_payload->>'price_only_stock_eod'='true'",
+            "normalized.payload->>'price_only_stock_eod'='true'",
             "s.is_primary=true",
         )
         query = STOCK.split("const already=await sql!", 1)[1].split("`;", 1)[0]
@@ -46,8 +46,8 @@ class StockEodQuotaGuardContract(unittest.TestCase):
         self.assertIn('["4. close"]', STOCK)
         self.assertIn('rows.every(x=>x.session_date===ny.day)', STOCK)
         self.assertIn("from unnest(", STOCK)
-        self.assertIn('provider_function:"TIME_SERIES_DAILY"', STOCK)
-        self.assertIn("price_only_stock_eod:true", STOCK)
+        self.assertIn("provider_function','TIME_SERIES_DAILY", STOCK)
+        self.assertIn("price_only_stock_eod", STOCK)
 
     def test_no_new_legacy_or_portfolio_mutations(self):
         self.assertNotIn("DELETE FROM", STOCK.upper())

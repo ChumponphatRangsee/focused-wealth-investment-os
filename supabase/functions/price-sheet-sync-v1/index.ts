@@ -175,16 +175,25 @@ async function loadPricePayload(googleToken:string) {
  const stockQuotes=openStocks.map(symbol=>({symbol,q:bySymbol.get(symbol)||{}}));
  const candidateIds=stockQuotes.filter(({q})=>q.asset_class==="Stock"
   &&q.status==="LAST_CLOSE"&&q.quote_kind==="STOCK_REGULAR_CLOSE"
-  &&q.provider==="ALPHA_VANTAGE_PRICE"&&q.currency==="USD"
+  &&(q.provider==="ALPHA_VANTAGE_PRICE"||q.provider==="TWELVE_DATA")&&q.currency==="USD"
   &&q.source_native_usd===true&&q.valuation_eligible===true
   &&Number(q.price_usd)>0&&q.observation_id&&q.session_date&&q.valid_until)
   .map(({q})=>String(q.observation_id));
- const certified=candidateIds.length?await sql!`select observation_id::text id
-  from fwios.market_observations where observation_id=ANY(${candidateIds}::uuid[])
-   and observation_type='REGULAR_CLOSE' and market_status='CLOSED'
-   and provider='ALPHA_VANTAGE_PRICE' and source_tier='A'
-   and raw_payload->>'price_only_stock_eod'='true'
-   and raw_payload->>'close_kind'='UNADJUSTED'`:[];
+ // Immutable observation compatibility: a previous worker stored EOD
+ // metadata as a JSONB *string* rather than a JSONB object.
+ // Decode only at read time, keeping provenance checks fail-closed.
+ const certified=candidateIds.length?await sql!`select o.observation_id::text id
+  from fwios.market_observations o
+  cross join lateral (select case when jsonb_typeof(o.raw_payload)='string'
+    then (o.raw_payload #>> '{}')::jsonb else o.raw_payload end as payload) normalized
+  where o.observation_id=ANY(${candidateIds}::uuid[])
+   and o.observation_type='REGULAR_CLOSE' and o.market_status='CLOSED'
+   and o.provider IN ('ALPHA_VANTAGE_PRICE','TWELVE_DATA') and o.source_tier='A'
+   and o.provenance_status='PASS' and o.value_currency='USD' and o.observation_value>0
+   and normalized.payload->>'price_only_stock_eod'='true'
+   and normalized.payload->>'close_kind'='UNADJUSTED'
+   and ((o.provider='ALPHA_VANTAGE_PRICE' and normalized.payload->>'provider_function'='TIME_SERIES_DAILY')
+     or (o.provider='TWELVE_DATA' and normalized.payload->>'adjustment'='none'))`:[];
  const allowedIds=new Set(certified.map((r:any)=>String(r.id)));
  const stockValues=stockQuotes.filter(({q})=>allowedIds.has(String(q.observation_id)))
   .map(({symbol,q})=>toValue(symbol,q));
@@ -192,10 +201,10 @@ async function loadPricePayload(googleToken:string) {
  // Never change price, observation ID, eligibility, timestamps or portfolio formulas.
  const stockStaleStatuses=stockQuotes.filter(({q})=>
    q.asset_class==="Stock"&&q.status==="STALE"&&
-   q.quote_kind==="STOCK_REGULAR_CLOSE"&&q.provider==="ALPHA_VANTAGE_PRICE"&&
+   q.quote_kind==="STOCK_REGULAR_CLOSE"&&(q.provider==="ALPHA_VANTAGE_PRICE"||q.provider==="TWELVE_DATA")&&
    q.source_native_usd===true&&q.observation_id&&
    Number.isFinite(Number(q.price_usd))&&Number(q.price_usd)>0)
-  .map(({symbol,q})=>({symbol,observation_id:String(q.observation_id),
+  .map(({symbol,q})=>({symbol,provider:String(q.provider),observation_id:String(q.observation_id),
     price_usd:Number(q.price_usd)}));
  const fxRows=await sql!`select observation_value::numeric fx_rate,provider,observation_id,observed_at,session_date,provenance_status
     from fwios.market_observations where observation_type='FX' and value_currency='THB'
@@ -235,7 +244,7 @@ async function writeShadow(payload: Awaited<ReturnType<typeof loadPricePayload>>
       if(stale) {
         // Protect lineage: do not mark a different/historic sheet observation stale.
         if(String(record[8]||"")!==stale.observation_id ||
-          String(record[7]||"")!=="ALPHA_VANTAGE_PRICE" ||
+          String(record[7]||"")!==stale.provider ||
           String(record[6]||"")!=="STOCK_REGULAR_CLOSE" ||
           Number(record[3])!==stale.price_usd ||
           !["LAST_CLOSE","STALE"].includes(String(record[5]||"")))
