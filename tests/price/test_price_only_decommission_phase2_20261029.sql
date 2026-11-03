@@ -27,8 +27,14 @@ WITH tests(test_name,passed) AS (
  UNION ALL SELECT '25_OBSOLETE_SNAPSHOT_TRIGGER_GONE',(SELECT to_regprocedure('fwios.immutable_snapshot_guard_v1()') IS NULL)
  UNION ALL SELECT '26_SEVEN_LEGACY_SQL_ROUTINES_GONE',(SELECT count(*)=0 FROM pg_proc WHERE pronamespace='fwios'::regnamespace AND proname = ANY(ARRAY['immutable_snapshot_guard_v1','lineage_append_only_guard_v1','normalize_architecture_system_state_write_v1','sync_market_daily_close_observation_v1','sync_market_price_quote_observation_v1','sync_market_price_snapshot_observation_v1','thesis_memory_append_only_guard_v1']))
  UNION ALL SELECT '27_ONLY_FIVE_CRON_REGISTRATIONS',(SELECT count(*)=5 FROM cron.job)
- UNION ALL SELECT '28_US_STOCK_EOD_CRON_ROUTED',(SELECT active AND command LIKE '%/functions/v1/price-market-refresh-v1%' AND command LIKE '%US_STOCK_EOD%' AND schedule='0 0,23 * * *' FROM cron.job WHERE jobname='fwios-us-stock-eod-close-v1')
- UNION ALL SELECT '29_STOCK_SHEET_FOLLOWUP_CRON_ROUTED',(SELECT active AND command LIKE '%/functions/v1/price-sheet-sync-v1%' AND command LIKE '%STOCK_EOD_SHEET%' AND schedule='30 0,23 * * *' FROM cron.job WHERE jobname='fwios-us-stock-eod-sheet-followup-v1')
+ UNION ALL SELECT '28_US_STOCK_EOD_CRON_ROUTED',(SELECT active AND command LIKE '%/functions/v1/price-market-refresh-v1%' AND command LIKE '%US_STOCK_EOD%' AND (schedule='0 0,23 * * *' OR
+ (schedule='0,55 0,5,6,23 * * *' AND command LIKE '%TWELVE_STOCK_EOD_FALLBACK%'
+  AND command LIKE '%01:55%' AND command LIKE '%19:00%'))
+ FROM cron.job WHERE jobname='fwios-us-stock-eod-close-v1')
+ UNION ALL SELECT '29_STOCK_SHEET_FOLLOWUP_CRON_ROUTED',(SELECT active AND command LIKE '%/functions/v1/price-sheet-sync-v1%' AND command LIKE '%STOCK_EOD_SHEET%' AND (schedule='30 0,23 * * *' OR
+ (schedule='10,30 0,6,7,23 * * *' AND command LIKE '%02:10%'
+  AND command LIKE '%19:30%'))
+ FROM cron.job WHERE jobname='fwios-us-stock-eod-sheet-followup-v1')
  UNION ALL SELECT '30_THREE_CORE_TABLES_CONFIRMED',(SELECT count(*)=3 FROM pg_class WHERE relnamespace='fwios'::regnamespace AND relkind='r')
  UNION ALL SELECT '31_ENTITY_DATA_MOVED',(SELECT count(*)=10 FROM fwios.instruments WHERE metadata->'retired_entity'->>'display_name' IS NOT NULL AND metadata->'retired_entity'->>'entity_type' IS NOT NULL)
  UNION ALL SELECT '32_IDENTITY_VIEW_MATCHES',(SELECT count(*)=10 FROM fwios.v_instrument_identity_current)
