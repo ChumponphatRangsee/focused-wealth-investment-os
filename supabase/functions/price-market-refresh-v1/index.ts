@@ -414,10 +414,12 @@ async function twelveDailyFetch(uri:string):Promise<any>{
  try {res=await fetch(uri,{headers:{Accept:"application/json"},signal:c.signal});body=await res.text();}
  catch(e){throw new Error(e instanceof Error&&e.name==="AbortError"?"TWELVE_DATA_TIMEOUT":"TWELVE_DATA_NETWORK_ERROR");}
  finally{clearTimeout(timer);}
- if(res.status===429)throw new Error("TWELVE_DATA_RATE_LIMIT");
- if(!res.ok)throw new Error("TWELVE_DATA_HTTP_"+res.status);
- let data:any;try{data=JSON.parse(body)}catch{throw new Error("TWELVE_DATA_NON_JSON_RESPONSE");}
- if(data?.status==="error"||typeof data?.code==="number"&&Number(data.code)>=400){
+ if(!res.ok&&res.status!==429)throw new Error("TWELVE_DATA_HTTP_"+res.status);
+ let data:any;
+ try{data=JSON.parse(body)}catch{
+  throw new Error(res.status===429?"TWELVE_DATA_RATE_LIMIT":"TWELVE_DATA_NON_JSON_RESPONSE");
+ }
+ if(res.status===429||data?.status==="error"||typeof data?.code==="number"&&Number(data.code)>=400){
   const message=String(data?.message||"").toLowerCase();
   if(/per day|daily|800.{0,10}credit/.test(message))throw new Error("TWELVE_DATA_DAILY_RATE_LIMIT");
   if(/per minute|minute|limit|credit|quota|too many|rate/.test(message)||Number(data?.code)===429)
