@@ -66,7 +66,7 @@ The US Stock EOD Alpha Vantage daily quota blocker is unrelated; do not claim a 
 
 ### Intended behavior
 - Current `US_STOCK_EOD` (Alpha Vantage) remains at 19:00 New York business-day time; the existing Atomic 4/4 USD closing-price validation and no-stale-backdating remain mandatory.
-- If not yet certified, proposed `TWELVE_STOCK_EOD_FALLBACK` checks on the **next New York business day at 01:15 ET**, only after historical daily bars are expected to be published. For **Friday's** close this means **Monday at 01:15 ET**, not Saturday; Twelve Data explicitly describes availability on the next trading day. The date must be the previous New York weekday and must actually occur in the provider response. If a US market holiday means no bar for that target, **fail closed**; the current implementation does not invent a holiday calendar.
+- If not yet certified, proposed `TWELVE_STOCK_EOD_FALLBACK` checks on the **next New York business day at 01:55 ET**, only after historical daily bars are expected to be published. For **Friday's** close this means **Monday at 01:55 ET**, not Saturday; Twelve Data explicitly describes availability on the next trading day. The date must be the previous New York weekday and must actually occur in the provider response. If a US market holiday means no bar for that target, **fail closed**; the current implementation does not invent a holiday calendar.
 - Provider Twelve Data `/time_series` uses `interval=1day`, `adjust=none`, currency USD, New York exchange timezone, latest unique session date and positive close. `parseTwelveDailyEod` validates this **inside** the provider-call receipt before it can be marked `SUCCESS` in the quota ledger. Neither parsed bar nor previous-session data is accepted without exact session match.
 - Price observation provenance uses `TWELVE_DATA`, source tier A, `REGULAR_CLOSE`, USD, `price_only_stock_eod=true`, `adjustment=none`, `close_kind=UNADJUSTED`. The Alpha/Twelve certified-observation guards check these markers, and Sheet Sync admits only strict provider/adjustment-specific certified observations. Existing crypto, FX, price formulas, and portfolio accounting must remain unchanged.
 
@@ -78,7 +78,7 @@ The US Stock EOD Alpha Vantage daily quota blocker is unrelated; do not claim a 
 
 ### Manual no-write provider entitlement check
 
-The repository includes `tests/price/manual_twelve_provider_probe.ts`. This is an **opt-in operator tool**, **not** part of CI, Cron or the deployed Edge runtime. It only makes up to four read-only Twelve Data HTTP calls; it does **not** write Supabase, GitHub or Google Sheets. It will run only during 01:15–01:59 on a New York weekday, targeting the previous US weekday's EOD. For a Friday close, this is normally Monday at 01:15 ET. All four must pass exact session, symbol, USD and timezone checks.
+The repository includes `tests/price/manual_twelve_provider_probe.ts`. This is an **opt-in operator tool**, **not** part of CI, Cron or the deployed Edge runtime. It only makes up to four read-only Twelve Data HTTP calls; it does **not** write Supabase, GitHub or Google Sheets. It will run only during 01:15–01:59 on a New York weekday, targeting the previous US weekday's EOD. For a Friday close, this is normally Monday at 01:55 ET. All four must pass exact session, symbol, USD and timezone checks.
 
 Set `TWELVE_DATA_API_KEY` securely in a local process environment (do not paste it into chat, code, GitHub or shell history), then run:
 
@@ -95,7 +95,7 @@ Expected safe output: `mode=READ_ONLY_MANUAL_NO_DATABASE_WRITES`, `all_valid=tru
 3. Confirm Supabase `fwios_quota` permissions and availability (1 table, 4 functions), and original source/cron drift expectations.
 4. Deploy only the current two Edge Workers **with every imported source file**. The Market Collector deployment must upload `index.ts`, **`twelve-eod-guards.ts`**, and `deno.json`; Sheet Sync must upload `index.ts` and `deno.json`. Keep the existing server-side automation-token authentication.
 5. With no provider traffic, test both `US_STOCK_EOD` and `TWELVE_STOCK_EOD_FALLBACK` in `dry_run=true` at an eligible New York window. Expected `provider_requests_attempted=0`, `database_writes=0` and `fwios_quota.api_call_ledger` unchanged.
-6. Only then apply the guarded `20261103103000_schedule_twelve_eod_fallback_v1.sql` migration, which **alters existing Cron IDs 17 and 18** rather than creating new jobs. Ensure New York time guards invoke Alpha at 19:00 and Twelve at 01:15, and follow-up Sheet Sync at 19:30 and 01:45, with DST correctness.
+6. Only then apply the guarded `20261103103000_schedule_twelve_eod_fallback_v1.sql` migration, which **alters existing Cron IDs 17 and 18** rather than creating new jobs. Ensure New York time guards invoke Alpha at 19:00 and Twelve at 01:55, and follow-up Sheet Sync at 19:30 and 02:10, with DST correctness.
 7. Accept production E2E only after provider returns all 4 **same-session** closes, collector atomically creates 4 certified observations, and price-sheet-sync-v1 returns `stock_count=4` with exact readback. Regression remains 44/44 PASS; Holdings quantities, Transactions, Cost Basis, manual overrides, and account valuations must not change except as a direct consequence of verified new prices.
 
 ### Rollback
