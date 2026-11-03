@@ -25,6 +25,9 @@ class PriceContractScope(unittest.TestCase):
         self.assertIn("auto_trade: false", contract)
         self.assertIn("crypto_prices_usd", contract)
         self.assertIn("usd_thb_fx", contract)
+        self.assertIn("operational_retention:", contract)
+        self.assertIn("active_cron_ids: [14,15,16,17,18,19]", contract)
+        self.assertIn("market_observations_retention_applies: false", contract)
 
 
     def test_held_us_stock_eod_scope(self):
