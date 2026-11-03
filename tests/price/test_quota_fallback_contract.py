@@ -61,6 +61,18 @@ class QuotaAndFallbackContract(unittest.TestCase):
         self.assertIn("from unnest(",COLLECTOR)
         self.assertIn('"TWELVE_STOCK_EOD_FALLBACK"',COLLECTOR)
 
+    def test_eod_provenance_is_typed_jsonb_and_legacy_readonly(self):
+        # Production 2026-11-03 incident: JSON.stringify + ::jsonb stored a
+        # JSONB string scalar; the four immutable rows must remain readable.
+        self.assertIn("jsonb_build_object('price_only',true,'price_only_stock_eod',true", COLLECTOR)
+        self.assertNotIn("const metadata=JSON.stringify({price_only:true,price_only_stock_eod:true", COLLECTOR)
+        self.assertIn("jsonb_typeof(o.raw_payload)='string'", COLLECTOR)
+        self.assertIn("normalized.payload->>'price_only_stock_eod'", COLLECTOR)
+        self.assertIn("jsonb_typeof(o.raw_payload)='string'", SYNC)
+        self.assertIn("normalized.payload->>'price_only_stock_eod'", SYNC)
+        self.assertIn("o.provenance_status='PASS'", SYNC)
+        self.assertIn("o.value_currency='USD'", SYNC)
+
     def test_sheet_accepts_only_certified_unadjusted_rows(self):
         self.assertIn("provider IN ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')",SYNC)
         self.assertIn("normalized.payload->>'price_only_stock_eod'='true'",SYNC)
