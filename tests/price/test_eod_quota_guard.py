@@ -27,7 +27,7 @@ class StockEodQuotaGuardContract(unittest.TestCase):
             "o.value_currency='USD'",
             "o.provenance_status='PASS'",
             "o.observation_value>0",
-            "o.raw_payload->>'price_only_stock_eod'='true'",
+            "normalized.payload->>'price_only_stock_eod'='true'",
             "s.is_primary=true",
         )
         query = STOCK.split("const already=await sql!", 1)[1].split("`;", 1)[0]
@@ -46,8 +46,8 @@ class StockEodQuotaGuardContract(unittest.TestCase):
         self.assertIn('["4. close"]', STOCK)
         self.assertIn('rows.every(x=>x.session_date===ny.day)', STOCK)
         self.assertIn("from unnest(", STOCK)
-        self.assertIn('provider_function:"TIME_SERIES_DAILY"', STOCK)
-        self.assertIn("price_only_stock_eod:true", STOCK)
+        self.assertIn("provider_function','TIME_SERIES_DAILY", STOCK)
+        self.assertIn("price_only_stock_eod", STOCK)
 
     def test_no_new_legacy_or_portfolio_mutations(self):
         self.assertNotIn("DELETE FROM", STOCK.upper())
