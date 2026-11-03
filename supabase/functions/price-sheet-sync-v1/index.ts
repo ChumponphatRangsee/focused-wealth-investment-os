@@ -188,6 +188,15 @@ async function loadPricePayload(googleToken:string) {
  const allowedIds=new Set(certified.map((r:any)=>String(r.id)));
  const stockValues=stockQuotes.filter(({q})=>allowedIds.has(String(q.observation_id)))
   .map(({symbol,q})=>toValue(symbol,q));
+ // A stale historical stock quote may update the status cell ONLY.
+ // Never change price, observation ID, eligibility, timestamps or portfolio formulas.
+ const stockStaleStatuses=stockQuotes.filter(({q})=>
+   q.asset_class==="Stock"&&q.status==="STALE"&&
+   q.quote_kind==="STOCK_REGULAR_CLOSE"&&q.provider==="ALPHA_VANTAGE_PRICE"&&
+   q.source_native_usd===true&&q.observation_id&&
+   Number.isFinite(Number(q.price_usd))&&Number(q.price_usd)>0)
+  .map(({symbol,q})=>({symbol,observation_id:String(q.observation_id),
+    price_usd:Number(q.price_usd)}));
  const fxRows=await sql!`select observation_value::numeric fx_rate,provider,observation_id,observed_at,session_date,provenance_status
     from fwios.market_observations where observation_type='FX' and value_currency='THB'
       and provenance_status='PASS' and observation_value>0
@@ -195,7 +204,7 @@ async function loadPricePayload(googleToken:string) {
  if(!fxRows.length)throw new Error("USDTHB_FX_MISSING");
  const fx=fxRows[0];
  if(new Date(String(fx.observed_at)).getTime()<Date.now()-1000*60*60*120)throw new Error("USDTHB_FX_STALE");
- return {openAssets,openStocks,values,stockValues,fx:["USDTHB",Number(fx.fx_rate),String(fx.provider),
+ return {openAssets,openStocks,values,stockValues,stockStaleStatuses,fx:["USDTHB",Number(fx.fx_rate),String(fx.provider),
   String(fx.observation_id),String(fx.observed_at),String(fx.session_date),String(fx.provenance_status)]};
 }
 
@@ -209,6 +218,8 @@ async function writeShadow(payload: Awaited<ReturnType<typeof loadPricePayload>>
   if (String(before?.[0]?.[0] || "") !== "asset_symbol")
     throw new Error("SHEET_HEADER_MISMATCH");
   const updateableStockSymbols = new Set(payload.stockValues.map(data=>String(data[0])));
+  const staleBySymbol = new Map<string,(typeof payload.stockStaleStatuses)[number]>(payload.stockStaleStatuses.map(s=>[s.symbol,s] as const));
+  const staleStatusRows = new Map<number,string>();
   const existingBySymbol = new Map<string, number>();
   const stockProtected = new Map<number, string>();
   for (let row = 2; row <= SHEET_MAX_ROW; row++) {
@@ -218,8 +229,24 @@ async function writeShadow(payload: Awaited<ReturnType<typeof loadPricePayload>>
     if (existingBySymbol.has(symbol))
       throw new Error("DUPLICATE_SHEET_SYMBOL_" + symbol);
     existingBySymbol.set(symbol, row);
-    if (String(record[2] || "") === "Stock" && !updateableStockSymbols.has(symbol))
-      stockProtected.set(row, JSON.stringify(record.slice(0, 16)));
+    if (String(record[2] || "") === "Stock" && !updateableStockSymbols.has(symbol)) {
+      const stale=staleBySymbol.get(symbol);
+      const snapshot=record.slice(0,16);
+      if(stale) {
+        // Protect lineage: do not mark a different/historic sheet observation stale.
+        if(String(record[8]||"")!==stale.observation_id ||
+          String(record[7]||"")!=="ALPHA_VANTAGE_PRICE" ||
+          String(record[6]||"")!=="STOCK_REGULAR_CLOSE" ||
+          Number(record[3])!==stale.price_usd ||
+          !["LAST_CLOSE","STALE"].includes(String(record[5]||"")))
+          throw new Error("STOCK_STALE_LINEAGE_MISMATCH_"+symbol);
+        if(String(record[5])==="LAST_CLOSE"){
+          staleStatusRows.set(row,symbol);
+          snapshot[5]="STALE";
+        }
+      }
+      stockProtected.set(row,JSON.stringify(snapshot));
+    }
   }
   const claimedRows = new Set<number>(existingBySymbol.values());
   const targets = [...payload.values,...payload.stockValues].map((data) => {
@@ -248,6 +275,10 @@ async function writeShadow(payload: Awaited<ReturnType<typeof loadPricePayload>>
     updates.push({ range:`${SHEET_NAME}!Q${t.row}`,
       majorDimension:"ROWS",
       values:[[`=IF(AND(D${t.row}<>"",$S$2<>""),D${t.row}*$S$2,"")`]] });
+  }
+  for(const row of staleStatusRows.keys()) {
+    updates.push({range:`${SHEET_NAME}!F${row}`,
+      majorDimension:"ROWS",values:[["STALE"]]});
   }
   updates.push({ range:`${SHEET_NAME}!R2:X2`,
     majorDimension:"ROWS", values:[payload.fx] });
@@ -296,8 +327,9 @@ async function writeShadow(payload: Awaited<ReturnType<typeof loadPricePayload>>
       String(fx[23]) !== String(payload.fx[6]))
     throw new Error("FX_READBACK_MISMATCH");
   return { rowCount:targets.length, totalRowsPreserved:existingBySymbol.size,
-    protectedStocks:stockProtected.size, openAssets:payload.openAssets,
-    openStocks:payload.openStocks,stockSynced:payload.stockValues.length,cryptoSynced:payload.values.length };
+    protectedStocks:stockProtected.size, staleStatusUpdated:staleStatusRows.size,
+    openAssets:payload.openAssets,openStocks:payload.openStocks,
+    stockSynced:payload.stockValues.length,cryptoSynced:payload.values.length };
 }
 
 Deno.serve(async(req:Request)=>{
@@ -318,10 +350,12 @@ Deno.serve(async(req:Request)=>{
   const payload=await loadPricePayload(token);
   if(dryRun) return Response.json({ok:true,worker:WORKER,dry_run:true,asset_count:payload.values.length+payload.stockValues.length,
     crypto_count:payload.values.length,stock_count:payload.stockValues.length,
+    stale_status_candidates:payload.stockStaleStatuses.length,
     source:"GOOGLE_SHEET_HOLDINGS_READ_ONLY",database_writes:0,sheet_writes:0,auto_trade:false});
   const receipt=await writeShadow(payload,token);
   return Response.json({ok:true,worker:WORKER,asset_count:receipt.rowCount,
     crypto_count:receipt.cryptoSynced,stock_count:receipt.stockSynced,
+    stale_status_updated:receipt.staleStatusUpdated,
     sheet:SHEET_NAME,sheet_write_readback_verified:true,source:"GOOGLE_SHEET_HOLDINGS_READ_ONLY",
     database_writes:0,auto_trade:false});
  }catch(e) {

@@ -205,6 +205,59 @@ function newYorkClock(now: Date) {
   hour:Number(get("hour")),minute:Number(get("minute")),
   weekday:get("weekday")};
 }
+
+/** Alpha Vantage provider-only response parser; never returns raw text, keys, URLs or secrets. */
+function alphaProviderRejection(data:any):string|null {
+ if (!data || typeof data!=="object" || Array.isArray(data))
+  return "ALPHA_VANTAGE_UNEXPECTED_RESPONSE_NON_OBJECT";
+ const field=["Information","Note","Error Message","message","error","detail"]
+  .find(k=>typeof data?.[k]==="string"&&String(data[k]).trim().length>0);
+ if (!field) return null;
+ const why=String(data[field]).toLowerCase();
+ if (/invalid.{0,30}(api.{0,5}key|apikey)|api.{0,5}key.{0,30}invalid|unknown key|not valid|demo key/.test(why))
+  return "ALPHA_VANTAGE_KEY_REJECTED";
+ if (/per day|daily.{0,20}(limit|quota|request)|25.{0,15}(api.{0,6})?requests/.test(why))
+  return "ALPHA_VANTAGE_DAILY_RATE_LIMIT";
+ if (/frequency|per minute|requests.{0,15}minute|calls.{0,15}minute|too many requests|throttl/.test(why))
+  return "ALPHA_VANTAGE_FREQUENCY_RATE_LIMIT";
+ if (/premium|subscription|subscribe|upgrade|plan|entitlement|not available on free/.test(why))
+  return "ALPHA_VANTAGE_PLAN_RESTRICTED";
+ if (/rate limit|quota|limit|api calls/.test(why))
+  return "ALPHA_VANTAGE_RATE_LIMIT_UNSPECIFIED";
+ return "ALPHA_VANTAGE_PROVIDER_REJECTED";
+}
+/** Only call from the US Stock EOD path, after quota/idempotency/dry-run guards. */
+async function alphaDailyFetch(uri:string):Promise<any> {
+ const c=new AbortController(), timeout=setTimeout(()=>c.abort(),18000);
+ let r:Response;
+ let body:string;
+ try {
+  r=await fetch(uri,{signal:c.signal,headers:{Accept:"application/json"}});
+  body=await r.text();
+ } catch(e) {
+  throw new Error(e instanceof Error&&e.name==="AbortError"
+   ?"ALPHA_VANTAGE_PROVIDER_TIMEOUT":"ALPHA_VANTAGE_PROVIDER_NETWORK_ERROR");
+ } finally{clearTimeout(timeout);}
+ const contentType=String(r.headers.get("content-type")||"").toLowerCase();
+ const kind=contentType.includes("json")?"JSON":
+  contentType.includes("html")?"HTML":contentType.includes("text")?"TEXT":"OTHER";
+ if(r.status===429)throw new Error("ALPHA_VANTAGE_RATE_LIMIT_HTTP_429");
+ if(!r.ok)throw new Error("ALPHA_VANTAGE_PROVIDER_HTTP_"+r.status+"_CONTENT_"+kind);
+ let data:any;
+ try{data=JSON.parse(body);}catch {
+  throw new Error("ALPHA_VANTAGE_NON_JSON_RESPONSE_CONTENT_"+kind);
+ }
+ const rejection=alphaProviderRejection(data);
+ if(rejection)throw new Error(rejection);
+ if(!data||typeof data!=="object"||Array.isArray(data))
+  throw new Error("ALPHA_VANTAGE_UNEXPECTED_RESPONSE_NON_OBJECT");
+ if(!data?.["Meta Data"]||!data?.["Time Series (Daily)"])
+  throw new Error("ALPHA_VANTAGE_UNEXPECTED_RESPONSE_OBJECT_"+
+   (data?.["Meta Data"]?"META":"NO_META")+"_"+(data?.["Time Series (Daily)"]?"SERIES":"NO_SERIES")+
+   "_CONTENT_"+kind);
+ return data;
+}
+
 type StockEodRow={symbol:string;close:number;session_date:string};
 async function stockCloseRefresh(dry:boolean){
  const ny=newYorkClock(new Date());
@@ -265,23 +318,11 @@ async function stockCloseRefresh(dry:boolean){
   url.searchParams.set("apikey",apiKey);
   // Do not include the private URL in any log, error, provenance or response.
   let data:any;
-  try {data=await jsonFetch(url.toString());}
+  try {data=await alphaDailyFetch(url.toString());}
   catch(e) {
-   // HTTP 429 is a provider-side limit. Never retry automatically.
-   if(e instanceof Error && e.message==="PROVIDER_HTTP_429")
-    throw new Error("ALPHA_VANTAGE_RATE_LIMIT");
-   throw e;
-  }
-  if(data?.Note||data?.Information||data?.["Error Message"]){
-   // Sanitize provider rejection without returning raw provider message or credentials.
-   const why=String(data.Note||data.Information||data["Error Message"]).toLowerCase();
-   const code=/limit|quota|frequency|requests per day|api calls/.test(why)
-     ?"ALPHA_VANTAGE_DAILY_RATE_LIMIT"
-     :/invalid|demo|not valid|unknown key/.test(why)
-     ?"ALPHA_VANTAGE_KEY_REJECTED"
-     :/premium|subscription|plan|upgrade/.test(why)
-     ?"ALPHA_VANTAGE_PLAN_RESTRICTED":"ALPHA_VANTAGE_PROVIDER_REJECTED";
-   throw new Error(code);
+   // Safe operational diagnostic: reason, symbol and attempted-call position only.
+   const code=e instanceof Error?e.message:"ALPHA_VANTAGE_PROVIDER_UNKNOWN";
+   throw new Error(code+"_SYMBOL_"+symbol+"_ATTEMPT_"+(rows.length+1));
   }
   const meta=String(data?.["Meta Data"]?.["2. Symbol"]||"").toUpperCase();
   if(meta!==symbol)throw new Error("STOCK_EOD_SYMBOL_MISMATCH_"+symbol);

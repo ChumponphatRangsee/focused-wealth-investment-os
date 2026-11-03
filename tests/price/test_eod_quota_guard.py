@@ -12,7 +12,7 @@ class StockEodQuotaGuardContract(unittest.TestCase):
         self.assertLess(STOCK.index("if(certified.size===symbols.length)"), key)
         self.assertLess(STOCK.index("if(certified.size>0)"), key)
         self.assertLess(STOCK.index("if(dry)return {"), key)
-        self.assertLess(key, STOCK.index("await jsonFetch(url.toString())"))
+        self.assertLess(key, STOCK.index("await alphaDailyFetch(url.toString())"))
         self.assertIn('reason:"PREFLIGHT_NO_PROVIDER_REQUEST"', STOCK)
         self.assertIn("provider_called:false", STOCK)
         self.assertIn("provider_requests_attempted:0", STOCK)
@@ -53,8 +53,8 @@ class StockEodQuotaGuardContract(unittest.TestCase):
         self.assertNotIn("DELETE FROM", STOCK.upper())
         self.assertNotIn("UPDATE FWIOS.", STOCK.upper())
         self.assertIn("portfolio_writes:0,auto_trade:false", SOURCE)
-        self.assertIn('ALPHA_VANTAGE_DAILY_RATE_LIMIT', STOCK)
-        self.assertIn('ALPHA_VANTAGE_RATE_LIMIT', STOCK)
+        self.assertIn('ALPHA_VANTAGE_DAILY_RATE_LIMIT', SOURCE)
+        self.assertIn('ALPHA_VANTAGE_RATE_LIMIT_HTTP_429', SOURCE)
 
 if __name__ == "__main__":
     unittest.main()
