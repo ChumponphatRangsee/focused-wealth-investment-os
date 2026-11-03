@@ -28,6 +28,9 @@ class PriceContractScope(unittest.TestCase):
         self.assertIn("operational_retention:", contract)
         self.assertIn("active_cron_ids: [14,15,16,17,18,19]", contract)
         self.assertIn("market_observations_retention_applies: false", contract)
+        self.assertIn("mode: retain_indefinitely", contract)
+        self.assertIn("automatic_prune: false", contract)
+        self.assertIn("purge_requires_idempotency_redesign_first: true", contract)
 
 
     def test_held_us_stock_eod_scope(self):
@@ -101,6 +104,13 @@ class PriceContractScope(unittest.TestCase):
         self.assertNotIn("cron.alter_job", sql)
         self.assertNotIn("cron.unschedule", sql)
         self.assertNotIn("CASCADE", sql)
+
+    def test_quota_ledger_has_no_destructive_retention_migration(self):
+        migrations = ROOT / "supabase" / "migrations"
+        for path in migrations.glob("*.sql"):
+            sql = path.read_text(encoding="utf-8")
+            self.assertNotIn("DELETE FROM fwios_quota.api_call_ledger", sql, path.name)
+            self.assertNotIn("TRUNCATE fwios_quota.api_call_ledger", sql, path.name)
 
     def test_only_current_migration_receipts(self):
         files = [p.name for p in (ROOT / "supabase" / "migrations").glob("*.sql")]
