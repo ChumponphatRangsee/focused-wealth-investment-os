@@ -41,6 +41,13 @@ class PriceContractScope(unittest.TestCase):
         self.assertIn("observations_after_cleanup: 1114", contract)
         self.assertIn("mode: active_architecture_history", contract)
         self.assertIn("age_based_prune: false", contract)
+        self.assertIn("usdthb_fx_identity_normalization_2026_11_03:", contract)
+        self.assertIn("canonical_identity_count: 11", contract)
+        self.assertIn("normalized_fx_rows_after_live_verify: 2", contract)
+        self.assertIn("legacy_msft_carried_fx_rows_preserved: 9", contract)
+        self.assertIn("market_worker_version: 13", contract)
+        self.assertIn("sheet_worker_version: 7", contract)
+        self.assertIn("sql_regression_passed: 50", contract)
 
 
     def test_held_us_stock_eod_scope(self):

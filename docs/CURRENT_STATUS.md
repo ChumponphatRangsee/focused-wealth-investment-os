@@ -1,6 +1,18 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
 
+## 2026-11-03 USD/THB FX identity normalization — Production E2E PASS (PR #121 / #122)
+
+- **Dedicated FX identity is live.** Migration `usdthb_fx_identity_v1` created canonical symbol **`USDTHB`** with `asset_class=FX`, `instrument_type=CURRENCY_PAIR`, venue `FX`, namespace `FX_PAIR`, and primary venue `FRANKFURTER`.
+- Canonical identities are now **11 total = 10 held assets + 1 FX support identity**. The Google Sheet holdings universe remains exactly 4 Stocks + 6 Crypto; `USDTHB` is not a portfolio holding.
+- The migration did **not rewrite or delete** the 9 historical Frankfurter FX rows that used MSFT as a carrier identity. Those rows remain immutable legacy evidence. Instead, it seeded the latest verified 33.76 USD/THB observation for session 2026-11-02 under the new FX identity with explicit lineage back to the source observation.
+- Market Worker **v13** now resolves `USDTHB/FX/FX/FX_PAIR` directly and no longer derives the FX instrument from whichever historical FX row is latest. Sheet Worker **v7** accepts only the canonical `USDTHB` FX identity for the current FX rate.
+- Dry-run receipts: pg_net **#12019 HTTP 200** for FX with `fx_symbol=USDTHB`, `database_writes=0`; **#12020 HTTP 200** for Sheet with 10 assets, 6 Crypto, 4 Stocks and zero writes.
+- Live verification: pg_net **#12021 HTTP 200** wrote one new Frankfurter FX observation under `USDTHB` at **33.76**, session 2026-11-02; legacy MSFT-carried FX rows remained **9**. pg_net **#12022 HTTP 200** then completed Google Sheet sync with `sheet_write_readback_verified=true`, `database_writes=0`, and `auto_trade=false`.
+- Live state after verification: **1,116 market observations**, **2 normalized USDTHB FX observations**, **9 immutable legacy MSFT-carried FX observations**, append-only trigger enabled, active Cron IDs **14–19** unchanged.
+- Production regression is now **50/50 PASS**. A syntax defect in the newly extended read-only regression assertion was caught before worker deployment, fixed in PR #122, and the corrected suite passed both before and after the live E2E verification.
+- No Transactions, Holdings quantities, Cost Basis, Manual Overrides or portfolio-accounting rows were mutated; automatic trading remains disabled.
+
 ## 2026-11-03 targeted market-observation cleanup — Production PASS (PR #119)
 
 - **User-authorized targeted cleanup completed:** permanently removed exactly **12,462** retired `COINGECKO / LIVE_QUOTE / THB` observations. This was a source/currency-specific legacy cleanup, **not age-based retention**.
@@ -67,11 +79,11 @@
 - Supabase-managed schemas such as `auth`, `storage`, `realtime`, `extensions`, `graphql_public`, and `supabase_migrations` are platform infrastructure and should not be treated as FWIOS legacy data.
 
 ### Recommended next task for the next chat
-Normalize the **USD/THB FX identity model** before doing any further market-observation cleanup.
-- Current `FRANKFURTER_FX` rows are functionally filtered by `observation_type='FX'` and USD/THB currency fields, but their `instrument_id` currently points to MSFT.
-- Design a dedicated FX identity or another semantically correct representation without changing current Sheet calculations.
-- Do not delete the 9 current FX rows until the replacement identity/read path is proven end-to-end.
-- Operational retention is otherwise settled: Cron receipts 30 days, pg_net responses 6 hours, quota ledger retained, active market history not age-pruned.
+No immediate structural cleanup is required.
+- Monitor the next natural FX Cron + Sheet sync cycle to confirm the recurring path continues writing/reading the canonical `USDTHB` identity without intervention.
+- Keep the 9 MSFT-carried FX rows as immutable legacy evidence; do not rewrite or delete them merely to make history visually uniform.
+- Operational retention remains settled: Cron receipts 30 days, pg_net responses 6 hours, quota ledger retained, active market history not age-pruned.
+- Any future market-history retirement should remain source/semantics-specific and explicitly authorized, never age-based by default.
 
 ### New-chat starting point
 Read, in order:
