@@ -84,6 +84,21 @@ class PriceContractScope(unittest.TestCase):
         self.assertIn("COMMIT;", sql)
         self.assertNotIn("CASCADE", sql)
 
+    def test_cron_job_run_details_retention_is_guarded(self):
+        path = ROOT / "supabase" / "migrations" / "20261103190000_cron_job_run_details_retention_v1.sql"
+        sql = path.read_text(encoding="utf-8")
+        self.assertIn("fwios-cron-run-details-retention-v1", sql)
+        self.assertIn("interval '30 days'", sql)
+        self.assertIn("WHERE end_time < now()", sql)
+        self.assertIn("15 3 * * *", sql)
+        self.assertIn("ARRAY[14,15,16,17,18]", sql)
+        self.assertIn("CRON_RETENTION_EXISTING_JOBS_CHANGED", sql)
+        self.assertIn("CRON_RETENTION_MIGRATION_DELETED_HISTORY", sql)
+        self.assertNotIn("DELETE FROM fwios.market_observations", sql)
+        self.assertNotIn("cron.alter_job", sql)
+        self.assertNotIn("cron.unschedule", sql)
+        self.assertNotIn("CASCADE", sql)
+
     def test_only_current_migration_receipts(self):
         files = [p.name for p in (ROOT / "supabase" / "migrations").glob("*.sql")]
         self.assertTrue(files)
