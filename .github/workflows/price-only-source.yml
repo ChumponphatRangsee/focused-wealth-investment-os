@@ -37,6 +37,7 @@ jobs:
         run: |
           deno check supabase/functions/price-market-refresh-v1/index.ts
           deno check supabase/functions/price-sheet-sync-v1/index.ts
+          deno check tests/price/manual_twelve_provider_probe.ts
       - name: Run fixture-based Twelve Data EOD guards
         run: deno test tests/price/test_twelve_eod_guards.ts
       - name: Run real SQL quota concurrency tests in isolated PostgreSQL
