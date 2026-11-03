@@ -9,7 +9,7 @@ The live Stock price read model is now **EOD-only**: verified `TWELVE_DATA` / `A
 
 Google Sheet OPEN Holdings → Alpha Vantage `TIME_SERIES_DAILY` EOD 19:00 ET → **Twelve Data `/time_series?interval=1day&adjust=none` fallback 01:55 ET on next NY weekday if no certified EOD** → atomic 4/4 `fwios.market_observations` → Google Sheet `_Market_Data` via Sheet Worker at 19:30 ET / 02:10 ET → existing Price Data and Holdings formulas. The fallback is **live**. On 2026-11-03 Twelve Data returned 2026-11-02 closes for MSFT/NVDA/TLN/TTWO; Collector HTTP 200 `database_writes=4` (#12017) and Sheet HTTP 200 `stock_count=4`, `sheet_write_readback_verified=true` (#12018). Crypto CoinGecko and FX Frankfurter routines unchanged.
 
-The private `fwios_quota.api_call_ledger` reserves each provider's full stock batch atomically before HTTP. The first live Twelve run used 4 calls and all ended `SUCCESS`. The existing 5 Cron jobs are retained. No automatic trading or portfolio accounting writes. The latest Source of Truth is `docs/CURRENT_STATUS.md` (not the historical deployment notes below).
+The private `fwios_quota.api_call_ledger` reserves each provider's full stock batch atomically before HTTP. The first live Twelve run used 4 calls and all ended `SUCCESS`. The existing five **price-service** Cron jobs (#14–#18) are retained unchanged; Cron **#19** is a separate operational-maintenance job that prunes completed `cron.job_run_details` older than 30 days. No automatic trading or portfolio accounting writes. The latest Source of Truth is `docs/CURRENT_STATUS.md` (not the historical deployment notes below).
 
 **Production provenance compatibility note:** Four initial 2026-11-02 Twelve EOD observations have `raw_payload` encoded as a JSONB string scalar by a bug in the first collector version. Their prices, provider, session and identity are valid. Do not mutate append-only observation history. Both Collector and Sheet Sync read and validate these via strict read-only JSONB normalization; future EOD rows use native `jsonb_build_object` metadata. See tests and status receipt for details.
 
@@ -43,11 +43,14 @@ At 19:00 US Eastern on weekdays (DST protected, 06:00/07:00 next day Bangkok), c
 
 - Cron #14 Crypto (17:10 ET); #15 FX (17:10 ET, weekdays); #16 Sheet Sync (17:20 ET).
 - New Stock EOD and follow-up Sheet jobs were **installed live** as Cron #17 and #18 via `20261030120000_schedule_held_us_stock_eod_v1.sql` on 2026-10-30. The source-validation gate was passed, but Alpha Vantage quota has not yet allowed a successful same-session price response.
+- Operational maintenance Cron #19 runs at **03:15 GMT daily (10:15 Bangkok)** and deletes only `cron.job_run_details` rows whose `end_time` is older than 30 days. It is not part of the price collection/sync flow.
 - Run a real post-close EOD test and verify the date, symbols, canonical observations, Google Sheet readback and formula integrity before certifying production.
 
 ## Security and retention
 
-The live Price Service retains 3 `fwios` tables, 1 view and 6 required routines. Legacy archive was user-deleted with no backup; do not try to resurrect legacy SQL or 16 retired Edge endpoints (HTTP 410). Provider credentials and server-to-server auth token remain in Vault. Only two active Edge Worker source directories are allowed.
+The live Price Service retains 3 `fwios` tables, 1 identity view and 5 `fwios` functions. Legacy archive was user-deleted with no backup; do not try to resurrect legacy SQL or 16 retired Edge endpoints (HTTP 410). Provider credentials and server-to-server auth token remain in Vault. Only two active Edge Worker source directories are allowed.
+
+`cron.job_run_details` is operational logging, not canonical price history. Production Cron #19 (`fwios-cron-run-details-retention-v1`) runs daily at 03:15 GMT and keeps approximately 30 days by deleting only rows with `end_time` older than 30 days; null `end_time` rows are intentionally retained. This policy must never be applied to `fwios.market_observations`. `fwios_quota.api_call_ledger` remains outside this policy until its audit-history requirement is decided separately.
 
 ## 2026-10-30 production deployment receipt
 
