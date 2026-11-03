@@ -313,6 +313,7 @@ async function stockCloseRefresh(dry:boolean){
  if(!gate.allowed)return {source:"ALPHA_VANTAGE_PRICE",skipped:true,reason:"QUOTA_GUARD_"+gate.reason,
   provider_requests_attempted:0,database_writes:0,dry_run:false};
  const rows:StockEodRow[]=[];
+ try {
  for(const symbol of symbols){
   const url=new URL("https://www.alphavantage.co/query");
   url.searchParams.set("function","TIME_SERIES_DAILY");
@@ -340,6 +341,7 @@ async function stockCloseRefresh(dry:boolean){
    throw new Error("STOCK_EOD_CLOSE_INVALID_"+symbol);
   rows.push({symbol,close,session_date:day});
  }
+ } finally {await cancelUndispatched("ALPHA_VANTAGE_PRICE",key,batch)}
  // Never backdate a stale/previous-day quote as a fresh US closing price.
  const allCurrent=rows.every(x=>x.session_date===ny.day);
  if(!allCurrent){
@@ -379,6 +381,10 @@ async function reserveEod(p:EodProvider,day:string,symbols:string[]){
  const rows=await sql!`select fwios_quota.reserve_eod_batch_v1(${p},${key},${batch},${day}::date,${symbols}::text[]) gate`;
  const gate=rows[0]?.gate||{allowed:false,reason:"QUOTA_RESERVATION_FAILED"};
  return {gate,batch,key};
+}
+async function cancelUndispatched(p:EodProvider,key:string,batch:string){
+ const done=await sql!`select fwios_quota.cancel_eod_undispatched_v1(${p},${key},${batch}) canceled`;
+ return Number(done[0]?.canceled||0);
 }
 async function withReservedProviderCall<T>(p:EodProvider,key:string,batch:string,symbol:string,work:()=>Promise<T>):Promise<T>{
  const started=await sql!`select fwios_quota.mark_eod_dispatched_v1(${p},${key},${batch},${symbol}) ok`;
@@ -455,6 +461,7 @@ async function twelveFallbackRefresh(dry:boolean){
  const {gate,batch,key}=await reserveEod("TWELVE_DATA",day,symbols);
  if(!gate.allowed)return {source:"TWELVE_DATA",skipped:true,reason:"QUOTA_GUARD_"+gate.reason,provider_requests_attempted:0,database_writes:0,dry_run:false};
  const rows:StockEodRow[]=[];
+ try {
  for(const symbol of symbols){
   const url=new URL("https://api.twelvedata.com/time_series");
   for(const [k,v] of Object.entries({symbol,interval:"1day",outputsize:"4",adjust:"none",apikey:apiKey}))url.searchParams.set(k,v);
@@ -471,6 +478,7 @@ async function twelveFallbackRefresh(dry:boolean){
    return {source:"TWELVE_DATA",skipped:true,reason:"CURRENT_SESSION_EOD_NOT_AVAILABLE",expected_session:day,provider_requests_attempted:rows.length+1,database_writes:0,dry_run:false};
   rows.push({symbol,close,session_date:day});
  }
+ } finally {await cancelUndispatched("TWELVE_DATA",key,batch)}
  const tickers=rows.map(r=>r.symbol),closes=rows.map(r=>r.close);
  const metadata=JSON.stringify({price_only:true,price_only_stock_eod:true,provider_function:"time_series",
   adjustment:"none",close_kind:"UNADJUSTED",source_session_date:day});
