@@ -179,14 +179,21 @@ async function loadPricePayload(googleToken:string) {
   &&q.source_native_usd===true&&q.valuation_eligible===true
   &&Number(q.price_usd)>0&&q.observation_id&&q.session_date&&q.valid_until)
   .map(({q})=>String(q.observation_id));
- const certified=candidateIds.length?await sql!`select observation_id::text id
-  from fwios.market_observations where observation_id=ANY(${candidateIds}::uuid[])
-   and observation_type='REGULAR_CLOSE' and market_status='CLOSED'
-   and provider IN ('ALPHA_VANTAGE_PRICE','TWELVE_DATA') and source_tier='A'
-   and raw_payload->>'price_only_stock_eod'='true'
-   and raw_payload->>'close_kind'='UNADJUSTED'
-    and ((provider='ALPHA_VANTAGE_PRICE' and raw_payload->>'provider_function'='TIME_SERIES_DAILY')
-      or (provider='TWELVE_DATA' and raw_payload->>'adjustment'='none'))`:[];
+ // Immutable observation compatibility: a previous worker stored EOD
+ // metadata as a JSONB *string* rather than a JSONB object.
+ // Decode only at read time, keeping provenance checks fail-closed.
+ const certified=candidateIds.length?await sql!`select o.observation_id::text id
+  from fwios.market_observations o
+  cross join lateral (select case when jsonb_typeof(o.raw_payload)='string'
+    then (o.raw_payload #>> '{}')::jsonb else o.raw_payload end as payload) normalized
+  where o.observation_id=ANY(${candidateIds}::uuid[])
+   and o.observation_type='REGULAR_CLOSE' and o.market_status='CLOSED'
+   and o.provider IN ('ALPHA_VANTAGE_PRICE','TWELVE_DATA') and o.source_tier='A'
+   and o.provenance_status='PASS' and o.value_currency='USD' and o.observation_value>0
+   and normalized.payload->>'price_only_stock_eod'='true'
+   and normalized.payload->>'close_kind'='UNADJUSTED'
+   and ((o.provider='ALPHA_VANTAGE_PRICE' and normalized.payload->>'provider_function'='TIME_SERIES_DAILY')
+     or (o.provider='TWELVE_DATA' and normalized.payload->>'adjustment'='none'))`:[];
  const allowedIds=new Set(certified.map((r:any)=>String(r.id)));
  const stockValues=stockQuotes.filter(({q})=>allowedIds.has(String(q.observation_id)))
   .map(({symbol,q})=>toValue(symbol,q));
