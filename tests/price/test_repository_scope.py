@@ -31,6 +31,11 @@ class PriceContractScope(unittest.TestCase):
         self.assertIn("mode: retain_indefinitely", contract)
         self.assertIn("automatic_prune: false", contract)
         self.assertIn("purge_requires_idempotency_redesign_first: true", contract)
+        self.assertIn("pg_net_http_response:", contract)
+        self.assertIn("mode: built_in_ttl", contract)
+        self.assertIn("ttl_hours: 6", contract)
+        self.assertIn("custom_cleanup: false", contract)
+        self.assertIn("durable_audit: false", contract)
 
 
     def test_held_us_stock_eod_scope(self):
@@ -111,6 +116,14 @@ class PriceContractScope(unittest.TestCase):
             sql = path.read_text(encoding="utf-8")
             self.assertNotIn("DELETE FROM fwios_quota.api_call_ledger", sql, path.name)
             self.assertNotIn("TRUNCATE fwios_quota.api_call_ledger", sql, path.name)
+
+    def test_pg_net_system_response_table_has_no_custom_retention_migration(self):
+        migrations = ROOT / "supabase" / "migrations"
+        for path in migrations.glob("*.sql"):
+            sql = path.read_text(encoding="utf-8")
+            self.assertNotIn("DELETE FROM net._http_response", sql, path.name)
+            self.assertNotIn("TRUNCATE net._http_response", sql, path.name)
+            self.assertNotIn("ALTER SYSTEM SET pg_net.ttl", sql, path.name)
 
     def test_only_current_migration_receipts(self):
         files = [p.name for p in (ROOT / "supabase" / "migrations").glob("*.sql")]
