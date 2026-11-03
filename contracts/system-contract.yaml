@@ -130,7 +130,14 @@ operational_retention:
     applies_to_all_cron_jobs: true
     existing_price_jobs_14_18_unchanged: true
   market_observations_retention_applies: false
-  quota_ledger_policy: undecided
+  quota_ledger_policy:
+    mode: retain_indefinitely
+    automatic_prune: false
+    reason: audit_and_deterministic_duplicate_batch_protection
+    operational_quota_window_hours: 24
+    minute_window_seconds: 60
+    batch_identity_persists_beyond_quota_window: true
+    purge_requires_idempotency_redesign_first: true
 
 active_provider_fallback:
   pull_request: 112
