@@ -50,7 +50,9 @@ At 19:00 US Eastern on weekdays (DST protected, 06:00/07:00 next day Bangkok), c
 
 The live Price Service retains 3 `fwios` tables, 1 identity view and 5 `fwios` functions. Legacy archive was user-deleted with no backup; do not try to resurrect legacy SQL or 16 retired Edge endpoints (HTTP 410). Provider credentials and server-to-server auth token remain in Vault. Only two active Edge Worker source directories are allowed.
 
-`cron.job_run_details` is operational logging, not canonical price history. Production Cron #19 (`fwios-cron-run-details-retention-v1`) runs daily at 03:15 GMT and keeps approximately 30 days by deleting only rows with `end_time` older than 30 days; null `end_time` rows are intentionally retained. This policy must never be applied to `fwios.market_observations`. `fwios_quota.api_call_ledger` remains outside this policy until its audit-history requirement is decided separately.
+`cron.job_run_details` is operational logging, not canonical price history. Production Cron #19 (`fwios-cron-run-details-retention-v1`) runs daily at 03:15 GMT and keeps approximately 30 days by deleting only rows with `end_time` older than 30 days; null `end_time` rows are intentionally retained. This policy must never be applied to `fwios.market_observations`.
+
+`fwios_quota.api_call_ledger` has a separate policy: **retain indefinitely / no automatic prune**. Although quota calculations use only 60-second and rolling-24-hour windows, the ledger also preserves provider-call audit evidence and deterministic batch identity (`EOD_V1:<provider>:<session_date>`). Removing old rows would weaken old-session duplicate-batch protection. Live sizing on 2026-11-03 was only 4 rows / 64 KiB; projected growth is roughly 1,008 rows per 252-session year for one four-symbol provider batch, or about 2,016 rows/year in a conservative two-provider case. Any future purge requires an idempotency-preserving redesign first.
 
 ## 2026-10-30 production deployment receipt
 
