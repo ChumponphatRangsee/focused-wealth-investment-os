@@ -23,3 +23,5 @@ jobs:
         run: |
           deno check supabase/functions/price-market-refresh-v1/index.ts
           deno check supabase/functions/price-sheet-sync-v1/index.ts
+      - name: Run fixture-based Twelve Data EOD guards
+        run: deno test tests/price/test_twelve_eod_guards.ts
