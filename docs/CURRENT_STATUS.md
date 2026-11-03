@@ -1,6 +1,15 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
 
+## 2026-11-03 operational log retention — Production PASS (PR #115)
+
+- **30-day pg_cron retention is live.** Migration `cron_job_run_details_retention_v1` created Cron **#19 `fwios-cron-run-details-retention-v1`** at **03:15 GMT daily (10:15 Asia/Bangkok)**.
+- Retention deletes only rows where `end_time < now() - interval '30 days'`. Runs with no `end_time` are retained, so active/incomplete-run diagnostics fail safe rather than being pruned.
+- Production postflight immediately after migration: **109 → 109** `cron.job_run_details` rows, **0** eligible rows older than 30 days, **0** running rows, **0** rows with null `end_time`. Existing jobs **14–18 were unchanged**; active Cron inventory is now five price-service jobs plus one maintenance job.
+- Preflight verified Supabase Postgres **17.6**, pg_cron **1.6.4**, cron timezone **GMT**, DELETE privilege for the migration role, and no prior cleanup/retention job. GitHub PR #115 CI passed Python contract tests, Deno typecheck, Twelve EOD guard tests and isolated PostgreSQL quota concurrency tests before merge.
+- After the earlier 19,004-row cleanup, `cron.job_run_details` still had about **14.9 MB** allocated despite only 109 live tuples; autovacuum completed with **0 dead tuples**. No `VACUUM FULL` or table rewrite was added because the goal is to prevent regrowth without introducing unnecessary locking.
+- This retention policy applies only to disposable pg_cron operational receipts. It **does not apply to `fwios.market_observations`** and does not change `fwios_quota.api_call_ledger`, provider credentials, Edge Functions, Google Sheet holdings/accounting, or automatic trading.
+
 ## 2026-11-03 session handoff — ready for new chat
 
 ### Completed in this session
@@ -27,12 +36,11 @@
 - Supabase-managed schemas such as `auth`, `storage`, `realtime`, `extensions`, `graphql_public`, and `supabase_migrations` are platform infrastructure and should not be treated as FWIOS legacy data.
 
 ### Recommended next task for the next chat
-Design and implement a **retention policy for operational logs**, starting with `cron.job_run_details`.
-- Recommended starting policy: keep roughly **30 days** of current Cron run history and automatically prune older rows.
-- Do **not** apply this retention to `fwios.market_observations`; price history is business data, not disposable operational logging.
-- Consider a separate retention policy for `fwios_quota.api_call_ledger` only after deciding how much provider-call audit history is required.
-- Implement retention through a guarded migration / scheduled maintenance job, preserve current jobs 14–18, and add regression checks so active-run diagnostics remain available.
-- Verify against current Supabase/pg_cron behavior before implementation; pg_cron does not automatically clean historical `job_run_details`.
+Decide whether `fwios_quota.api_call_ledger` needs a **separate retention/audit policy**.
+- Do not reuse the pg_cron 30-day rule automatically; provider-call receipts may need a longer audit window for quota, incident and provenance analysis.
+- Keep `fwios.market_observations` outside operational-log retention; it is canonical business price history.
+- Before any quota-ledger write, inspect current row volume, growth rate, provider/session coverage and the minimum history required for quota debugging.
+- Cron retention is already complete and live as job #19; preserve jobs 14–18 and the new maintenance job unless a later guarded migration intentionally changes them.
 
 ### New-chat starting point
 Read, in order:
