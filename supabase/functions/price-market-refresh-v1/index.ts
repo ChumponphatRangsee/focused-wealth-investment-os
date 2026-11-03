@@ -421,7 +421,9 @@ async function twelveDailyFetch(uri:string):Promise<any>{
  let data:any;try{data=JSON.parse(body)}catch{throw new Error("TWELVE_DATA_NON_JSON_RESPONSE");}
  if(data?.status==="error"||typeof data?.code==="number"&&Number(data.code)>=400){
   const message=String(data?.message||"").toLowerCase();
-  if(/limit|credit|quota|too many|rate/.test(message)||Number(data?.code)===429)throw new Error("TWELVE_DATA_RATE_LIMIT");
+  if(/per day|daily|800.{0,10}credit/.test(message))throw new Error("TWELVE_DATA_DAILY_RATE_LIMIT");
+  if(/per minute|minute|limit|credit|quota|too many|rate/.test(message)||Number(data?.code)===429)
+   throw new Error("TWELVE_DATA_RATE_LIMIT");
   if(/apikey|api key|invalid|unauthori/.test(message))throw new Error("TWELVE_DATA_KEY_REJECTED");
   if(/plan|premium|subscription|access/.test(message))throw new Error("TWELVE_DATA_PLAN_RESTRICTED");
   throw new Error("TWELVE_DATA_PROVIDER_REJECTED");
