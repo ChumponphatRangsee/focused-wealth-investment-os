@@ -113,7 +113,7 @@ proposed_extension_not_yet_active:
     interval: 1day
     adjustment: none
     currency: USD
-    scheduled_fallback: next_ny_business_day_01_15_et
+    scheduled_fallback: next_ny_business_day_01_55_et
     source_session: prior_ny_business_day
     must_validate_all_held_stocks_before_atomic_insert: true
     must_preserve_source_provenance: true
