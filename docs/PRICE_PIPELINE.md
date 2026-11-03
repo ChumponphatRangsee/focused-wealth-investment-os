@@ -54,6 +54,8 @@ The live Price Service retains 3 `fwios` tables, 1 identity view and 5 `fwios` f
 
 `fwios_quota.api_call_ledger` has a separate policy: **retain indefinitely / no automatic prune**. Although quota calculations use only 60-second and rolling-24-hour windows, the ledger also preserves provider-call audit evidence and deterministic batch identity (`EOD_V1:<provider>:<session_date>`). Removing old rows would weaken old-session duplicate-batch protection. Live sizing on 2026-11-03 was only 4 rows / 64 KiB; projected growth is roughly 1,008 rows per 252-session year for one four-symbol provider batch, or about 2,016 rows/year in a conservative two-provider case. Any future purge requires an idempotency-preserving redesign first.
 
+`net._http_response` uses **pg_net built-in retention**, not a project cleanup job. Live pg_net 0.20.4 reports `pg_net.ttl = 6 hours` from the default config; the table is UNLOGGED and current rows are being pruned within that window. Treat these responses as short-lived debugging evidence only: response IDs documented in production receipts are not expected to remain queryable indefinitely. Do not `DELETE`, `TRUNCATE`, add triggers to, or otherwise repurpose the pg_net system response table. The project role currently cannot change `pg_net.ttl`; if a longer diagnostic window is ever needed, use the supported system-parameter path and worker restart rather than a custom retention Cron.
+
 ## 2026-10-30 production deployment receipt
 
 `price-market-refresh-v1` **v4** deployed with US_STOCK_EOD; `price-sheet-sync-v1` **v3** deployed with stock-only-if-certified safeguards. Five active Cron jobs: #14/#15/#16 existing and **#17 at 19:00 New York weekdays** / **#18 at 19:30 NY weekdays** newly added.
