@@ -218,7 +218,7 @@ async function writeShadow(payload: Awaited<ReturnType<typeof loadPricePayload>>
   if (String(before?.[0]?.[0] || "") !== "asset_symbol")
     throw new Error("SHEET_HEADER_MISMATCH");
   const updateableStockSymbols = new Set(payload.stockValues.map(data=>String(data[0])));
-  const staleBySymbol = new Map(payload.stockStaleStatuses.map(s=>[s.symbol,s]));
+  const staleBySymbol = new Map<string,(typeof payload.stockStaleStatuses)[number]>(payload.stockStaleStatuses.map(s=>[s.symbol,s] as const));
   const staleStatusRows = new Map<number,string>();
   const existingBySymbol = new Map<string, number>();
   const stockProtected = new Map<number, string>();
