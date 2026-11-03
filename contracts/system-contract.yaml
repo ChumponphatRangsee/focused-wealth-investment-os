@@ -4,7 +4,7 @@ contract:
   title: Asset Price Data Service
   date: "2026-10-30"
   timezone: Asia/Bangkok
-  status: dual_provider_eod_fallback_production_e2e_pass_2026_11_03
+  status: fx_identity_normalized_production_e2e_pass_2026_11_03
   auto_trade: false
 objective:
   purpose: collect_validate_store_and_sync_held_asset_prices
@@ -55,11 +55,13 @@ google_sheet:
 workers:
   market_collector:
     edge_function: price-market-refresh-v1
+    deployed_version: 13
     modes: [CRYPTO, FX, US_STOCK_EOD, TWELVE_STOCK_EOD_FALLBACK]
     scheduled_job_ids: [14, 15, 17]
     us_stock_schedule: "19:00 Alpha Vantage and 01:55 following NY weekday Twelve Data, active Cron 17"
   sheet_price_sync:
     edge_function: price-sheet-sync-v1
+    deployed_version: 7
     scheduled_job_ids: [16, 18]
     us_stock_followup: "19:30 Alpha EOD and 02:10 Twelve EOD NY weekdays, active Cron 18"
   require_server_authentication: true
@@ -96,8 +98,11 @@ legacy_runtime_notice:
   stock_provider_dry_run: twelve_fallback_real_http_200_4_of_4
   stock_data_written: true
   post_deploy_sheet_readback: pass
-  sql_regression_passed: 48
+  sql_regression_passed: 50
+  canonical_identity_count: 11
   held_instrument_count: 10
+  support_identity_count: 1
+  fx_pair_symbol: USDTHB
   open_stock_symbols: [MSFT, NVDA, TLN, TTWO]
   open_crypto_symbols: [BTC, DOGE, ETH, HBAR, SOL, XRP]
   user_authorized_permanent_unheld_stock_purge: true
@@ -129,6 +134,30 @@ legacy_runtime_notice:
     current_price_reads_unchanged: true
     append_only_trigger_restored: true
     age_based_retention: false
+  usdthb_fx_identity_normalization_2026_11_03:
+    live: true
+    migration: usdthb_fx_identity_v1
+    canonical_symbol: USDTHB
+    asset_class: FX
+    instrument_type: CURRENCY_PAIR
+    venue: FX
+    symbol_namespace: FX_PAIR
+    primary_venue: FRANKFURTER
+    canonical_identity_count: 11
+    held_instrument_count: 10
+    normalized_fx_rows_after_live_verify: 2
+    legacy_msft_carried_fx_rows_preserved: 9
+    legacy_rows_mutated: false
+    market_observation_rows_after_live_verify: 1116
+    market_worker_version: 13
+    sheet_worker_version: 7
+    fx_dry_run_pg_net_response_id: 12019
+    sheet_dry_run_pg_net_response_id: 12020
+    fx_live_pg_net_response_id: 12021
+    sheet_live_pg_net_response_id: 12022
+    sheet_write_readback_verified: true
+    regression_passed: 50
+    auto_trade: false
   read_current_status: docs/CURRENT_STATUS.md
 operational_retention:
   cron_job_run_details:
