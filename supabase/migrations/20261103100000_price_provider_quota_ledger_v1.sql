@@ -106,6 +106,22 @@ END;$$;
 REVOKE ALL ON FUNCTION fwios_quota.reserve_eod_batch_v1(text,text,text,date,text[]) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION fwios_quota.mark_eod_dispatched_v1(text,text,text,text) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION fwios_quota.complete_eod_call_v1(text,text,text,text,text,text) FROM PUBLIC,anon,authenticated,service_role;
+-- Return only never-dispatched reservations. Unknown or dispatched requests must count.
+CREATE OR REPLACE FUNCTION fwios_quota.cancel_eod_undispatched_v1(
+ p_provider text,p_key_alias text,p_batch_id text)
+RETURNS integer LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,fwios_quota AS $
+DECLARE v_count integer;
+BEGIN
+ UPDATE fwios_quota.api_call_ledger
+    SET state='CANCELED',completed_at=clock_timestamp()
+  WHERE provider=p_provider AND key_alias=p_key_alias
+    AND batch_id=p_batch_id AND state='RESERVED';
+ GET DIAGNOSTICS v_count=ROW_COUNT;
+ RETURN v_count;
+END;$;
+REVOKE ALL ON FUNCTION fwios_quota.cancel_eod_undispatched_v1(text,text,text)
+ FROM PUBLIC,anon,authenticated,service_role;
+
 -- Edge worker's SUPABASE_DB_URL connects with the privileged internal postgres role;
 -- no quota schema or functions are exposed to anon/authenticated/service_role REST.
 COMMIT;
