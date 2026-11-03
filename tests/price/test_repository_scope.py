@@ -36,6 +36,11 @@ class PriceContractScope(unittest.TestCase):
         self.assertIn("ttl_hours: 6", contract)
         self.assertIn("custom_cleanup: false", contract)
         self.assertIn("durable_audit: false", contract)
+        self.assertIn("legacy_coingecko_thb_cleanup_2026_11_03:", contract)
+        self.assertIn("deleted_rows: 12462", contract)
+        self.assertIn("observations_after_cleanup: 1114", contract)
+        self.assertIn("mode: active_architecture_history", contract)
+        self.assertIn("age_based_prune: false", contract)
 
 
     def test_held_us_stock_eod_scope(self):

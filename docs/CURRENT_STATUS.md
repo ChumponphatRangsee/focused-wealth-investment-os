@@ -1,6 +1,17 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
 
+## 2026-11-03 targeted market-observation cleanup — Production PASS (PR #119)
+
+- **User-authorized targeted cleanup completed:** permanently removed exactly **12,462** retired `COINGECKO / LIVE_QUOTE / THB` observations. This was a source/currency-specific legacy cleanup, **not age-based retention**.
+- `fwios.market_observations` decreased **13,576 → 1,114 rows**. Postflight preserved exactly **900 CoinGecko Crypto USD**, **205 Alpha/Twelve Stock EOD USD**, and **9 Frankfurter USD/THB FX** observations.
+- The migration held an exclusive lock only for the guarded delete window, disabled only the named append-only trigger, restored it before commit, and failed closed unless the target count was exactly 12,462.
+- The migration snapshotted all 10 current native-USD price reads before and after and required an exact match on price, status, provider, session, observation UUID and quote kind. Current price behavior therefore remained unchanged.
+- Live postflight: legacy CoinGecko THB rows **0**, append-only trigger enabled, active Cron IDs **14–19** unchanged, and migration history contains `purge_legacy_coingecko_thb_v1`.
+- No age-based retention was added to canonical price history. Active-architecture price observations remain append-only and retained; any future targeted retirement requires explicit authorization plus a guarded migration.
+- Relation allocation is still about **19 MB** immediately after deletion because PostgreSQL does not shrink the relation file on ordinary DELETE. No `VACUUM FULL` was introduced; free space can be reused by PostgreSQL without a blocking table rewrite.
+- **Known data-model debt:** current Frankfurter USD/THB FX rows are associated with the MSFT instrument UUID as a carrier identity. Runtime filtering still reads them correctly by FX type/currency, but the identity is semantically wrong and should be normalized in a separate guarded migration before any future FX-history cleanup.
+
 ## 2026-11-03 pg_net HTTP receipt retention — BUILT-IN 6H / no custom cleanup
 
 - **Decision:** keep Supabase/pg_net built-in response retention at the current **6 hours** and do **not** add another cleanup Cron for `net._http_response`.
@@ -56,12 +67,11 @@
 - Supabase-managed schemas such as `auth`, `storage`, `realtime`, `extensions`, `graphql_public`, and `supabase_migrations` are platform infrastructure and should not be treated as FWIOS legacy data.
 
 ### Recommended next task for the next chat
-No additional operational-log cleanup is required now.
-- `cron.job_run_details`: custom 30-day retention via Cron #19.
-- `net._http_response`: pg_net built-in 6-hour TTL; no custom cleanup.
-- `fwios_quota.api_call_ledger`: retain indefinitely for audit/idempotency.
-- `fwios.market_observations`: canonical history; never operationally pruned.
-- Revisit pg_net only if real incident-response experience shows that the 6-hour diagnostic window is too short. In that case, evaluate a Support-approved TTL extension or a separate redacted durable run receipt instead of deleting/reconfiguring system tables ad hoc.
+Normalize the **USD/THB FX identity model** before doing any further market-observation cleanup.
+- Current `FRANKFURTER_FX` rows are functionally filtered by `observation_type='FX'` and USD/THB currency fields, but their `instrument_id` currently points to MSFT.
+- Design a dedicated FX identity or another semantically correct representation without changing current Sheet calculations.
+- Do not delete the 9 current FX rows until the replacement identity/read path is proven end-to-end.
+- Operational retention is otherwise settled: Cron receipts 30 days, pg_net responses 6 hours, quota ledger retained, active market history not age-pruned.
 
 ### New-chat starting point
 Read, in order:
