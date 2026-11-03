@@ -283,14 +283,16 @@ async function stockCloseRefresh(dry:boolean){
  // Protect partial certified sessions: do not mix old and newly fetched rows.
  const already=await sql!`select distinct s.symbol from fwios.market_observations o
   join fwios.instrument_symbols s on s.instrument_id=o.instrument_id
+  cross join lateral (select case when jsonb_typeof(o.raw_payload)='string'
+    then (o.raw_payload #>> '{}')::jsonb else o.raw_payload end as payload) normalized
   where s.active=true and s.is_primary=true and s.symbol=any(${symbols}::text[])
     and o.session_date=${ny.day}::date and o.observation_type='REGULAR_CLOSE'
     and o.market_status='CLOSED' and o.provider in ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')
     and o.source_tier='A' and o.value_currency='USD' and o.provenance_status='PASS'
-    and o.observation_value>0 and o.raw_payload->>'price_only_stock_eod'='true'
-    and o.raw_payload->>'close_kind'='UNADJUSTED'
-    and ((o.provider='ALPHA_VANTAGE_PRICE' and o.raw_payload->>'provider_function'='TIME_SERIES_DAILY')
-      or (o.provider='TWELVE_DATA' and o.raw_payload->>'adjustment'='none'))`;
+    and o.observation_value>0 and normalized.payload->>'price_only_stock_eod'='true'
+    and normalized.payload->>'close_kind'='UNADJUSTED'
+    and ((o.provider='ALPHA_VANTAGE_PRICE' and normalized.payload->>'provider_function'='TIME_SERIES_DAILY')
+      or (o.provider='TWELVE_DATA' and normalized.payload->>'adjustment'='none'))`;
  const certified=new Set(already.map((x:any)=>String(x.symbol).toUpperCase()));
  if(certified.size===symbols.length)return {
   source:"ALPHA_VANTAGE_PRICE",asset_count:symbols.length,symbols,session_date:ny.day,
@@ -363,14 +365,14 @@ async function stockCloseRefresh(dry:boolean){
  // One SQL statement so all held symbols commit together or none commit.
  // Observed_at is the actual collection time; provider reports only the session DATE.
  const tickers=rows.map(x=>x.symbol),closes=rows.map(x=>x.close);
- const metadata=JSON.stringify({price_only:true,price_only_stock_eod:true,
-  provider_function:"TIME_SERIES_DAILY",close_kind:"UNADJUSTED",
-  source_session_date:ny.day});
+ // Write typed JSONB object, never serialize it into JSONB string.
  const saved=await sql!`select x.symbol,fwios.ensure_market_observation_v1(
   fwios.resolve_instrument_id_v1(x.symbol,'Stock',null,null),
   'REGULAR_CLOSE',x.close,'USD',${ny.day}::date,now(),'CLOSED',
   'ALPHA_VANTAGE_PRICE','A','https://www.alphavantage.co/query',
-  'PASS',${metadata}::jsonb,null,null
+  'PASS',jsonb_build_object('price_only',true,'price_only_stock_eod',true,
+    'provider_function','TIME_SERIES_DAILY','close_kind','UNADJUSTED',
+    'source_session_date',${ny.day}::text),null,null
  ) observation_id
  from unnest(${tickers}::text[],${closes}::numeric[]) AS x(symbol,close)`;
  if(saved.length!==rows.length||saved.some((x:any)=>!x.observation_id))
@@ -453,14 +455,16 @@ async function twelveFallbackRefresh(dry:boolean){
  // A full certified session from either provider needs no more API requests.
  const certifiedRows=await sql!`select distinct s.symbol from fwios.market_observations o
   join fwios.instrument_symbols s on s.instrument_id=o.instrument_id
+  cross join lateral (select case when jsonb_typeof(o.raw_payload)='string'
+    then (o.raw_payload #>> '{}')::jsonb else o.raw_payload end as payload) normalized
   where s.active=true and s.is_primary=true and s.symbol=any(${symbols}::text[])
    and o.session_date=${day}::date and o.observation_type='REGULAR_CLOSE'
    and o.market_status='CLOSED' and o.provider in ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')
    and o.source_tier='A' and o.value_currency='USD' and o.provenance_status='PASS'
-   and o.observation_value>0 and o.raw_payload->>'price_only_stock_eod'='true'
-    and o.raw_payload->>'close_kind'='UNADJUSTED'
-    and ((o.provider='ALPHA_VANTAGE_PRICE' and o.raw_payload->>'provider_function'='TIME_SERIES_DAILY')
-      or (o.provider='TWELVE_DATA' and o.raw_payload->>'adjustment'='none'))`;
+   and o.observation_value>0 and normalized.payload->>'price_only_stock_eod'='true'
+    and normalized.payload->>'close_kind'='UNADJUSTED'
+    and ((o.provider='ALPHA_VANTAGE_PRICE' and normalized.payload->>'provider_function'='TIME_SERIES_DAILY')
+      or (o.provider='TWELVE_DATA' and normalized.payload->>'adjustment'='none'))`;
  const certified=new Set(certifiedRows.map((x:any)=>String(x.symbol).toUpperCase()));
  if(certified.size===symbols.length)return {source:"TWELVE_DATA",skipped:true,reason:"EOD_SESSION_ALREADY_CERTIFIED",session_date:day,provider_requests_attempted:0,database_writes:0,dry_run:dry};
  if(certified.size>0)return {source:"TWELVE_DATA",skipped:true,reason:"INCOMPLETE_CERTIFIED_SESSION_REQUIRES_REVIEW",certified_count:certified.size,provider_requests_attempted:0,database_writes:0,dry_run:dry};
@@ -488,13 +492,14 @@ async function twelveFallbackRefresh(dry:boolean){
  }
  } finally {await cancelUndispatched("TWELVE_DATA",key,batch)}
  const tickers=rows.map(r=>r.symbol),closes=rows.map(r=>r.close);
- const metadata=JSON.stringify({price_only:true,price_only_stock_eod:true,provider_function:"time_series",
-  adjustment:"none",close_kind:"UNADJUSTED",source_session_date:day});
+ // Write typed JSONB object, never serialize it into JSONB string.
  const saved=await sql!`select x.symbol,fwios.ensure_market_observation_v1(
   fwios.resolve_instrument_id_v1(x.symbol,'Stock',null,null),
   'REGULAR_CLOSE',x.close,'USD',${day}::date,now(),'CLOSED',
   'TWELVE_DATA','A','https://api.twelvedata.com/time_series',
-  'PASS',${metadata}::jsonb,null,null
+  'PASS',jsonb_build_object('price_only',true,'price_only_stock_eod',true,
+    'provider_function','time_series','adjustment','none','close_kind','UNADJUSTED',
+    'source_session_date',${day}::text),null,null
  ) observation_id from unnest(${tickers}::text[],${closes}::numeric[]) AS x(symbol,close)`;
  if(saved.length!==rows.length||saved.some((x:any)=>!x.observation_id))throw new Error("STOCK_EOD_DATABASE_PERSISTENCE_MISMATCH");
  return {source:"TWELVE_DATA",asset_count:rows.length,symbols,session_date:day,
