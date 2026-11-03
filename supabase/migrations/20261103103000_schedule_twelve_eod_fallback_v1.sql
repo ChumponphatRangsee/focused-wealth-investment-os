@@ -15,22 +15,22 @@ END $$;
 
 SELECT cron.alter_job(
  job_id=>17,
- schedule=>'0,15 0,5,6,23 * * *',
+ schedule=>'0,55 0,5,6,23 * * *',
  command=>replace(
    replace(command,
       '''mode'',''US_STOCK_EOD''',
-      '''mode'',CASE WHEN to_char(now() AT TIME ZONE ''America/New_York'',''HH24:MI'')=''01:15'' THEN ''TWELVE_STOCK_EOD_FALLBACK'' ELSE ''US_STOCK_EOD'' END'),
+      '''mode'',CASE WHEN to_char(now() AT TIME ZONE ''America/New_York'',''HH24:MI'')=''01:55'' THEN ''TWELVE_STOCK_EOD_FALLBACK'' ELSE ''US_STOCK_EOD'' END'),
    '''HH24:MI'')=''19:00''',
-   '''HH24:MI'') IN (''19:00'',''01:15'')')
+   '''HH24:MI'') IN (''19:00'',''01:55'')')
 )
 FROM cron.job WHERE jobid=17;
 
 SELECT cron.alter_job(
  job_id=>18,
- schedule=>'30,45 0,5,6,23 * * *',
+ schedule=>'10,30 0,6,7,23 * * *',
  command=>replace(command,
    '''HH24:MI'')=''19:30''',
-   '''HH24:MI'') IN (''19:30'',''01:45'')')
+   '''HH24:MI'') IN (''19:30'',''02:10'')')
 )
 FROM cron.job WHERE jobid=18;
 COMMIT;
