@@ -9,6 +9,7 @@ import time
 import unittest
 
 import psycopg
+from psycopg import sql
 
 URL = os.environ["QUOTA_TEST_DATABASE_URL"]
 ROOT = Path(__file__).resolve().parents[2]
@@ -25,11 +26,9 @@ def reserve(conn, batch, symbols=SYMBOLS, provider=PROVIDER, key=KEY):
 def create_db():
     with psycopg.connect(URL, autocommit=True) as conn:
         for role in ("anon", "authenticated", "service_role"):
-            conn.execute(
-                "DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname=%s) "
-                "THEN EXECUTE 'CREATE ROLE '||quote_ident(%s); END IF; END $$",
-                (role, role),
-            )
+            exists = conn.execute("SELECT 1 FROM pg_roles WHERE rolname=%s", (role,)).fetchone()
+            if not exists:
+                conn.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(role)))
         conn.execute(MIGRATION.read_text())
 
 class QuotaIntegrationTests(unittest.TestCase):
