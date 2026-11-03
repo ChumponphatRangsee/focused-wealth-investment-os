@@ -435,7 +435,7 @@ async function twelveDailyFetch(uri:string):Promise<any>{
 async function twelveFallbackRefresh(dry:boolean){
  const ny=newYorkClock(new Date());
  // Never treat the 00:00-01:14 ET interval as published EOD.
- if(["Sat","Sun"].includes(ny.weekday)||ny.hour<1||ny.hour>2)
+ if(["Sat","Sun"].includes(ny.weekday)||ny.hour!==1||ny.minute<15)
   return {source:"TWELVE_DATA",skipped:true,reason:"TWELVE_EOD_OUTSIDE_RELEASE_WINDOW",database_writes:0,dry_run:dry};
  const day=previousNyBusinessDay(ny);
  if(!day)throw new Error("TWELVE_EOD_SESSION_INVALID");
@@ -467,18 +467,25 @@ async function twelveFallbackRefresh(dry:boolean){
  for(const symbol of symbols){
   const url=new URL("https://api.twelvedata.com/time_series");
   for(const [k,v] of Object.entries({symbol,interval:"1day",outputsize:"4",adjust:"none",apikey:apiKey}))url.searchParams.set(k,v);
-  let data:any;
-  try{data=await withReservedProviderCall("TWELVE_DATA",key,batch,symbol,()=>twelveDailyFetch(url.toString()));}
-  catch(e){const code=e instanceof Error?e.message:"TWELVE_DATA_UNKNOWN";throw new Error(code+"_SYMBOL_"+symbol+"_ATTEMPT_"+(rows.length+1));}
-  if(String(data.meta?.symbol||"").toUpperCase()!==symbol||String(data.meta?.currency||"").toUpperCase()!=="USD")
-   throw new Error("TWELVE_DATA_SYMBOL_CURRENCY_MISMATCH_"+symbol);
-  if(String(data.meta?.exchange_timezone||"")!=="America/New_York")
-   throw new Error("TWELVE_DATA_EXCHANGE_TIMEZONE_MISMATCH_"+symbol);
-  const candidate=data.values.find((v:any)=>String(v?.datetime||"").slice(0,10)===day);
-  const close=Number(candidate?.close);
-  if(!(close>0)||!Number.isFinite(close)||close>10000000)
-   return {source:"TWELVE_DATA",skipped:true,reason:"CURRENT_SESSION_EOD_NOT_AVAILABLE",expected_session:day,provider_requests_attempted:rows.length+1,database_writes:0,dry_run:false};
-  rows.push({symbol,close,session_date:day});
+  let row:StockEodRow;
+  try {
+   row=await withReservedProviderCall("TWELVE_DATA",key,batch,symbol,async()=>{
+    const data=await twelveDailyFetch(url.toString());
+    if(String(data.meta?.symbol||"").toUpperCase()!==symbol||String(data.meta?.currency||"").toUpperCase()!=="USD")
+     throw new Error("TWELVE_DATA_SYMBOL_CURRENCY_MISMATCH");
+    if(String(data.meta?.exchange_timezone||"")!=="America/New_York")
+     throw new Error("TWELVE_DATA_EXCHANGE_TIMEZONE_MISMATCH");
+    const candidate=data.values.find((v:any)=>String(v?.datetime||"").slice(0,10)===day);
+    const close=Number(candidate?.close);
+    if(!(close>0)||!Number.isFinite(close)||close>10000000)
+     throw new Error("TWELVE_DATA_SESSION_NOT_READY");
+    return {symbol,close,session_date:day};
+   });
+  }catch(e){
+   const code=e instanceof Error?e.message:"TWELVE_DATA_UNKNOWN";
+   throw new Error(code+"_SYMBOL_"+symbol+"_ATTEMPT_"+(rows.length+1));
+  }
+  rows.push(row);
  }
  } finally {await cancelUndispatched("TWELVE_DATA",key,batch)}
  const tickers=rows.map(r=>r.symbol),closes=rows.map(r=>r.close);
