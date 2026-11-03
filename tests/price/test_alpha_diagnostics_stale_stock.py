@@ -30,7 +30,7 @@ class ProviderDiagnosticsAndStockStaleness(unittest.TestCase):
                         stock.index('vaultSecret("ALPHA_VANTAGE_API_KEY")'))
         self.assertLess(stock.index('vaultSecret("ALPHA_VANTAGE_API_KEY")'),
                         stock.index('await withReservedProviderCall('))
-        self.assertIn('raw_payload->>\'price_only_stock_eod\'=\'true\'',stock)
+        self.assertIn('normalized.payload->>\'price_only_stock_eod\'=\'true\'',stock)
         self.assertIn("from unnest(",stock)
 
     def test_stale_stock_status_only_uses_protected_lineage(self):
