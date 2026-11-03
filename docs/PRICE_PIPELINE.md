@@ -76,6 +76,19 @@ The US Stock EOD Alpha Vantage daily quota blocker is unrelated; do not claim a 
 - Entire held-stock batch is reserved atomically before the first provider request. Only definitely `RESERVED` but not dispatched rows may be canceled. `DISPATCHED`, timeout `UNKNOWN`, rejected and completed requests conservatively consume the local budget.
 - A batch key is unique per provider and NY session; duplicate runs fail closed. An incomplete batch is not automatically retried under the same key. Do not bypass this by changing request IDs.
 
+### Manual no-write provider entitlement check
+
+The repository includes `tests/price/manual_twelve_provider_probe.ts`. This is an **opt-in operator tool**, **not** part of CI, Cron or the deployed Edge runtime. It only makes up to four read-only Twelve Data HTTP calls; it does **not** write Supabase, GitHub or Google Sheets. It will run only during 01:15–01:59 on a New York weekday, targeting the previous US weekday's EOD. For a Friday close, this is normally Monday at 01:15 ET. All four must pass exact session, symbol, USD and timezone checks.
+
+Set `TWELVE_DATA_API_KEY` securely in a local process environment (do not paste it into chat, code, GitHub or shell history), then run:
+
+```bash
+deno run --allow-env=TWELVE_DATA_API_KEY --allow-net=api.twelvedata.com \
+  tests/price/manual_twelve_provider_probe.ts
+```
+
+Expected safe output: `mode=READ_ONLY_MANUAL_NO_DATABASE_WRITES`, `all_valid=true`, `attempted=4`, one verified `VALID_EOD` per stock, plus numeric provider credit headers when supplied. The probe prints **no key, raw response or full request URL**. It intentionally stops on the first rejection or validation failure. This consumes up to four credits; do not loop or schedule the probe. **The agent has not run this script against the user's API key.** The command only typechecks as part of CI. Delete the locally set environment variable after finishing.
+
 ### Release checklist (DO NOT activate before all checks are satisfied)
 1. Confirm Twelve Data account entitlement with a manually authorized, isolated **no-write** `adjust=none` response for all 4 Stock symbols, including metadata and session date. The prior attempted no-write invocation was blocked before reaching Twelve Data: entitlement is **not yet proven**. Never record the API key or the full query string.
 2. **Verified in GitHub CI:** Python contracts, Deno typecheck, 8 Deno fixture cases, and `tests/price/quota_postgres_integration.py` against a disposable PostgreSQL 16 service. Concurrent independent DB sessions verified a single winner for the same batch; separate batches cannot both reserve 4 slots against the same 4-request minute budget. Also tested cancellation of exactly never-dispatched slots, unreleased dispatched calls and private access. Production rollback SQL smoke previously passed. These tests use no provider requests.
