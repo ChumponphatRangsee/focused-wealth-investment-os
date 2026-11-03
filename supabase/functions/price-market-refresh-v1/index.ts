@@ -325,25 +325,29 @@ async function stockCloseRefresh(dry:boolean){
   url.searchParams.set("outputsize","compact");
   url.searchParams.set("apikey",apiKey);
   // Do not include the private URL in any log, error, provenance or response.
-  let data:any;
-  try {data=await withReservedProviderCall("ALPHA_VANTAGE_PRICE",key,batch,symbol,()=>alphaDailyFetch(url.toString()));}
-  catch(e) {
-   // Safe operational diagnostic: reason, symbol and attempted-call position only.
+  let row:StockEodRow;
+  try {
+   row=await withReservedProviderCall("ALPHA_VANTAGE_PRICE",key,batch,symbol,async()=>{
+    const data=await alphaDailyFetch(url.toString());
+    const meta=String(data?.["Meta Data"]?.["2. Symbol"]||"").toUpperCase();
+    if(meta!==symbol)throw new Error("STOCK_EOD_SYMBOL_MISMATCH");
+    const series=data?.["Time Series (Daily)"];
+    if(!series||typeof series!=="object"||Array.isArray(series))
+     throw new Error("STOCK_EOD_RESPONSE_MISSING");
+    const days=Object.keys(series).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)
+     && x<=ny.day).sort().reverse();
+    const day=days[0]||"";
+    const close=Number(series?.[day]?.["4. close"]);
+    if(!day||!(close>0)||!Number.isFinite(close)||close>10000000)
+     throw new Error("STOCK_EOD_CLOSE_INVALID");
+    if(day!==ny.day)throw new Error("STOCK_EOD_SESSION_NOT_READY");
+    return {symbol,close,session_date:day};
+   });
+  }catch(e){
    const code=e instanceof Error?e.message:"ALPHA_VANTAGE_PROVIDER_UNKNOWN";
    throw new Error(code+"_SYMBOL_"+symbol+"_ATTEMPT_"+(rows.length+1));
   }
-  const meta=String(data?.["Meta Data"]?.["2. Symbol"]||"").toUpperCase();
-  if(meta!==symbol)throw new Error("STOCK_EOD_SYMBOL_MISMATCH_"+symbol);
-  const series=data?.["Time Series (Daily)"];
-  if(!series||typeof series!=="object"||Array.isArray(series))
-   throw new Error("STOCK_EOD_RESPONSE_MISSING_"+symbol);
-  const days=Object.keys(series).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)
-    && x<=ny.day).sort().reverse();
-  const day=days[0]||"";
-  const close=Number(series?.[day]?.["4. close"]);
-  if(!day||!(close>0)||!Number.isFinite(close)||close>10000000)
-   throw new Error("STOCK_EOD_CLOSE_INVALID_"+symbol);
-  rows.push({symbol,close,session_date:day});
+  rows.push(row);
  }
  } finally {await cancelUndispatched("ALPHA_VANTAGE_PRICE",key,batch)}
  // Never backdate a stale/previous-day quote as a fresh US closing price.
