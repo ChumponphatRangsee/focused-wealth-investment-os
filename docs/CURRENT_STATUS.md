@@ -1,6 +1,17 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
 
+## 2026-11-03 pg_net HTTP receipt retention — BUILT-IN 6H / no custom cleanup
+
+- **Decision:** keep Supabase/pg_net built-in response retention at the current **6 hours** and do **not** add another cleanup Cron for `net._http_response`.
+- Live preflight: pg_net **0.20.4**, `pg_net.ttl = 6 hours` from the default source, response table is **UNLOGGED**, request queue is empty, and the current response window contains **6 rows / 278,528 bytes total relation size**.
+- The oldest live response was about **5h48m** old and there were **0 rows older than 6 hours**, confirming the built-in worker is already pruning expired responses during normal request processing.
+- Current six-response sample: **5 HTTP 2xx**, **1 HTTP 503**, **0 timeouts**, **0 pg_net error rows**. The 503 is the already-documented Alpha Vantage EOD failure receipt; current Twelve fallback and Sheet follow-up receipts are HTTP 200.
+- `net._http_response` is an **ephemeral diagnostic buffer, not durable audit history**. Historical response IDs recorded in this document are production receipts observed at the time, but the live rows are expected to disappear after the pg_net TTL.
+- Project `postgres` currently lacks permission to `SET pg_net.ttl`. Supabase documents that changing this parameter is a system-level operation and may require Support-granted parameter privilege plus a pg_net worker restart.
+- Keep the default 6h for now because storage pressure is negligible and duplicate cleanup would add unnecessary operational complexity. If next-day incident investigation later proves 6h insufficient, prefer either a Support-approved TTL extension (for example 24h) or a separate redacted durable run-receipt design rather than modifying the pg_net system table directly.
+- No Supabase schema, Cron, Edge Worker, Vault, Google Sheet, quota-ledger, canonical price history or trading behavior changed in this inspection.
+
 ## 2026-11-03 quota-ledger retention decision — RETAIN / no automatic prune
 
 - **Decision:** `fwios_quota.api_call_ledger` is retained indefinitely for now; no scheduled DELETE/retention Cron is added.
@@ -45,11 +56,12 @@
 - Supabase-managed schemas such as `auth`, `storage`, `realtime`, `extensions`, `graphql_public`, and `supabase_migrations` are platform infrastructure and should not be treated as FWIOS legacy data.
 
 ### Recommended next task for the next chat
-Review the remaining **operational HTTP receipt retention**, starting with `net._http_response`, before adding any custom cleanup.
-- First verify current pg_net retention/configuration and actual live row volume; do not assume it behaves like pg_cron.
-- Preserve enough HTTP receipts to diagnose provider/Edge failures and correlate Cron dispatches with actual responses.
-- Keep `fwios.market_observations` permanently outside operational-log retention.
-- Keep `fwios_quota.api_call_ledger` unpruned unless batch/idempotency evidence is redesigned first.
+No additional operational-log cleanup is required now.
+- `cron.job_run_details`: custom 30-day retention via Cron #19.
+- `net._http_response`: pg_net built-in 6-hour TTL; no custom cleanup.
+- `fwios_quota.api_call_ledger`: retain indefinitely for audit/idempotency.
+- `fwios.market_observations`: canonical history; never operationally pruned.
+- Revisit pg_net only if real incident-response experience shows that the 6-hour diagnostic window is too short. In that case, evaluate a Support-approved TTL extension or a separate redacted durable run receipt instead of deleting/reconfiguring system tables ad hoc.
 
 ### New-chat starting point
 Read, in order:
