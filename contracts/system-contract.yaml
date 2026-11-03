@@ -104,3 +104,37 @@ legacy_runtime_notice:
   observations_after_purge_before_e2e: 18652
   post_purge_crypto_fx_sheet_e2e: pass
   read_current_status: docs/CURRENT_STATUS.md
+proposed_extension_not_yet_active:
+  pull_request: 112
+  rollout_state: draft_pending_live_twelve_data_validation
+  provider_fallback:
+    provider: TWELVE_DATA
+    endpoint: time_series
+    interval: 1day
+    adjustment: none
+    currency: USD
+    scheduled_fallback: next_ny_business_day_01_15_et
+    source_session: prior_ny_business_day
+    must_validate_all_held_stocks_before_atomic_insert: true
+    must_preserve_source_provenance: true
+  quota_control:
+    schema: fwios_quota
+    table: api_call_ledger
+    separate_from_three_canonical_price_tables: true
+    atomic_reservation_before_request: true
+    unique_batch_per_provider_session: true
+    allow_cancel_only_undispatched_requests: true
+    window: conservative_rolling_24_hours
+    provider_reported_remaining_is_not_inferred: true
+  required_before_activation:
+    - github_contract_tests_and_deno_check_pass
+    - supabase_quota_transactional_tests_pass
+    - no_write_live_twelve_data_entitlement_check
+    - verify_correct_market_session_and_unadjusted_close
+    - preserve_all_four_stock_atomic_write_contract
+    - verify_sheet_provenance_and_price_readback
+    - prove_cron_dry_run_has_zero_provider_requests
+    - verify_no_portfolio_accounting_writes
+  no_legacy_worker_resurrection: true
+  no_unheld_stock_writes: true
+  auto_trade: false
