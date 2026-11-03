@@ -52,8 +52,8 @@ class QuotaAndFallbackContract(unittest.TestCase):
     def test_twelve_price_semantics_and_validation(self):
         for required in ('interval:"1day"','adjust:"none"','previousNyBusinessDay','TWELVE_DATA_SYMBOL_CURRENCY_MISMATCH',
                          'TWELVE_DATA_EXCHANGE_TIMEZONE_MISMATCH','CURRENT_SESSION_EOD_NOT_AVAILABLE',
-                         'source:"TWELVE_DATA"','"REGULAR_CLOSE"','price_only_stock_eod:true',
-                         "raw_payload->>'price_only_stock_eod'='true'"):
+                         'source:"TWELVE_DATA"','"REGULAR_CLOSE"','price_only_stock_eod',
+                         "normalized.payload->>'price_only_stock_eod'='true'"):
             with self.subTest(required=required):
                 self.assertIn(required.replace('"REGULAR_CLOSE"',"'REGULAR_CLOSE'"),COLLECTOR+"\n"+GUARDS)
         self.assertIn('parseTwelveDailyEod(data,symbol,day)',COLLECTOR)
@@ -63,8 +63,8 @@ class QuotaAndFallbackContract(unittest.TestCase):
 
     def test_sheet_accepts_only_certified_unadjusted_rows(self):
         self.assertIn("provider IN ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')",SYNC)
-        self.assertIn("raw_payload->>'price_only_stock_eod'='true'",SYNC)
-        self.assertIn("raw_payload->>'adjustment'='none'",SYNC)
+        self.assertIn("normalized.payload->>'price_only_stock_eod'='true'",SYNC)
+        self.assertIn("normalized.payload->>'adjustment'='none'",SYNC)
         self.assertIn("STOCK_STALE_LINEAGE_MISMATCH_",SYNC)
         self.assertIn('stale.provider',SYNC)
         self.assertIn("stock_count:receipt.stockSynced",SYNC)
