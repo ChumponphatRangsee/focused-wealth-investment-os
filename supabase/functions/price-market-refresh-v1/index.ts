@@ -178,21 +178,20 @@ async function cryptoRefresh(dry:boolean){
 async function fxRefresh(dry:boolean){
  const url="https://api.frankfurter.app/latest?from=USD&to=THB",d=await jsonFetch(url);
  const rate=Number(d?.rates?.THB),day=String(d?.date||"");
- if(!(rate>0)||!(/^\d{4}-\d{2}-\d{2}$/).test(day))throw new Error("FX_INVALID");
+ if(!(rate>0)||!(/^\d{4}-\d{2}-\d{2}$/.test(day)))throw new Error("FX_INVALID");
  const age=(Date.now()-Date.parse(day+"T00:00:00Z"))/86400000;
  if(age>5||age< -1)throw new Error("FX_STALE");
- if(dry)return {source:"FRANKFURTER_FX",day,rate,database_writes:0,dry_run:true};
- const ids=await sql!`select instrument_id from fwios.market_observations
-  where observation_type='FX' and fx_base_currency='USD' and fx_quote_currency='THB'
-    and provenance_status='PASS' and instrument_id is not null
-  order by observed_at desc limit 1`;
- if(!ids.length)throw new Error("FX_INSTRUMENT_MISSING");
- const meta=JSON.stringify({price_only:true,source_url:url,quote_date:day});
+ const identity=await sql!`select fwios.resolve_instrument_id_v1(
+   'USDTHB','FX','FX','FX_PAIR') instrument_id`;
+ if(identity.length!==1||!identity[0].instrument_id)throw new Error("FX_IDENTITY_MISSING");
+ if(dry)return {source:"FRANKFURTER_FX",day,rate,fx_symbol:"USDTHB",
+  database_writes:0,dry_run:true};
+ const meta=JSON.stringify({price_only:true,fx_symbol:"USDTHB",source_url:url,quote_date:day});
  const o=await sql!`select fwios.ensure_market_observation_v1(
-    ${ids[0].instrument_id}::uuid,'FX',${rate},'THB',${day}::date,now(),'FX',
+    ${identity[0].instrument_id}::uuid,'FX',${rate},'THB',${day}::date,now(),'FX',
     'FRANKFURTER_FX','B',${url},'PASS',${meta}::jsonb,'USD','THB') observation_id`;
  if(!o?.[0]?.observation_id)throw new Error("FX_SAVE_FAILED");
- return {source:"FRANKFURTER_FX",day,database_writes:1,dry_run:false};
+ return {source:"FRANKFURTER_FX",day,fx_symbol:"USDTHB",database_writes:1,dry_run:false};
 }
 
 function newYorkClock(now: Date) {
