@@ -55,6 +55,14 @@ Required deliverables:
 5. Estimate daily/monthly API usage and cost for FWIOS
 6. Recommend final **Provider Strategy v1**
 
+### Provider Strategy research draft — 2026-11-06
+
+- Research-only Provider Strategy draft is now recorded in `docs/DATA_PROVIDER_STRATEGY_V1.md`.
+- Recommended lean stack: Massive for bulk US equity EOD + normalized financials/ratios, Twelve Data for focused 5–50 stock EOD, SEC EDGAR for primary filings/evidence, CoinGecko for Crypto, Frankfurter for FX, with Alpha Vantage removed from scheduled-primary dependency and retained only as tertiary/on-demand validation pending approval.
+- Estimated recurring provider cost for the lean personal/internal configuration is approximately **$29/month**, driven by Massive Financials & Ratios; other recommended v1 providers can remain on current/free tiers under the stated workload assumptions.
+- This is **DRAFT / PENDING USER APPROVAL**. No Multi-Provider Data Infrastructure design or implementation is authorized yet.
+- No Supabase schema, Edge Worker, Cron, provider credential, Google Sheet accounting, portfolio state, or trading behavior changed during this research/documentation phase.
+
 ### Approval gate
 
 Only after **Provider Strategy v1 is explicitly approved** may the next phase design **Multi-Provider Data Infrastructure v1**, including concepts such as Provider Registry, Capability Registry, Quota/Rate-Limit Policy, API Call Ledger, Raw Provider Data, Normalization, Canonical Data, Validation/Quality, and provider failover.
