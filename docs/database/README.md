@@ -1,69 +1,107 @@
 # FWIOS Database Documentation
 
-**Documentation version:** DB-DOC-1.0  
-**Architecture status:** CURRENT PRODUCTION BASELINE  
-**Verified against live Supabase:** 2026-11-06 10:26:42 UTC  
-**Supabase project:** `focused-wealth-investment-os`  
-**Implementation changes authorized by this documentation:** No
+**Layout version:** DB-DOC-LAYOUT-2  
+**Current architecture:** DB-ARCH-1.0  
+**Current documentation revision:** DOC-REV-2  
+**Production schema changed by this restructure:** No
 
-This directory is the maintainable, text-first database architecture reference for FWIOS.
+This directory separates **current production architecture**, **future design**, and **immutable historical snapshots** so AI and human maintainers do not confuse versions.
 
-The objective is simple: when the production database is upgraded or downgraded, an AI or human maintainer must be able to read the live state, compare it with these files, update the diagrams and catalog, and leave an auditable record of what changed.
+## Read this first
+
+The machine-readable pointer is:
+
+- [CURRENT.yaml](CURRENT.yaml)
+
+An AI handling any database task must read `CURRENT.yaml` before opening architecture files.
+
+## Directory structure
+
+```text
+docs/database/
+├── CURRENT.yaml
+├── README.md
+├── current/
+│   ├── MANIFEST.yaml
+│   ├── DATABASE_ARCHITECTURE.md
+│   ├── DATABASE_ERD.md
+│   ├── DATA_FLOW.md
+│   └── TABLE_CATALOG.md
+├── planned/
+│   └── README.md
+├── history/
+│   └── DB-ARCH-1.0/
+│       ├── MANIFEST.yaml
+│       ├── DATABASE_ARCHITECTURE.md
+│       ├── DATABASE_ERD.md
+│       ├── DATA_FLOW.md
+│       └── TABLE_CATALOG.md
+├── AI_MAINTENANCE_RULES.md
+└── CHANGELOG.md
+```
+
+## Version types
+
+These identifiers are intentionally separate.
+
+| Identifier | Meaning | Changes when |
+|---|---|---|
+| `DB-ARCH-X.Y` | Actual database architecture | Structural/domain/authority architecture changes |
+| Supabase migration version | Executed PostgreSQL migration history | A migration is applied |
+| `DOC-REV-N` | Documentation revision | Docs change without changing production architecture |
+| `DB-DOC-LAYOUT-N` | Documentation storage/layout format | Versioning/document organization changes |
+
+Example: restructuring these files changed `DOC-REV-1 -> DOC-REV-2` and layout to `DB-DOC-LAYOUT-2`, while the production architecture remains `DB-ARCH-1.0`.
 
 ## Source-of-truth order
 
-When sources disagree, use this order:
+When sources disagree:
 
-1. **Live Supabase production state** — what actually exists now.
-2. `contracts/system-contract.yaml` — supported ownership and safety contract.
-3. `docs/CURRENT_STATUS.md` — latest operational handoff and production receipts.
-4. `docs/PRICE_PIPELINE.md` — current price-pipeline behavior.
-5. `docs/API_PROVIDER_GUIDE_V1.md` and `docs/DATA_PROVIDER_STRATEGY_V1.md` — selected provider strategy.
-6. Files in this directory — human-readable architecture mirror of the verified live state.
-7. Historical migrations — evidence of how the database reached the current state, not proof that old objects still exist.
+1. **Live Supabase production state**
+2. `contracts/system-contract.yaml`
+3. `docs/CURRENT_STATUS.md`
+4. `docs/PRICE_PIPELINE.md`
+5. `docs/database/CURRENT.yaml`
+6. `docs/database/current/*`
+7. provider/design documentation
+8. historical migrations and `history/*`
 
-**Never infer current production architecture from migration history alone.**
+Migration history proves what once ran; it does not prove an old object still exists.
 
-## Files
+## Current
 
-| File | Purpose |
-|---|---|
-| [DATABASE_ARCHITECTURE.md](DATABASE_ARCHITECTURE.md) | Current schemas, ownership boundaries, runtime components and database invariants |
-| [DATABASE_ERD.md](DATABASE_ERD.md) | Mermaid entity/relationship diagrams generated from the current live schema |
-| [DATA_FLOW.md](DATA_FLOW.md) | Current end-to-end data flow through providers, workers, database and Google Sheet |
-| [TABLE_CATALOG.md](TABLE_CATALOG.md) | Purpose, ownership, writers/readers, keys, retention and lifecycle for each current table/view |
-| [AI_MAINTENANCE_RULES.md](AI_MAINTENANCE_RULES.md) | Required procedure for AI-driven upgrade/downgrade documentation updates |
-| [CHANGELOG.md](CHANGELOG.md) | Durable architecture-document history |
+The only mutable documentation representing verified production is under:
 
-## Status vocabulary
+- [current/](current/)
 
-Every architecture object must be described using one of these states:
+Do not create version-numbered subfolders inside `current/`. `CURRENT.yaml` supplies the version.
 
-- **CURRENT** — verified to exist and be supported in live production.
-- **PLANNED** — design only; not deployed.
-- **TRANSITION** — live temporarily during an approved cutover.
-- **RETIRED** — no longer part of current architecture; retained only as historical context.
-- **PLATFORM** — Supabase/Postgres operational object managed outside the FWIOS application schema.
+## Planned
 
-Planned objects must never be drawn inside the CURRENT ERD as if they already exist.
+Future designs belong under:
 
-## Maintenance invariant
+- [planned/](planned/)
 
-The diagram is not the source of truth. The diagram is a reviewable representation of the live database.
+Every planned architecture must use its own version directory, for example `planned/DB-ARCH-2.0/`.
 
-For every approved schema upgrade or downgrade:
+A planned object must never appear in the current ERD/catalog as though it exists in production.
 
-`live database -> verify -> update catalog -> update ERD -> update data flow -> update changelog -> verify again`
+## History
 
-Do not manually edit a generated picture and treat it as canonical. Mermaid/Markdown remains the editable source so AI maintainers can update it through normal Git diffs.
+Retired current snapshots belong under:
 
-## Current ownership boundary
+- [history/](history/)
 
-- Supabase owns canonical instrument identity and market-price observations.
-- The Investment Portfolio Tracker Google Sheet owns Transactions, Holdings quantities, Cost Basis, Manual Overrides and portfolio accounting.
-- FWIOS database/provider work must not directly mutate those accounting-owned values.
-- Automatic trading remains disabled.
+Historical version folders are immutable. Do not edit them to make old architecture look like the current system.
 
-## Current provider-strategy boundary
+## Compatibility paths
 
-Alpha Vantage is excluded from the future Provider Strategy v1. Historical observations, quota receipts, constraints and functions that still mention Alpha Vantage are **current runtime legacy state**, not approval to use Alpha in future architecture. They must remain documented until an approved runtime cutover removes them.
+The old files at the root of `docs/database/` are retained as pointer stubs so existing GitHub links do not break. They are **not** the editable current architecture.
+
+## Maintenance
+
+Read [AI_MAINTENANCE_RULES.md](AI_MAINTENANCE_RULES.md) before any upgrade, downgrade, retirement, promotion or documentation reconciliation.
+
+## Safety boundary
+
+Documentation maintenance never authorizes runtime changes. Transactions, Holdings quantities, Cost Basis, Manual Overrides and portfolio accounting remain outside database-documentation writes, and automatic trading remains disabled.
