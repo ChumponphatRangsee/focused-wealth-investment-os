@@ -1,6 +1,73 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
 
+## 2026-11-06 handoff — FWIOS Data Provider Strategy v1 (RESEARCH / DESIGN ONLY)
+
+### Preflight source-of-truth check
+
+- GitHub default branch is `main`; pre-update baseline head was `29eea0f4180e82ddfa6a85251155496f5d944fe8` (`docs: record USDTHB FX identity production pass (#123)`).
+- Re-read current `docs/CURRENT_STATUS.md`, `contracts/system-contract.yaml`, and `docs/PRICE_PIPELINE.md` from `main` before this handoff update.
+- Live Supabase was inspected read-only at **2026-11-06 17:01 Asia/Bangkok**. No provider/worker was manually invoked and no production data was written.
+- Live price state: **11 instruments + 11 symbols**, **1,149 market observations**, append-only observation guard enabled, Edge Workers remain **price-market-refresh-v1 v13** and **price-sheet-sync-v1 v7**, active Cron IDs **14–19** unchanged.
+- Current observation mix: **918 CoinGecko USD LIVE_QUOTE**, **120 Twelve Data USD REGULAR_CLOSE**, **97 Alpha Vantage USD REGULAR_CLOSE**, and **14 Frankfurter THB FX** observations.
+- `fwios_quota.api_call_ledger` has **24** rows. Current provider-call outcomes: Twelve Data **16 SUCCESS**; Alpha Vantage **2 SUCCESS, 2 PROVIDER_REJECTED, 4 CANCELED**.
+- Alpha Vantage still demonstrates the unresolved daily-limit behavior: the 2026-11-03 and 2026-11-04 EOD batches each reached `ALPHA_VANTAGE_DAILY_RATE_LIMIT` after the first successful symbol, causing undispatched remainder reservations to be canceled. **Issue #106 remains OPEN.**
+- Twelve Data fallback has continued to pass naturally without operator intervention. Latest verified run: session **2026-11-05**, MSFT/NVDA/TLN/TTWO all **SUCCESS**, pg_net **#12042 HTTP 200**, `database_writes=4`, `portfolio_writes=0`, `auto_trade=false`. Follow-up Sheet sync pg_net **#12043 HTTP 200** returned `stock_count=4`, `crypto_count=6`, and `sheet_write_readback_verified=true`.
+- Latest Stock EOD canonical rows for MSFT/NVDA/TLN/TTWO are all Twelve Data `REGULAR_CLOSE`, USD, session **2026-11-05**, `market_status=CLOSED`, `provenance_status=PASS`.
+- Existing contract ownership remains unchanged: Supabase owns canonical market-price observations; the Investment Portfolio Tracker Google Sheet owns Transactions, Holdings quantities, Cost Basis, and portfolio accounting.
+
+### Next task: FWIOS Data Provider Strategy v1
+
+**Do not build Multi-Provider Infrastructure yet.** This phase is research and architecture decision only. No implementation, migration, provider deployment, Cron modification, worker invocation, production write, or portfolio-accounting mutation is authorized by this task.
+
+Research and choose providers for these workloads:
+
+1. S&P 500 Universe / Bulk Screening
+2. Portfolio + Watchlist EOD Market Data
+3. Fundamentals / Financial Statements / Metrics
+4. SEC Filings / Primary Evidence
+5. News / Catalysts
+6. Crypto
+7. FX
+8. Backup / Secondary providers
+
+For each candidate provider, compare:
+
+- Coverage
+- Free/Paid quota
+- Rate limit
+- Batch / multi-symbol support
+- Cost
+- Data freshness
+- Historical depth
+- Fundamental-data quality
+- Reliability
+- Licensing / redistribution constraints
+- API complexity
+- Suitability for approximately 500-stock universe vs 5–50 stock watchlist/portfolio
+
+Required deliverables:
+
+1. Provider comparison matrix
+2. Recommended Primary + Fallback per workload
+3. Explain which workloads should use bulk providers vs focused providers
+4. Decide whether Alpha Vantage should be retired, retained as secondary, or reassigned
+5. Estimate daily/monthly API usage and cost for FWIOS
+6. Recommend final **Provider Strategy v1**
+
+### Approval gate
+
+Only after **Provider Strategy v1 is explicitly approved** may the next phase design **Multi-Provider Data Infrastructure v1**, including concepts such as Provider Registry, Capability Registry, Quota/Rate-Limit Policy, API Call Ledger, Raw Provider Data, Normalization, Canonical Data, Validation/Quality, and provider failover.
+
+Until that approval:
+
+- do not implement provider abstractions or new infrastructure;
+- do not add or rotate provider keys;
+- do not change provider schedules, Cron, workers, database schemas, or canonical price behavior;
+- do not manually invoke provider/worker flows to manufacture a PASS;
+- keep `auto_trade=false`;
+- do not modify Transactions, Holdings quantities, Cost Basis, Manual Overrides, or portfolio accounting.
+
 ## 2026-11-03 USD/THB FX identity normalization — Production E2E PASS (PR #121 / #122)
 
 - **Dedicated FX identity is live.** Migration `usdthb_fx_identity_v1` created canonical symbol **`USDTHB`** with `asset_class=FX`, `instrument_type=CURRENCY_PAIR`, venue `FX`, namespace `FX_PAIR`, and primary venue `FRANKFURTER`.
