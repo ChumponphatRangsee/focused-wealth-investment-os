@@ -55,6 +55,18 @@ Required deliverables:
 5. Estimate daily/monthly API usage and cost for FWIOS
 6. Recommend final **Provider Strategy v1**
 
+### 2026-11-06 database documentation baseline — DB-DOC-1.0
+
+- Created a text-first, AI-maintainable database documentation set under `docs/database/`: `README.md`, `DATABASE_ARCHITECTURE.md`, `DATABASE_ERD.md`, `DATA_FLOW.md`, `TABLE_CATALOG.md`, `AI_MAINTENANCE_RULES.md`, and `CHANGELOG.md`.
+- Baseline was verified against live Supabase **read-only** at **2026-11-06 10:26:42 UTC** before documentation writes.
+- Current live application structure documented: **3 `fwios` tables + 1 identity view + 5 `fwios` functions + 1 append-only trigger**, plus **1 `fwios_quota` table + 4 quota functions**.
+- Current operational flow documents **6 active pg_cron jobs**, pg_net queue/response receipts, Vault as credential storage, and Edge Functions `price-market-refresh-v1 v13` + `price-sheet-sync-v1 v7`.
+- Mermaid/Markdown is the canonical editable diagram representation. Any future PNG/SVG is derived only; AI should update the text source first.
+- Maintenance contract: live Supabase is the technical truth; PLANNED objects must never appear as CURRENT; every approved schema upgrade/downgrade must update table catalog, ERD, data flow when affected, changelog, and this handoff after production verification.
+- Alpha Vantage is excluded from the future provider strategy, but live runtime constraints/functions that still mention Alpha are documented as legacy transition debt until a separately approved cutover removes them. Historical evidence remains immutable.
+- Supabase catalog tooling flags `fwios_quota.api_call_ledger` because RLS is disabled. Direct privilege verification at this baseline found **no schema USAGE** for `anon`, `authenticated`, or `service_role`, and **no direct table grants** to those roles or `PUBLIC`; no RLS/security change was made in this documentation task.
+- This was **documentation-only**: no migration, schema write, provider invocation, Edge deployment, Cron change, Vault change, Google Sheet accounting change, portfolio mutation, or trading behavior change.
+
 ### 2026-11-06 provider-set revision — Alpha Vantage removed from strategy
 
 - User decision: **Alpha Vantage is removed completely from FWIOS Provider Strategy v1.** It will not be a future primary, fallback, tertiary validator, scheduled dependency, or active Provider Registry member.
