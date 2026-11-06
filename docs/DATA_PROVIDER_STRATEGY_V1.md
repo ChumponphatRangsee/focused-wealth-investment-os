@@ -1,6 +1,6 @@
 # FWIOS Data Provider Strategy v1
 
-**Status:** DRAFT — PENDING USER APPROVAL  
+**Status:** DRAFT — PROVIDER SET REVISED; INFRASTRUCTURE PENDING APPROVAL  
 **Date:** 2026-11-06  
 **Phase:** Research / architecture decision only  
 **Implementation authorized:** No
@@ -20,7 +20,13 @@ Recommended v1 stack:
 | News / catalysts | Massive News + SEC 8-K monitoring | Tiingo News optional | Hourly structured news is enough for research; 8-K remains primary evidence for company material events |
 | Crypto | CoinGecko | Twelve Data | Specialist crypto aggregator already used by FWIOS; generous free Demo quota |
 | FX | Frankfurter | Twelve Data FX | Daily official-source reference rates, no key, open source, long history |
-| Tertiary validation | Alpha Vantage | — | Remove from scheduled primary dependency; retain only for low-frequency/on-demand cross-checks until entitlement issue is resolved |
+
+
+## Explicit provider exclusion
+
+**Alpha Vantage is removed from Provider Strategy v1 by user decision on 2026-11-06.** It is not a primary, fallback, tertiary validator, or future dependency in this strategy. Historical production receipts that mention Alpha Vantage remain immutable historical evidence, but the future provider design must not require Alpha Vantage.
+
+This is a strategy/documentation decision only. The currently deployed runtime still contains the historical Alpha path until a separately approved implementation phase removes it safely; do not rewrite historical observations or manufacture a replacement PASS.
 
 ## Architecture principle: bulk vs focused providers
 
@@ -61,7 +67,6 @@ Current FWIOS production already has natural Twelve Data 4/4 EOD acceptance evid
 | FMP | Optional normalized fundamentals / enrichment | US on Starter; 30+ years on Premium; 100+ endpoints; news, statements, metrics | Starter 300/min; Premium 750/min; Ultimate 3,000/min; bulk/batch officially on Ultimate | Starter ~$22/mo; Premium ~$59/mo; Ultimate ~$149/mo on current annual-price page | Real-time/EOD depending endpoint | Very broad normalized fundamentals and ratios | Useful enrichment; unnecessary as mandatory v1 dependency if Massive+SEC covers core needs | Display/redistribution requires separate license | Good; **Excellent on Ultimate** | Excellent |
 | Tiingo | Optional news / secondary multi-asset | 30+ years EOD; broad stocks/ETF; news; crypto/FX | Free 50/hour, 1,000/day; Power 10,000/hour, 100,000/day | $0 / $30 Power | News real-time; EOD market data | Fundamentals are a separate add-on with non-public price | Good secondary feed and rich news tagging | Individual/Power internal use only; redistribution separate | Fair on free; Good on Power | Excellent |
 | EODHD | Low-cost bulk backup | 150k+ tickers; 30+ years EOD on paid; global | Paid plans 100k calls/day, 1,000/min; bulk EOD available | EOD plan $19.99/mo | EOD / delayed/live depending plan | Fundamentals plan separate; bulk fundamentals requires Extended plan | Broad/cheap, but vendor discloses some price feeds are aggregated/indicative rather than exchange feeds | Internal plan terms; check redistribution separately | **Good backup** | Good |
-| Alpha Vantage | Tertiary/manual verifier only | 100k+ global symbols; many analytics endpoints | Free 25 requests/day; premium removes daily cap; realtime bulk quotes premium | $0 free or paid premium | EOD/free; premium realtime options | Broad but one-symbol-oriented for many core endpoints | Current FWIOS key has repeated `ALPHA_VANTAGE_DAILY_RATE_LIMIT` behavior | Commercial use/realtime requires entitlement | **Poor on free** | Fair only if paid |
 
 ## Workload decisions
 
@@ -128,14 +133,6 @@ If refreshed every 15 minutes, one batched call per interval is about 2,880 requ
 **Primary: Frankfurter. Fallback: Twelve Data FX.**
 
 Frankfurter is appropriate because FWIOS uses USD/THB for valuation/reference conversion, not intraday FX trading. It uses central-bank and official-source reference rates, requires no API key, and can be self-hosted.
-
-### 8. Alpha Vantage decision
-
-**Recommendation: retire Alpha Vantage from the scheduled primary production path and reassign it to tertiary/on-demand verification only.**
-
-Do not delete the provider immediately and do not manufacture a PASS. Current live quota evidence shows partial success followed by `ALPHA_VANTAGE_DAILY_RATE_LIMIT`; it should not remain a dependency required for the normal EOD pipeline.
-
-Issue #106 should remain open until the approved strategy is implemented. At implementation time it can be rewritten/closed as superseded if Alpha is formally removed from the scheduled path.
 
 ## Estimated FWIOS API usage
 
@@ -254,8 +251,7 @@ Adopt a provider portfolio, not a universal provider:
 3. **SEC EDGAR = primary corporate evidence and filing truth.**
 4. **CoinGecko = crypto specialist.**
 5. **Frankfurter = daily FX reference specialist.**
-6. **Alpha Vantage = no scheduled production dependency; tertiary on-demand validation only.**
-7. **FMP / Tiingo / EODHD = optional secondary providers activated only when a defined capability gap justifies their cost.**
+6. **FMP / Tiingo / EODHD = optional secondary providers activated only when a defined capability gap justifies their cost.**
 
 This strategy minimizes cost and provider calls while preserving the strongest source for each workload. It also gives the later Multi-Provider Infrastructure phase a clear reason to distinguish capability classes instead of building generic failover between interchangeable vendors.
 
@@ -286,5 +282,4 @@ No production runtime, database schema, Cron, Worker, provider credential, Googl
 - Financial Modeling Prep pricing, screener, bulk and batch documentation
 - Tiingo pricing and News API documentation
 - EODHD pricing and bulk-fundamentals documentation
-- Alpha Vantage support, premium and API documentation
 - sec-api.io pricing documentation
