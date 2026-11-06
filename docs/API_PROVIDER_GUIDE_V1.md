@@ -2,7 +2,7 @@
 
 **Status:** DESIGN REFERENCE — NO IMPLEMENTATION YET  
 **Verified:** 2026-11-06  
-**Scope:** Approved provider set for FWIOS research/data workloads  
+**Scope:** Selected Provider Strategy v1 set; infrastructure still pending approval  
 **Excluded:** Alpha Vantage
 
 ## Purpose
