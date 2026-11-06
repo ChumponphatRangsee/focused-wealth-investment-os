@@ -1,0 +1,20 @@
+schema_version: 1
+architecture_version: DB-ARCH-1.0
+status: RETIRED_SNAPSHOT
+immutable: true
+captured_from:
+  legacy_documentation_label: DB-DOC-1.0
+  baseline_commit: 998f1e824db77c640f8392248ef3a1ba4fbc27a0
+  verified_at: "2026-11-06T10:26:42Z"
+  supabase_project: focused-wealth-investment-os
+  migration_head:
+    version: "20261103103747"
+    name: usdthb_fx_identity_v1
+reason: >
+  Immutable documentation snapshot preserved before introducing
+  current/planned/history version separation. This snapshot describes
+  the same production architecture now designated DB-ARCH-1.0.
+editing_policy: >
+  Do not edit historical architecture content. If a historical factual
+  correction is unavoidable, add a correction note to the global
+  CHANGELOG instead of rewriting the snapshot.
