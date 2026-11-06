@@ -55,6 +55,17 @@ Required deliverables:
 5. Estimate daily/monthly API usage and cost for FWIOS
 6. Recommend final **Provider Strategy v1**
 
+### 2026-11-06 provider-set revision — Alpha Vantage removed from strategy
+
+- User decision: **Alpha Vantage is removed completely from FWIOS Provider Strategy v1.** It will not be a future primary, fallback, tertiary validator, scheduled dependency, or active Provider Registry member.
+- This decision updates future architecture only. The currently deployed price runtime still contains the historical Alpha path until a separately approved implementation/cutover phase removes it safely. Historical observations and receipts remain immutable evidence.
+- Provider Strategy was updated in `docs/DATA_PROVIDER_STRATEGY_V1.md`.
+- New provider reference document created: `docs/API_PROVIDER_GUIDE_V1.md`.
+- The API guide defines provider responsibilities, authentication, endpoint roles, quotas/rate limits, batch behavior, freshness/history, licensing constraints, FWIOS-specific validation rules, and cost baseline for **Massive, Twelve Data, SEC EDGAR, CoinGecko and Frankfurter**.
+- Recommended v1 recurring provider cost remains approximately **$29/month** for personal/internal use, driven by Massive Financials & Ratios; current free/public tiers cover the other approved providers under the stated workload assumptions.
+- No production provider calls, Supabase schema, Edge Worker, Cron, Vault credential, Google Sheet accounting, portfolio state or trading behavior changed during this documentation update.
+- Issue #106 should remain historical/open until the runtime Alpha path is actually removed or superseded in an approved implementation phase; do not close it merely because the strategy document changed.
+
 ### Provider Strategy research draft — 2026-11-06
 
 - Research-only Provider Strategy draft is now recorded in `docs/DATA_PROVIDER_STRATEGY_V1.md`.
