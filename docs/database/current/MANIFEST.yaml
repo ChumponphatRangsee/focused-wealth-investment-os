@@ -1,0 +1,17 @@
+schema_version: 1
+architecture_version: DB-ARCH-1.0
+doc_revision: DOC-REV-2
+status: CURRENT
+mutable: true
+verified_at: "2026-11-06T10:42:14Z"
+supabase_project: focused-wealth-investment-os
+postgres_version: "17.6.1.166"
+migration_head:
+  version: "20261103103747"
+  name: usdthb_fx_identity_v1
+source_of_truth:
+  technical_state: live_supabase
+  safety_contract: contracts/system-contract.yaml
+  operational_handoff: docs/CURRENT_STATUS.md
+history_snapshot: docs/database/history/DB-ARCH-1.0
+planned_root: docs/database/planned
