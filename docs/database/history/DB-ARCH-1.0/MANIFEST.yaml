@@ -1,7 +1,8 @@
 schema_version: 1
 architecture_version: DB-ARCH-1.0
-status: RETIRED_SNAPSHOT
+status: ARCHIVED_BASELINE
 immutable: true
+architecture_current_at_archive_time: true
 captured_from:
   legacy_documentation_label: DB-DOC-1.0
   baseline_commit: 998f1e824db77c640f8392248ef3a1ba4fbc27a0
