@@ -1,169 +1,99 @@
 # AI Database Documentation Maintenance Rules
 
-**Policy version:** AI-DB-DOC-1.0  
-**Applies to:** `docs/database/*`
+**Policy version:** AI-DB-DOC-2.0  
+**Documentation layout:** DB-DOC-LAYOUT-2
 
-This file is the maintenance contract for any AI or human agent updating FWIOS database architecture documentation.
+This file is the maintenance contract for any AI or human updating FWIOS database architecture documentation.
 
-## 1. Mandatory preflight
+## 1. First file to read
+
+Always read `docs/database/CURRENT.yaml` before deciding which architecture files are current.
+
+Never infer the current architecture from the highest-looking folder number, migration name, Git commit order, `planned/`, or `history/`.
+
+## 2. Mandatory preflight
 
 Before changing database documentation:
 
 1. Read current GitHub `main`.
-2. Read:
-   - `docs/CURRENT_STATUS.md`
-   - `contracts/system-contract.yaml`
-   - `docs/PRICE_PIPELINE.md`
-   - `docs/API_PROVIDER_GUIDE_V1.md`
-   - all current files under `docs/database/`
-3. Inspect live Supabase **read-only**:
-   - project/version/status;
-   - current relations and columns;
-   - PK/FK/check constraints as needed;
-   - views;
-   - functions affecting data behavior;
-   - non-internal triggers;
-   - active cron jobs when data flow depends on them;
-   - live Edge Functions when data flow depends on them.
-4. Compare live state against the current docs.
-5. Do not perform a production write merely to make documentation match an intended design.
+2. Read `docs/database/CURRENT.yaml`.
+3. Read `docs/CURRENT_STATUS.md`, `contracts/system-contract.yaml`, `docs/PRICE_PIPELINE.md`, `docs/API_PROVIDER_GUIDE_V1.md`, `docs/database/current/MANIFEST.yaml`, and affected files in `docs/database/current/`.
+4. Inspect live Supabase read-only: project/version/status, relations/columns, PK/FK/check constraints as needed, views, behavior-affecting functions, non-internal triggers, active Cron/Edge Functions when relevant, and migration head.
+5. Compare live state against `current/`.
+6. Do not perform a production write merely to make docs match a planned design.
 
-## 2. Classification rule
+## 3. Version model
 
-For every object, explicitly classify it:
+- **DB-ARCH-X.Y** = actual production database architecture.
+- **Supabase migration version** = executed PostgreSQL migration history; many migrations may belong to one DB-ARCH.
+- **DOC-REV-N** = documentation revision without a production architecture change.
+- **DB-DOC-LAYOUT-N** = how architecture documentation is stored/navigated.
 
-- `CURRENT`
-- `PLANNED`
-- `TRANSITION`
-- `RETIRED`
-- `PLATFORM`
+## 4. Status locations
 
-**Never describe PLANNED as CURRENT.**
+- `current/` = verified production architecture only.
+- `planned/DB-ARCH-X.Y/` = design only.
+- `history/DB-ARCH-X.Y/` = immutable snapshot.
+- `CURRENT.yaml` = only machine-readable pointer to the current version.
 
-A design document may discuss planned tables, but the CURRENT ERD and CURRENT table catalog must contain only objects verified in production.
+## 5. Starting a planned architecture
 
-## 3. Upgrade procedure
+1. Choose a proposed `DB-ARCH-X.Y`.
+2. Create `planned/DB-ARCH-X.Y/`.
+3. Add `MANIFEST.yaml` with `status: PLANNED`, `production_status: NOT_DEPLOYED`, `based_on`, and approval state.
+4. Keep future tables/flows inside that planned folder.
+5. Do not add planned objects to current diagrams.
 
-After an approved schema upgrade has been deployed:
+Design approval alone does not promote a version.
 
-1. Verify the migration is present in live migration history.
-2. Query live schema state.
-3. Verify expected constraints/relationships/triggers/functions.
-4. Run the approved regression/postflight checks.
-5. Update `TABLE_CATALOG.md`.
-6. Update `DATABASE_ERD.md`.
-7. Update `DATA_FLOW.md` if the logical path changed.
-8. Update `DATABASE_ARCHITECTURE.md` if ownership/domain boundaries changed.
-9. Add a `CHANGELOG.md` entry with:
-   - date;
-   - architecture-doc version;
-   - migration/PR/commit if available;
-   - objects added/changed/retired;
-   - data-flow impact;
-   - rollback/downgrade implications.
-10. Update `docs/CURRENT_STATUS.md` with the verified production outcome.
-11. Re-read the committed docs and confirm they describe the live database, not the intended migration.
+## 6. Upgrade / promotion procedure
 
-## 4. Downgrade / retirement procedure
+After implementation is separately approved and deployed:
 
-When a current object is removed or a feature is downgraded:
+1. Verify migrations/runtime in live Supabase.
+2. Run required regression/postflight checks.
+3. Ensure the outgoing current architecture has an immutable snapshot in `history/<old DB-ARCH>/`.
+4. Rebuild/reconcile `current/` from verified production.
+5. Update `current/MANIFEST.yaml`.
+6. Update `CURRENT.yaml`.
+7. Update `CHANGELOG.md`.
+8. Update `docs/CURRENT_STATUS.md`.
+9. Re-read GitHub `main` and confirm `CURRENT.yaml` matches live production.
 
-1. Verify the object is actually absent/inactive in production before removing it from CURRENT docs.
-2. Remove it from the current ERD.
-3. Remove or mark it RETIRED in the current catalog, depending on whether historical context is necessary.
-4. Remove obsolete flow arrows from `DATA_FLOW.md`.
-5. Record the retirement in `CHANGELOG.md`.
-6. Preserve historical facts in changelog/handoff documentation.
-7. Do not rewrite immutable production evidence merely because a provider/table/function is no longer current.
-8. Verify no live reader/writer still depends on the retired object.
+## 7. Downgrade procedure
 
-## 5. Column-level changes
+A downgrade is production-first, documentation-second.
 
-Update the ERD/catalog when a column affects:
+1. Production downgrade must be separately authorized and executed.
+2. Verify live production.
+3. Archive the outgoing current version if needed.
+4. Reconstruct `current/` from the matching historical snapshot, then reconcile against live state.
+5. Update `CURRENT.yaml`.
+6. Record the downgrade in `CHANGELOG.md`.
+7. Never point `CURRENT.yaml` to an older version while production still runs the newer schema.
 
-- PK/FK identity;
-- uniqueness/idempotency;
-- lifecycle/status;
-- provider lineage;
-- canonical value semantics;
-- currency/session/time semantics;
-- retention;
-- security/ownership;
-- data-flow routing.
+## 8. Historical immutability
 
-A purely incidental column may remain catalog-only if putting it in the ERD would reduce readability, but the catalog must stay accurate.
+Files under `history/DB-ARCH-X.Y/` are immutable snapshots. Do not edit them during normal maintenance.
 
-## 6. Diagram rules
+If a historical fact needs correction, record a correction in the global changelog instead of silently rewriting the snapshot.
 
-- Mermaid source in Markdown is the editable canonical diagram representation.
-- Keep diagrams readable; do not dump every Postgres system table.
-- Distinguish physical FK relationships from logical data-flow relationships.
-- Never draw a logical correlation as an FK.
-- Views must be labeled as views/projections.
-- Platform schemas must be visually separated from FWIOS-owned schemas.
-- Any PNG/SVG generated later is a derived artifact, not the source of truth.
+## 9. Compatibility stubs
 
-## 7. Data-flow rules
+The root files `DATABASE_ARCHITECTURE.md`, `DATABASE_ERD.md`, `DATA_FLOW.md`, and `TABLE_CATALOG.md` are compatibility pointers only. Never maintain architecture content there.
 
-Update `DATA_FLOW.md` whenever a change affects:
+## 10. Diagram rules
 
-- who writes a table;
-- who reads a table;
-- provider routing;
-- normalization/canonicalization stages;
-- durable evidence/lineage;
-- quota/failover behavior;
-- Google Sheet boundary;
-- accounting ownership;
-- trading behavior.
+Mermaid/Markdown is the editable representation. Distinguish physical FK from logical flow, label views as projections, separate platform schemas from FWIOS-owned schemas, and treat later PNG/SVG files as derived artifacts only.
 
-## 8. Safety invariants
+## 11. Safety invariants
 
-Documentation changes never authorize runtime changes.
+Documentation changes never authorize runtime changes. Unless explicitly authorized: no schema write, no provider/worker invocation to manufacture PASS, no Transactions/Holdings quantity/Cost Basis/Manual Override/portfolio-accounting mutation, no automatic trading, no secret exposure, and no deletion/rewrite of immutable evidence.
 
-Unless an approved implementation task explicitly says otherwise:
+## 12. Provider retirement rule
 
-- do not mutate Transactions;
-- do not mutate Holdings quantities;
-- do not mutate Cost Basis;
-- do not mutate Manual Overrides;
-- do not mutate portfolio accounting;
-- keep `auto_trade=false`;
-- do not manually invoke a provider/worker merely to manufacture PASS evidence;
-- do not expose provider secrets;
-- do not hard-delete immutable history to make diagrams cleaner.
+If a provider is removed from strategy while live code/constraints/history still reference it, future design must exclude it but current docs must reflect verified runtime truth until an approved cutover removes the live reference. This currently applies to Alpha Vantage.
 
-## 9. Provider retirement rule
+## 13. Drift handling
 
-If a provider is removed from strategy but still appears in live constraints/functions/history:
-
-- document the strategy decision separately from live runtime truth;
-- do not pretend the runtime reference has already disappeared;
-- mark the live reference as transition/legacy debt;
-- remove it from CURRENT runtime documentation only after verified cutover.
-
-This rule currently applies to Alpha Vantage.
-
-## 10. Drift handling
-
-If live production and docs disagree:
-
-- treat live production as the current technical state;
-- treat contract/safety documents as the authority for what behavior is permitted;
-- report the drift explicitly;
-- do not silently reconcile by editing production;
-- update docs only to VERIFIED reality, or mark the mismatch as unresolved.
-
-## 11. Versioning
-
-Use documentation versions:
-
-- patch: wording/non-structural corrections;
-- minor: table/relationship/flow changes that preserve overall architecture;
-- major: domain/authority redesign or major structural cutover.
-
-Example:
-
-`DB-DOC-1.0 -> DB-DOC-1.1 -> DB-DOC-2.0`
-
-This version tracks documentation architecture, not PostgreSQL/Supabase migration version numbers.
+If live production and docs disagree: live Supabase is the technical state; contract/safety docs define what is permitted; report the drift explicitly; do not silently edit production; reconcile `current/` only to verified reality; update `CURRENT.yaml` last.
