@@ -55,6 +55,25 @@ Required deliverables:
 5. Estimate daily/monthly API usage and cost for FWIOS
 6. Recommend final **Provider Strategy v1**
 
+### 2026-11-06 database documentation versioning restructure — DB-DOC-LAYOUT-2
+
+- Database documentation was reorganized to prevent architecture-version confusion as FWIOS evolves.
+- Production architecture remains **DB-ARCH-1.0**; this restructure is **DOC-REV-2** only and made **no production schema/runtime change**.
+- Added machine-readable `docs/database/CURRENT.yaml`. AI/human maintainers must read this first; it points to the only mutable verified-production documentation under `docs/database/current/`.
+- Added version-separated roots:
+  - `docs/database/current/` — verified production mirror;
+  - `docs/database/planned/` — design-only future architectures;
+  - `docs/database/history/DB-ARCH-X.Y/` — immutable snapshots.
+- Archived the original flat DB-DOC-1.0 baseline under `history/DB-ARCH-1.0/`. This is an **ARCHIVED_BASELINE**, not evidence that DB-ARCH-1.0 is retired; DB-ARCH-1.0 is still current production.
+- Old root files `DATABASE_ARCHITECTURE.md`, `DATABASE_ERD.md`, `DATA_FLOW.md`, and `TABLE_CATALOG.md` are now compatibility pointers only so existing links continue working without creating duplicate mutable sources.
+- Version semantics are now separated:
+  - `DB-ARCH-X.Y` = actual production database architecture;
+  - Supabase migration version = executed PostgreSQL history;
+  - `DOC-REV-N` = documentation-only revision;
+  - `DB-DOC-LAYOUT-N` = documentation storage/navigation format.
+- Live read-only preflight at **2026-11-06 10:42:14 UTC** still matched the baseline: 3 `fwios` tables, 1 view, 5 `fwios` functions, 1 `fwios_quota` table, 4 quota functions, 6 active Cron jobs, 11 instruments, 11 symbols, 1,149 market observations, and 24 quota-ledger rows. Migration head remains `20261103103747_usdthb_fx_identity_v1`.
+- No migration, schema write, Edge deployment, Cron change, provider call, Vault change, Google Sheet accounting change, portfolio mutation, or trading behavior change occurred.
+
 ### 2026-11-06 database documentation baseline — DB-DOC-1.0
 
 - Created a text-first, AI-maintainable database documentation set under `docs/database/`: `README.md`, `DATABASE_ARCHITECTURE.md`, `DATABASE_ERD.md`, `DATA_FLOW.md`, `TABLE_CATALOG.md`, `AI_MAINTENANCE_RULES.md`, and `CHANGELOG.md`.
