@@ -1,16 +1,16 @@
 # FWIOS Current Data Flow
 
 **Architecture version:** DB-ARCH-1.0  
-**Doc revision:** DOC-REV-2  
+**Doc revision:** DOC-REV-3  
 **Status:** CURRENT  
-**Verified against live Supabase:** 2026-11-06 10:26:42 UTC
+**Verified against live Supabase:** Schema 2026-11-06; runtime retirement 2026-11-09 04:16 UTC
 
 ## Current production flow
 
 ```mermaid
 flowchart LR
     C["pg_cron<br/>cron.job"] --> NQ["pg_net<br/>http_request_queue"]
-    NQ --> MW["Edge Function<br/>price-market-refresh-v1 v13"]
+    NQ --> MW["Edge Function<br/>price-market-refresh-v1 v14"]
 
     VAULT["Supabase Vault<br/>provider/runtime secrets"] -. credentials .-> MW
 
@@ -54,7 +54,7 @@ The current market worker collects from the live provider paths used by the supp
 
 Provider Strategy v1 selects Massive and SEC for future workloads, but they are **not shown as current runtime inputs** because the current production database/worker has not been upgraded to use them yet.
 
-Alpha Vantage is also intentionally omitted from the future/provider flow. Historical/live runtime code and rows may still contain Alpha references until an approved cutover removes them.
+Alpha Vantage was **retired from active Cron/Market Worker dispatch** on 2026-11-09 (Cron migration `20261109040630`, Market Worker v14, Vault credential removal migration `20261109041640`). Historical Alpha market observations, quota receipts, read-function legacy branches and Sheet provenance compatibility remain intact by design; they are not active API dependencies. Twelve Data is the only scheduled Stock EOD provider; autonomous post-cutover 4/4 + Sheet-readback acceptance is pending.
 
 ### 3. Quota/idempotency guard
 

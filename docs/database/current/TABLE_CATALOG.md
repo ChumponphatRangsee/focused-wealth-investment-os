@@ -1,7 +1,7 @@
 # FWIOS Table Catalog
 
 **Architecture version:** DB-ARCH-1.0  
-**Doc revision:** DOC-REV-2  
+**Doc revision:** DOC-REV-3  
 **Status:** CURRENT  
 **Verified against live Supabase:** 2026-11-06 10:26:42 UTC
 

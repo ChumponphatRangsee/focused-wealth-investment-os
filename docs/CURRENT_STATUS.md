@@ -1,12 +1,13 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
-## 2026-11-09 — Alpha Vantage runtime retirement (AUTHORIZED; rollout in progress)
+## 2026-11-09 — Alpha Vantage runtime retirement (DEPLOYED; autonomous E2E pending)
 
 - **User authorization:** explicitly requested production removal of Alpha Vantage on 2026-11-09, separately from the still-pending broad Multi-Provider Infrastructure strategy approval.
 - **DONE in Supabase:** guarded migration `20261109040630_retire_alpha_vantage_cron_v1` amended only Cron #17/#18. Job #17 schedules only Twelve Data at 01:55 America/New_York weekdays (DST-safe GMT 05:55/06:55), and job #18 performs Sheet follow-up at 02:10 ET (GMT 06:10/07:10). Both job IDs remain active. No Alpha-scheduled provider calls.
-- **Code cutover:** Market Worker removes the Alpha fetch/parser/dispatch and `US_STOCK_EOD` mode, retaining only CRYPTO, FX and the established Twelve mode. Its deployment/verification must be recorded separately; do not infer deployed status merely from a GitHub commit.
+- **DONE GitHub/Edge:** PR #124 merged (commit `547c65b9559dace4f432a00b549878aece72b733`); production `price-market-refresh-v1 v14` is ACTIVE and source-exact to GitHub `main`, removing Alpha fetch/parser/dispatch and `US_STOCK_EOD` mode. Custom server-token authentication remains enabled; JWT verification setting remains unchanged. GitHub price source contract/typecheck CI PASS.
 - **Immutable compatibility:** retain historical `ALPHA_VANTAGE_PRICE` market observations, quota receipts, and read-side compatibility. No historical rewrite, deletion, or replay. Do not assume legacy Alpha references in SQL or Sheet validator represent an active API dependency.
-- **Pending acceptance:** Wait for a naturally scheduled Twelve Data 4/4 correct-session EOD batch and subsequent Sheet readback, without any manual provider/worker invocation. Only then consider closing Issue #106 or declaring full autonomous E2E acceptance.
+- **DONE Vault:** migration `20261109041640_retire_alpha_vantage_vault_credential_v1` deleted precisely the `ALPHA_VANTAGE_API_KEY` secret without reading its plaintext; Twelve credential remains. Postflight Alpha Vault count 0, 97 historical Alpha market observations and 12 historical quota calls preserved, 11 instruments unchanged.
+- **Pending acceptance:** Wait for a naturally scheduled Twelve Data 4/4 correct-session EOD batch and subsequent Sheet readback, without any manual provider/worker invocation. Only then consider closing Issue #106 or declaring full autonomous E2E acceptance. The Friday 2026-11-06 EOD is due under the Monday 2026-11-09 01:55 ET schedule, after this read-only verification.
 - **Unchanged:** CoinGecko, Frankfurter, Cron #14–16 and #19, Transaction/holdings accounting, Manual Overrides, portfolio values, `auto_trade=false`. The separate stale `FWIOS Live Valuation` snapshot problem remains unresolved.
 - The 2026-11-06 handoff and older Alpha production notes below are historical; this newest section governs retirement state.
 

@@ -55,7 +55,7 @@ google_sheet:
 workers:
   market_collector:
     edge_function: price-market-refresh-v1
-    deployed_version: 13
+    deployed_version: 14
     modes: [CRYPTO, FX, US_STOCK_EOD, TWELVE_STOCK_EOD_FALLBACK]
     scheduled_job_ids: [14, 15, 17]
     us_stock_schedule: "01:55 America/New_York weekdays Twelve Data (previous NY business day) via Cron 17; Alpha disabled"
@@ -252,6 +252,9 @@ alpha_vantage_retirement_v1:
   twelve_data_becomes_sole_scheduled_stock_eod_provider: true
   preserve_historical_alpha_price_observations: true
   preserve_historical_quota_ledger: true
+  deployed_worker_version: 14
+  alpha_vault_secret_present: false
+  credential_migration_version: "20261109041640"
   natural_twelve_eod_and_sheet_readback_acceptance_pending: true
   auto_trade: false
   portfolio_accounting_mutation: false
