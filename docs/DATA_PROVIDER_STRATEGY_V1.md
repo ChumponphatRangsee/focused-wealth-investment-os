@@ -6,6 +6,8 @@
 **Phase:** Research / architecture decision only  
 **Implementation authorized:** No
 
+**Decision-readiness review (2026-11-09):** [PROVIDER_STRATEGY_V1_DECISION_REVIEW_20261109.md](PROVIDER_STRATEGY_V1_DECISION_REVIEW_20261109.md). Conditional design-only recommendation; **no Strategy approval and no implementation authorization**. The review adds point-in-time fundamentals, S&P 500 constituent licensing/history, personal-use restrictions, EOD timing and entitlement gates.
+
 ## Decision summary
 
 FWIOS should not use one provider for every workload. The recommended design separates **bulk-universe collection**, **focused portfolio/watchlist collection**, **primary evidence**, and **asset-class specialist feeds**.
@@ -44,6 +46,8 @@ Massive Daily Market Summary:
 - ideal for S&P 500 scanner input because FWIOS can filter the returned market locally.
 
 Do not spend 500 separate provider calls merely to refresh the S&P 500 closing-price universe.
+
+**Decision gate:** Massive's grouped feed returns the *whole US market*, not a licensed, point-in-time S&P 500 constituent list. Current and historical index membership, changes, issuer/share-class identity, and survivorship-bias handling must be separately specified before research/backtesting uses this as an S&P 500 universe.
 
 ### Focused plane — approximately 5–50 stocks
 
@@ -153,13 +157,13 @@ A one-time two-year Basic bootstrap using one grouped request per historical ses
 
 ### Fundamentals — Massive Financials & Ratios
 
-A conservative daily pull of:
+An illustrative minimum batch of:
 - ratios: 1 request
 - income statements: 1 request
 - balance sheets: 1 request
 - cash flows: 1 request
 
-is about **4 requests/trading day = ~88 requests/month**, because the endpoints support large result limits.
+is **at least 4 requests/trading day (~88 requests/month as a lower bound)** before pagination, retries, extra periods or per-symbol coverage checks. Actual usage must be measured from response metadata and `next_url`, rather than assuming four calls always cover the full 500-name financial history.
 
 In practice statements should become filing/event-driven, so steady-state usage can be lower.
 
