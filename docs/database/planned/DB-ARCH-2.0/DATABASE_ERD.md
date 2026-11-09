@@ -1,5 +1,5 @@
 # DB-ARCH-2.0 — Proposed Entity Relationships
-**STATUS: PLANNED / NOT DEPLOYED**. All edges below are **future design relationships**, not asserted current-production FKs. Physical FKs should be applied only where explicit in [TABLE_CATALOG.md](TABLE_CATALOG.md) after separate implementation authorization.
+**STATUS: PLANNED / NOT DEPLOYED**. All edges below are **future design relationships**, not asserted current-production FKs. **Safety invariant:** `auto_trade=false`; no portfolio accounting or canonical price history mutation. Physical FKs should be applied only where explicit in [TABLE_CATALOG.md](TABLE_CATALOG.md) after separate implementation authorization.
 
 ## Existing current price-service footprint (separate, not redefined)
 
