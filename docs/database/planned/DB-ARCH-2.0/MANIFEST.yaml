@@ -1,0 +1,63 @@
+schema_version: 1
+architecture_version: DB-ARCH-2.0
+title: FWIOS Multi-Provider Infrastructure v1
+status: PLANNED
+production_status: NOT_DEPLOYED
+approval:
+  provider_strategy_v1: APPROVED_2026_11_09
+  architecture_design: AUTHORIZED_2026_11_09
+  architecture_review: PENDING
+  implementation: NOT_APPROVED
+  procurement_and_new_provider_credentials: NOT_APPROVED
+  production_testing_and_deployment: NOT_APPROVED
+based_on:
+  architecture_version: DB-ARCH-1.0
+  documentation_revision: DOC-REV-4
+  source: docs/database/current/MANIFEST.yaml
+  migration_head: "20261109045146"
+  source_ref: "1a994819649ceb4d8949ec6b79252bf9651f880f"
+current_production_unchanged:
+  canonical_price_history: fwios.market_observations
+  price_identity_tables: [fwios.instruments, fwios.instrument_symbols]
+  price_quota_ledger: fwios_quota.api_call_ledger
+  active_edge_functions: [price-market-refresh-v1, price-sheet-sync-v1]
+  active_cron_ids: [15, 16, 17, 18, 19, 20]
+  accounting_authority: Investment_Portfolio_Tracker_Google_Sheet
+  auto_trade: false
+future_design_only:
+  private_schemas: [fwios_provider, fwios_research]
+  excluded_provider: ALPHA_VANTAGE
+  planned_workers_not_deployed:
+    - provider-research-dispatch-v1
+    - research-evidence-validate-v1
+  intended_capabilities:
+    - provider_registry_and_capability_registry
+    - quota_budget_and_idempotent_api_ledger
+    - source_receipts_and_provenance
+    - s_and_p_500_constituent_point_in_time
+    - unadjusted_bulk_eod
+    - fundamentals_and_sec_filing_evidence
+    - news_and_catalysts
+    - validated_research_metrics
+    - capability_specific_failover
+files:
+  - MANIFEST.yaml
+  - DATABASE_ARCHITECTURE.md
+  - DATABASE_ERD.md
+  - DATA_FLOW.md
+  - TABLE_CATALOG.md
+  - DESIGN_DECISIONS.md
+  - IMPLEMENTATION_PLAN.md
+source_of_truth:
+  production: docs/database/CURRENT.yaml
+  design: docs/database/planned/DB-ARCH-2.0/MANIFEST.yaml
+  price_service_contract: contracts/system-contract.yaml
+  approved_provider_strategy: docs/DATA_PROVIDER_STRATEGY_V1.md
+  provider_reference: docs/API_PROVIDER_GUIDE_V1.md
+promotion:
+  automatic: false
+  require_separate_user_implementation_authorization: true
+  require_provider_licensing_and_quota_entitlement_review: true
+  require_guarded_migrations_ci_and_security_review: true
+  require_staged_e2e_and_production_postflight: true
+  do_not_change_current_yaml_until_production_verified: true
