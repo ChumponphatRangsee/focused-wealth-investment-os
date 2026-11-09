@@ -1,5 +1,46 @@
 # Price Pipeline v1.1.0 — held US Stock EOD + Crypto + USD/THB FX
 
+## Current production quick reference — 2026-11-09 (read-only verified)
+
+**Authoritative order:** live Supabase runtime, `contracts/system-contract.yaml`, `docs/CURRENT_STATUS.md`, and `docs/database/CURRENT.yaml`. The operational schedules and Alpha Vantage references in the **historical release receipts below** must not be used as current deployment instructions.
+
+- **Runtime:** `price-market-refresh-v1` v14 (modes `CRYPTO`, `FX`, `TWELVE_STOCK_EOD_FALLBACK`); `price-sheet-sync-v1` v7. Alpha Vantage provider dispatch and credential are retired. Historical Alpha price rows, quota receipts, and read-side compatibility remain preserved.
+- **Canonical price history:** `fwios.market_observations` for stock, crypto, and FX; no age-based market-price pruning, no separate active Portfolio Valuation Snapshot. `FWIOS Live Valuation` is a historical-only Google Sheet tab.
+- **Accounting and dashboard:** `Transactions` and formula-derived `Holdings` belong to the Google Sheet. Prices flow through `_Market_Data` → `Price Data` → `Holdings` → `Dashboard`. `Dashboard!J6` requires the price checks and priced open holdings; `Dashboard!A7` fails closed if blocked.
+- **Safety:** no manual worker dispatch to manufacture acceptance, no portfolio/accounting mutations, `auto_trade=false`.
+
+### Active schedules (as of the 2026-11-09 preflight)
+
+| Cron ID | Purpose | Scheduled local time | Status |
+|---|---|---|---|
+| #20 | CoinGecko Crypto price refresh, mode `CRYPTO` | 17:10 America/New_York, daily | ACTIVE; replaces historical #14 |
+| #15 | Frankfurter USD/THB FX refresh | 17:10 America/New_York, weekdays | ACTIVE |
+| #16 | General Crypto/FX and eligible Stock Sheet sync | 17:20 America/New_York, daily | ACTIVE |
+| #17 | Twelve Data unadjusted Stock EOD, mode `TWELVE_STOCK_EOD_FALLBACK` | 01:55 America/New_York, weekdays | ACTIVE; Twelve-only |
+| #18 | Stock EOD Sheet follow-up | 02:10 America/New_York, weekdays | ACTIVE |
+| #19 | Retain ~30 days of completed `cron.job_run_details` | 03:15 UTC, daily | ACTIVE; operational receipts only |
+
+Cron #14 is **not active**. The other six jobs are the complete active set. A pg_cron row with `succeeded` or `0 rows` does **not** establish provider or Google Sheet E2E success; verify actual dispatch, HTTP response, canonical observations, and Sheet readback.
+
+**Unresolved autonomous acceptance (not failures):** first natural run of renamed Crypto Cron #20; first natural Twelve-only post-Alpha-cutover 4/4 Stock session and follow-up Sheet readback. Keep Issue #106 open until that evidence passes. No manual trigger should be used to create a false PASS.
+
+### Current data flow
+
+```text
+Google Sheet Holdings (OPEN assets; read only for selection)
+  ├── Crypto BTC/DOGE/ETH/HBAR/SOL/XRP → CoinGecko native USD (Cron #20)
+  ├── US Stock MSFT/NVDA/TLN/TTWO → Twelve Data unadjusted EOD USD (Cron #17)
+  └── FX USD/THB → Frankfurter → canonical USDTHB / FX_PAIR (Cron #15)
+             ↓
+      fwios.market_observations (append-only canonical history)
+             ↓
+      price-sheet-sync-v1 (Cron #16 / #18)
+             ↓
+      _Market_Data → Price Data → Holdings → Dashboard (fail closed)
+```
+
+---
+
 ## 2026-11-09 — Crypto Price Daily Refresh job name (LIVE)
 
 The user approved clarifying terminology: **Crypto daily price snapshot** and **US Stock regular-close EOD** are both canonical price observations, not per-account Portfolio Valuation Snapshots. The former Portfolio Valuation Snapshot is retired and preserved only as read-only historical evidence in the hidden `FWIOS Live Valuation` tab, without a live Dashboard dependency.
@@ -34,7 +75,9 @@ The user authorized retirement of the active Alpha Vantage price path. Productio
 
 **Acceptance gate:** Do not claim a new autonomous 4/4 Twelve EOD + Google Sheets readback PASS until the next naturally scheduled production runs are observed. Do not manually invoke providers/workers to generate acceptance evidence. Historical Alpha deployment paragraphs below are archived context and do not describe the post-cutover schedule.
 
-## Current live architecture (verified 2026-11-03)
+## Historical release receipts — 2026-11-03 and earlier (operational details superseded)
+
+> **Historical-only section:** The Alpha Vantage collection modes, old Cron #14, older Worker versions, old quota conditions, and old schedules described below are preserved as dated evidence, **not** as instructions for current production. Apply the 2026-11-09 current production quick reference above and verify live Supabase before any action.
 
 ### Legacy cleanup receipt — 2026-11-03
 
@@ -119,9 +162,9 @@ The authoritative Investment Portfolio Tracker Google Sheet `Holdings` was read 
 The US Stock EOD Alpha Vantage daily quota blocker is unrelated; do not claim a new Stock EOD price was successfully ingested yet.
 
 
-## Twelve Data EOD fallback — PR #112 (LIVE, 2026-11-03)
+## Historical Twelve Data fallback rollout — PR #112 (2026-11-03)
 
-**This section documents the active fail-closed behavior and historical release steps.**
+**Historical release receipt:** This section reflects the 2026-11-03 Alpha-primary / Twelve-fallback phase. The active 2026-11-09 Stock EOD runtime is Twelve-only; see the current production quick reference above.
 
 ### Intended behavior
 - Current `US_STOCK_EOD` (Alpha Vantage) remains at 19:00 New York business-day time; the existing Atomic 4/4 USD closing-price validation and no-stale-backdating remain mandatory.
