@@ -2,6 +2,7 @@
 
 **Status:** APPROVED PROVIDER REFERENCE — ARCHITECTURE DESIGN ONLY, NOT DEPLOYED  
 **User authorization:** 2026-11-09; any implementation or paid-provider activation requires separate approval  
+**Implementation status:** NOT APPROVED; this guide and the planned DB-ARCH-2.0 design do not authorize deployment, subscription purchases or provider credentials.  
 **Verified:** 2026-11-06  
 **Scope:** Approved provider responsibilities for the Multi-Provider Infrastructure v1 architecture design; implementation remains NOT APPROVED  
 **Runtime alignment checked:** 2026-11-09 (Alpha retired in Production independently of strategy approval)  
