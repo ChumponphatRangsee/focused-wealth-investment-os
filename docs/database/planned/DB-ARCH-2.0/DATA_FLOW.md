@@ -1,5 +1,5 @@
 # DB-ARCH-2.0 — Multi-Provider Data Flow
-**STATUS: PLANNED / NOT DEPLOYED**. Dashed components are future only. No production provider, worker, Cron, database or Sheet change is authorized by these diagrams.
+**STATUS: PLANNED / NOT DEPLOYED**. Dashed components are future only. No production provider, worker, Cron, database or Sheet change is authorized by these diagrams. **Safety invariant:** `auto_trade=false`; no Holdings quantities, Cost Basis, Transactions or Manual Overrides mutation.
 
 ## 1. Capability-specific routing (future research plane)
 
