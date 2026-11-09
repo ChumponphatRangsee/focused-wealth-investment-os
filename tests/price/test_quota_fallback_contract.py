@@ -7,6 +7,7 @@ GUARDS = (ROOT / "supabase/functions/price-market-refresh-v1/twelve-eod-guards.t
 SYNC = (ROOT / "supabase/functions/price-sheet-sync-v1/index.ts").read_text()
 QUOTA = (ROOT / "supabase/migrations/20261103100000_price_provider_quota_ledger_v1.sql").read_text()
 SCHEDULE = (ROOT / "supabase/migrations/20261103103000_schedule_twelve_eod_fallback_v1.sql").read_text()
+RETIREMENT = (ROOT / "supabase/migrations/20261109040630_retire_alpha_vantage_cron_v1.sql").read_text()
 
 class QuotaAndFallbackContract(unittest.TestCase):
     def test_quota_schema_is_private_and_distinct_from_price_history(self):
@@ -40,18 +41,15 @@ class QuotaAndFallbackContract(unittest.TestCase):
         self.assertNotIn("state='DISPATCHED'", cancel)
 
     def test_eod_requests_are_preceded_by_quota_guard(self):
-        stock = COLLECTOR.split("async function stockCloseRefresh(dry:boolean){",1)[1].split("async function cancelUndispatched",1)[0]
         twelve = COLLECTOR.split("async function twelveFallbackRefresh(dry:boolean){",1)[1].split("\n}\n",1)[0]
-        self.assertLess(stock.index('reason:"PREFLIGHT_NO_PROVIDER_REQUEST"'),stock.index('reserveEod("ALPHA_VANTAGE_PRICE"'))
-        self.assertLess(stock.index('reserveEod("ALPHA_VANTAGE_PRICE"'),stock.index('withReservedProviderCall("ALPHA_VANTAGE_PRICE"'))
         self.assertLess(twelve.index('reason:"PREFLIGHT_NO_PROVIDER_REQUEST"'),twelve.index('reserveEod("TWELVE_DATA"'))
         self.assertLess(twelve.index('reserveEod("TWELVE_DATA"'),twelve.index('withReservedProviderCall("TWELVE_DATA"'))
-        self.assertIn('cancelUndispatched("ALPHA_VANTAGE_PRICE"',stock)
         self.assertIn('cancelUndispatched("TWELVE_DATA"',twelve)
+        self.assertNotIn('ALPHA_VANTAGE',COLLECTOR)
 
     def test_twelve_price_semantics_and_validation(self):
         for required in ('interval:"1day"','adjust:"none"','previousNyBusinessDay','TWELVE_DATA_SYMBOL_CURRENCY_MISMATCH',
-                         'TWELVE_DATA_EXCHANGE_TIMEZONE_MISMATCH','CURRENT_SESSION_EOD_NOT_AVAILABLE',
+                         'TWELVE_DATA_EXCHANGE_TIMEZONE_MISMATCH','TWELVE_DATA_SESSION_NOT_READY',
                          'source:"TWELVE_DATA"','"REGULAR_CLOSE"','price_only_stock_eod',
                          "normalized.payload->>'price_only_stock_eod'='true'"):
             with self.subTest(required=required):
@@ -90,6 +88,11 @@ class QuotaAndFallbackContract(unittest.TestCase):
         self.assertIn("America/New_York",SCHEDULE)
         self.assertNotIn("cron.schedule(",SCHEDULE)
         self.assertNotIn("cron.unschedule(",SCHEDULE)
+        self.assertIn("schedule=>'55 5,6 * * *'",RETIREMENT)
+        self.assertIn("schedule=>'10 6,7 * * *'",RETIREMENT)
+        self.assertIn("'TWELVE_STOCK_EOD_FALLBACK'",RETIREMENT)
+        self.assertNotIn("'US_STOCK_EOD'",RETIREMENT)
+        self.assertNotIn("cron.unschedule(",RETIREMENT)
 
 if __name__ == "__main__":
     unittest.main()
