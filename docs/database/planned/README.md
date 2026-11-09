@@ -4,7 +4,7 @@ This directory contains **design-only** database architectures that are not prod
 
 ## Current state
 
-There is currently **no active planned database architecture folder**.
+**Active design candidate:** `DB-ARCH-2.0/` — **PLANNED / NOT_DEPLOYED**. Provider Strategy v1 approved for Architecture Design on 2026-11-09; implementation and promotion are **NOT APPROVED**. `docs/database/CURRENT.yaml` remains the production authority for DB-ARCH-1.0.
 
 When a new architecture design begins, create a versioned directory such as:
 

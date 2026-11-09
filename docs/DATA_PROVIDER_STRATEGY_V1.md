@@ -1,12 +1,13 @@
 # FWIOS Data Provider Strategy v1
 
-**Status:** DRAFT — PROVIDER SET REVISED; INFRASTRUCTURE PENDING APPROVAL  
+**Status:** APPROVED — PROVIDER STRATEGY v1, ARCHITECTURE DESIGN ONLY  
+**User authorization:** 2026-11-09 (Asia/Bangkok); no procurement, provider activation, schema/runtime change, or implementation authorization  
 **Date:** 2026-11-06  
 **Runtime alignment checked:** 2026-11-09 (Alpha retirement deployed; Provider Strategy remains draft)  
-**Phase:** Research / architecture decision only  
+**Phase:** Multi-Provider Infrastructure Architecture Design authorized  
 **Implementation authorized:** No
 
-**Decision-readiness audit (2026-11-09):** See the detailed **Decision Readiness Audit** appendix in this file. Recommendation is conditional and **design-only**; Provider Strategy remains **NOT APPROVED**, with no infrastructure design or implementation authorization.
+**Decision-readiness audit (2026-11-09, historical preapproval review):** The appendix below documents the risks and conditional recommendation **before** the user's subsequent explicit approval. **Current decision:** Provider Strategy v1 APPROVED for Architecture Design only on 2026-11-09; its historical NOT APPROVED language is superseded by this current decision. All data-quality, licensing, point-in-time and E2E gates remain active. **No implementation authorization**.
 
 ## Decision summary
 
@@ -260,11 +261,11 @@ Adopt a provider portfolio, not a universal provider:
 
 This strategy minimizes cost and provider calls while preserving the strongest source for each workload. It also gives the later Multi-Provider Infrastructure phase a clear reason to distinguish capability classes instead of building generic failover between interchangeable vendors.
 
-## Approval gate
+## Approval gate — updated 2026-11-09
 
-No Multi-Provider Data Infrastructure design or implementation should begin until the user explicitly approves this Provider Strategy v1.
+**Satisfied for design:** The user explicitly approved Provider Strategy v1 and authorized Multi-Provider Infrastructure Architecture Design on 2026-11-09. This is **NOT** authorization to procure paid subscriptions, issue new provider credentials, create new database objects, deploy workers, add Crons, modify live prices, access paid APIs, or begin implementation.
 
-After approval, the next phase may design:
+The authorized design phase covers:
 - Provider Registry
 - Capability Registry
 - Quota / Rate-Limit Policy
@@ -274,6 +275,8 @@ After approval, the next phase may design:
 - Canonical Data
 - Validation / Quality
 - Provider failover
+
+**Design outputs:** See `docs/database/planned/DB-ARCH-2.0/MANIFEST.yaml` for the separate planned architecture and approval gates. `docs/database/CURRENT.yaml` continues to identify the verified live DB-ARCH-1.0.
 
 No production runtime, database schema, Cron, Worker, provider credential, Google Sheet accounting, or trading behavior is changed by this document.
 

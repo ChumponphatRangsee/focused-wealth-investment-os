@@ -1,5 +1,16 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
+## 2026-11-09 — Provider Strategy v1 APPROVED for design; Multi-Provider Architecture PLANNED ONLY
+
+- **User authorization:** approved FWIOS Provider Strategy v1 and instructed proceeding with Multi-Provider Infrastructure **Architecture Design**. This authorizes documentation/analysis and GitHub documentation PRs only; **no implementation, paid subscription purchase, additional provider credential, live API invocation, schema migrations, new Cron/Worker, portfolio accounting change, or trade** is authorized.
+- **Source documents:** `docs/DATA_PROVIDER_STRATEGY_V1.md` and `docs/API_PROVIDER_GUIDE_V1.md` now mark design-only approval. The dated 2026-11-09 Decision Readiness Audit remains historical preapproval risk evidence and its risk gates are retained.
+- **Planned design root:** `docs/database/planned/DB-ARCH-2.0/`, explicitly `status: PLANNED` and `production_status: NOT_DEPLOYED`. Separate research/evidence/provider control planes from current `fwios` price-service data and `fwios_quota` price-specific ledger.
+- **Read-only baseline:** 2026-11-09 09:11:54 UTC Supabase healthy, PostgreSQL 17.6.1.166, three `fwios` tables, one `fwios_quota` ledger, exactly six active Crons #15–#20, only `price-market-refresh-v1` v14 and `price-sheet-sync-v1` v7 active. No new `fwios_provider`/`fwios_research` structures deployed.
+- **Protected constraints:** `contracts/system-contract.yaml` is unchanged and remains the current price-only contract; `docs/database/CURRENT.yaml` remains DB-ARCH-1.0. `fwios.market_observations` append-only history, Sheet Transactions/Holdings quantities/Cost Basis/Manual Overrides, `FWIOS Live Valuation` historical-only, and `auto_trade=false` remain unchanged.
+- **Acceptance gates parked:** post-rename Crypto Cron #20 first autonomous E2E and Twelve-only Stock EOD 4/4 + Sheet readback remain `PENDING_SCHEDULED_RUN`; Issue #106 remains OPEN until actual natural evidence. Do not manually invoke workers/providers for E2E proof.
+- **Next action after design documentation:** separate review/approval of implementation scope and cost/entitlements. Design approval must never be interpreted as production deployment approval.
+
+
 ## 2026-11-09 — Crypto price Cron name clarified (DEPLOYED; non-destructive)
 
 - **User-approved scope:** Crypto and US stock both retain canonical price history in `fwios.market_observations`; the retired Portfolio Valuation Snapshot is not required and remains historical-only in the Google Sheet. Only clarify misleading operational Crypto Cron naming; no extra portfolio or price-history snapshot pipeline is introduced.
