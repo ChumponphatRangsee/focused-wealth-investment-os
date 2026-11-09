@@ -1,7 +1,7 @@
 # FWIOS Database Architecture
 
 **Architecture version:** DB-ARCH-1.0  
-**Doc revision:** DOC-REV-3  
+**Doc revision:** DOC-REV-4  
 **Status:** CURRENT  
 **Live schema snapshot:** 2026-11-06 10:26:42 UTC  
 **Operational cutover verification:** 2026-11-09 04:16:58 UTC  
@@ -69,12 +69,14 @@ Live active jobs at the snapshot:
 
 | Job ID | Name | Schedule |
 |---:|---|---|
-| 14 | `fwios-portfolio-crypto-daily-snapshot` | `10 21,22 * * *` |
 | 15 | `fwios-portfolio-stock-post-close-sync` | `10 21,22 * * 1-5` |
 | 16 | `fwios-portfolio-sheet-shadow-sync-native` | `20 21,22 * * *` |
 | 17 | `fwios-us-stock-eod-close-v1` | `55 5,6 * * *` (01:55 NY) |
 | 18 | `fwios-us-stock-eod-sheet-followup-v1` | `10 6,7 * * *` (02:10 NY) |
 | 19 | `fwios-cron-run-details-retention-v1` | `15 3 * * *` |
+| 20 | `fwios-crypto-price-daily-refresh` | `10 21,22 * * *` |
+
+**2026-11-09 operational rename:** Old Crypto Cron ID #14 was retired atomically and replaced with #20. Its 46 historical run receipts remain attached to ID #14 in `cron.job_run_details`. The six active IDs are #15, #16, #17, #18, #19 and #20. This is a Cron identity/description update only; canonical price tables, migrations of market data and the database authority model remain unchanged.
 
 ### `net`
 
