@@ -1,14 +1,14 @@
 schema_version: 1
 architecture_version: DB-ARCH-1.0
-doc_revision: DOC-REV-3
+doc_revision: DOC-REV-4
 status: CURRENT
 mutable: true
-verified_at: "2026-11-09T04:16:58Z"
+verified_at: "2026-11-09T04:54:08Z"
 supabase_project: focused-wealth-investment-os
 postgres_version: "17.6.1.166"
 migration_head:
-  version: "20261109041640"
-  name: retire_alpha_vantage_vault_credential_v1
+  version: "20261109045146"
+  name: rename_crypto_daily_snapshot_cron_to_price_refresh_v1
 source_of_truth:
   technical_state: live_supabase
   safety_contract: contracts/system-contract.yaml
