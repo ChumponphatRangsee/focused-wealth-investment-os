@@ -67,8 +67,8 @@ workers:
   market_collector:
     edge_function: price-market-refresh-v1
     deployed_version: 14
-    modes: [CRYPTO, FX, US_STOCK_EOD, TWELVE_STOCK_EOD_FALLBACK]
-    scheduled_job_ids: [14, 15, 17]
+    modes: [CRYPTO, FX, TWELVE_STOCK_EOD_FALLBACK]
+    scheduled_job_ids: [20, 15, 17]
     us_stock_schedule: "01:55 America/New_York weekdays Twelve Data (previous NY business day) via Cron 17; Alpha disabled"
   sheet_price_sync:
     edge_function: price-sheet-sync-v1
@@ -102,8 +102,8 @@ legacy_runtime_notice:
   post_identity_cleanup_crypto_fx_sheet_e2e: pass
   retired_legacy_edge_deployments_still_present: 0
   active_price_edge_functions: [price-market-refresh-v1, price-sheet-sync-v1]
-  active_cron_ids: [14,15,16,17,18,19]
-  price_service_cron_ids: [14,15,16,17,18]
+  active_cron_ids: [15,16,17,18,19,20]
+  price_service_cron_ids: [15,16,17,18,20]
   operational_maintenance_cron_ids: [19]
   us_stock_extension_production_activation: twelve_fallback_e2e_pass_2026_11_03
   stock_provider_dry_run: twelve_fallback_real_http_200_4_of_4
@@ -267,5 +267,22 @@ alpha_vantage_retirement_v1:
   alpha_vault_secret_present: false
   credential_migration_version: "20261109041640"
   natural_twelve_eod_and_sheet_readback_acceptance_pending: true
+  auto_trade: false
+  portfolio_accounting_mutation: false
+
+cron_crypto_price_rename_2026_11_09:
+  authorized_by_user: true
+  deployed_migration_version: "20261109045146"
+  old_job_name: fwios-portfolio-crypto-daily-snapshot
+  old_job_id: 14
+  new_job_name: fwios-crypto-price-daily-refresh
+  new_job_id: 20
+  same_schedule_and_command_verified: true
+  cryptoprice_mode: CRYPTO
+  active_crypto_dispatchers: 1
+  original_run_receipts_preserved: 46
+  historical_snapshot_tab_preserved: true
+  crypto_and_stock_canonical_price_history_preserved: true
+  portfolio_valuation_snapshot_active: false
   auto_trade: false
   portfolio_accounting_mutation: false

@@ -1,5 +1,30 @@
 # FWIOS Database Documentation Changelog
 
+## DOC-REV-4 / Crypto daily price refresh Cron identity — 2026-11-09
+
+**Architecture version:** DB-ARCH-1.0 (canonical price/accounting architecture unchanged)  
+**Type:** Cron operational name/ID correction + current production documentation reconciliation  
+**Production migration:** `20261109045146_rename_crypto_daily_snapshot_cron_to_price_refresh_v1`  
+**Live verification:** 2026-11-09 04:54:08 UTC  
+**Migration head:** `20261109045146_rename_crypto_daily_snapshot_cron_to_price_refresh_v1`
+
+### Changed
+
+- Replaced active Crypto Cron #14 `fwios-portfolio-crypto-daily-snapshot` with the accurate name `fwios-crypto-price-daily-refresh`, active Cron **#20**; Supabase requires recreation because job names are immutable.
+- The replacement retained exactly the original `CRYPTO` Edge Worker dispatch command, UTC schedule `10 21,22 * * *`, database, owner and Vault-based authentication.
+- Exactly six jobs remain active: #15–#20. The 46 historical #14 run receipts remain in `cron.job_run_details`.
+- Current document pointers, table/catalog/ERD metadata, Contract and Data Flow updated to reflect actual live job IDs.
+
+### Preserved / not changed
+
+- CoinGecko canonical price observations (936) and Twelve Data canonical stock EOD observations (120) are preserved, append-only.
+- No active Portfolio Valuation Snapshot; old hidden Sheet snapshot is historical evidence only. No new snapshot table or portfolio backend.
+- No modifications to held quantities, Transactions, Cost Basis, Manual Overrides, price Workers, provider calls or trading (`auto_trade=false`).
+- Stock/Fx/Sheet/retention jobs #15–19 untouched. The first scheduled execution of new Crypto job #20 remains subject to natural monitoring.
+
+---
+
+
 ## DOC-REV-3 / Alpha Vantage runtime retirement — 2026-11-09
 
 **Architecture version:** DB-ARCH-1.0 (no schema/authority change)  

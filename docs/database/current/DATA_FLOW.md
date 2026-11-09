@@ -1,9 +1,9 @@
 # FWIOS Current Data Flow
 
 **Architecture version:** DB-ARCH-1.0  
-**Doc revision:** DOC-REV-3  
+**Doc revision:** DOC-REV-4  
 **Status:** CURRENT  
-**Verified against live Supabase:** Schema 2026-11-06; runtime retirement 2026-11-09 04:16 UTC
+**Verified against live Supabase:** Schema 2026-11-06; Cron/runtime state 2026-11-09 04:54 UTC
 
 ## Current production flow
 
@@ -39,6 +39,12 @@ flowchart LR
     GS -. owns .-> ACC["Transactions / Holdings qty / Cost Basis<br/>Manual Overrides / Portfolio Accounting"]
     OBS -. price input only .-> ACC
 ```
+
+## Crypto daily price refresh — operational name, not Portfolio Snapshot
+
+As of 2026-11-09, Cron #20 `fwios-crypto-price-daily-refresh` invokes the existing `price-market-refresh-v1` with `mode=CRYPTO`; it writes certified USD price observations through `fwios.ensure_market_observation_v1`. The original #14 `fwios-portfolio-crypto-daily-snapshot` has been unscheduled, while its historical `cron.job_run_details` entries remain attached to job ID #14. This is a name/identity change only: all other active jobs (#15–19) and worker logic are unchanged.
+
+Crypto (daily price observation) and US Stock (regular EOD close) remain in **the same append-only canonical price-history table**. Neither is a separate Portfolio Valuation Snapshot. The retired Google Sheet `FWIOS Live Valuation` historical snapshot is not a data source for current Dashboard valuation.
 
 ## Flow stages
 
