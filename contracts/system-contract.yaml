@@ -50,6 +50,17 @@ google_sheet:
   destination_tab: _Market_Data
   destination_consumers: [Price Data, Holdings]
   destination_write_readback_required: true
+  dashboard_value_source: Holdings_open_positions_thb_via_Price_Data
+  dashboard_value_cell: "Dashboard!A7"
+  dashboard_value_source_gate_cell: "Dashboard!J6"
+  dashboard_value_gate_requirements:
+    - Checks_F12_OK
+    - every_open_holding_has_positive_numeric_market_value
+  dashboard_value_missing_data_behavior: fail_closed_NA
+  dashboard_account_filter_cell: "Dashboard!J5"
+  retired_snapshot_tab: "FWIOS Live Valuation"
+  retired_snapshot_tab_usage: historical_evidence_only_not_dashboard_source
+  retired_snapshot_gate_pass_is_not_freshness_proof: true
   historical_unverified_stock_rows_immutable: true
   do_not_modify: [Transactions, Holdings quantities, Cost Basis, Manual Overrides]
 workers:

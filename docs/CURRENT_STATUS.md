@@ -1,5 +1,18 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
+## 2026-11-09 — Fixed stale Dashboard portfolio valuation snapshot (PRODUCTION SHEET VERIFIED)
+
+- **User authorization:** fix outdated Investment Portfolio Tracker valuation snapshot before moving on to Multi-Provider Infrastructure.
+- **Root cause:** `Dashboard!J6` and `Dashboard!A7` trusted the `Gate=PASS` flag from the **hidden**, inactive `FWIOS Live Valuation` sheet even though its last sync was **2026-10-28T21:20:06Z**. This flag only described historical eligibility and did not check snapshot recency.
+- **Remediation (native Google Sheet only):** changed exactly two formulas in `Investment Portfolio Tracker - Chumponphat` (sheet ID `1MUZD_nevvmH3yx972Ep6o8pCRmsdd_IgzSzjD6TPCjw`):
+  - `Dashboard!J6` uses `SHEET HOLDINGS` only when `Checks!F12=OK` and all `Open` positions have a positive, numeric computed value in `Holdings!H5:H20`; else reports `BLOCKED`.
+  - `Dashboard!A7` sums live `Holdings!H5:H20` for `Open` positions, respecting `Dashboard!J5` account filter (`ALL`, `Best`, `Loan Money`, `Mom`), and returns `#N/A` if `J6=BLOCKED`. No historical snapshot fallback exists in either formula.
+- **Verified Google Sheets effective values:** `Dashboard!J6=SHEET HOLDINGS`, `Dashboard!A7=298691.0421118036 THB` (matching `Holdings`), `Checks!F12=OK`, largest holding `NVDA 33.7%`, crypto allocation `36.1%`, concentration `REVIEW`. Old snapshot `336375.337971055 THB` and delta `37684.2958592514 THB` preserved read-only under the hidden historical tab.
+- **Data authority:** FWIOS Supabase owns price observations; `Price Data` receives validated prices; Google Sheet `Holdings` owns open quantities and portfolio accounting. The hidden old `FWIOS Live Valuation` snapshot is retained solely as historical evidence, not an active Dashboard source.
+- **Safety:** no edit to `Transactions`, `Holdings` quantity/cost formulas, `Price Data`, `_Market_Data`, manual overrides, Supabase, Cron or Workers; `auto_trade=false`. No provider/worker manually invoked. Stock EOD autonomous post-Alpha cutover acceptance remains pending separately.
+- **Monitoring caveat:** Dashboard uses existing `Checks!F12` price/operational gates; any stale/blocked or incomplete native price state is deliberately fail-closed. No change was made to the underlying snapshot generation service, which is no longer active.
+
+
 ## 2026-11-09 — Alpha Vantage runtime retirement (DEPLOYED; autonomous E2E pending)
 
 - **User authorization:** explicitly requested production removal of Alpha Vantage on 2026-11-09, separately from the still-pending broad Multi-Provider Infrastructure strategy approval.
