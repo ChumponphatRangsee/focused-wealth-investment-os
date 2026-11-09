@@ -1,5 +1,16 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
+## 2026-11-09 — Alpha Vantage runtime retirement (AUTHORIZED; rollout in progress)
+
+- **User authorization:** explicitly requested production removal of Alpha Vantage on 2026-11-09, separately from the still-pending broad Multi-Provider Infrastructure strategy approval.
+- **DONE in Supabase:** guarded migration `20261109040630_retire_alpha_vantage_cron_v1` amended only Cron #17/#18. Job #17 schedules only Twelve Data at 01:55 America/New_York weekdays (DST-safe GMT 05:55/06:55), and job #18 performs Sheet follow-up at 02:10 ET (GMT 06:10/07:10). Both job IDs remain active. No Alpha-scheduled provider calls.
+- **Code cutover:** Market Worker removes the Alpha fetch/parser/dispatch and `US_STOCK_EOD` mode, retaining only CRYPTO, FX and the established Twelve mode. Its deployment/verification must be recorded separately; do not infer deployed status merely from a GitHub commit.
+- **Immutable compatibility:** retain historical `ALPHA_VANTAGE_PRICE` market observations, quota receipts, and read-side compatibility. No historical rewrite, deletion, or replay. Do not assume legacy Alpha references in SQL or Sheet validator represent an active API dependency.
+- **Pending acceptance:** Wait for a naturally scheduled Twelve Data 4/4 correct-session EOD batch and subsequent Sheet readback, without any manual provider/worker invocation. Only then consider closing Issue #106 or declaring full autonomous E2E acceptance.
+- **Unchanged:** CoinGecko, Frankfurter, Cron #14–16 and #19, Transaction/holdings accounting, Manual Overrides, portfolio values, `auto_trade=false`. The separate stale `FWIOS Live Valuation` snapshot problem remains unresolved.
+- The 2026-11-06 handoff and older Alpha production notes below are historical; this newest section governs retirement state.
+
+
 
 ## 2026-11-06 handoff — FWIOS Data Provider Strategy v1 (RESEARCH / DESIGN ONLY)
 
