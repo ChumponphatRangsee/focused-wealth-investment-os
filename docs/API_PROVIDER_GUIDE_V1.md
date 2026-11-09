@@ -3,6 +3,7 @@
 **Status:** DESIGN REFERENCE — NO IMPLEMENTATION YET  
 **Verified:** 2026-11-06  
 **Scope:** Selected Provider Strategy v1 set; infrastructure still pending approval  
+**Runtime alignment checked:** 2026-11-09 (Alpha retired in Production independently of strategy approval)  
 **Excluded:** Alpha Vantage
 
 ## Purpose
@@ -622,7 +623,7 @@ It must not appear in the future:
 - quota allocation
 - new API documentation
 
-Historical observations and historical operational receipts mentioning Alpha Vantage remain immutable evidence. Removal from the currently deployed runtime requires a separate approved implementation/cutover phase.
+Historical observations and historical operational receipts mentioning Alpha Vantage remain immutable evidence. **The separately authorized production retirement is already deployed as of 2026-11-09**: Market Worker v14 no longer dispatches Alpha, Cron #17/#18 are Twelve-only, and the Alpha Vault credential was removed. Existing read-side compatibility remains historical only. This is **not** approval of the broader Multi-Provider Infrastructure, and autonomous post-cutover Twelve-only E2E acceptance remains pending.
 
 ## Implementation gate
 
@@ -637,4 +638,4 @@ This document does **not** authorize:
 - portfolio accounting changes
 - trading
 
-Only after the provider design is approved should **Multi-Provider Data Infrastructure v1** be designed and implemented.
+Only after explicit user approval of **Provider Strategy v1** may **Multi-Provider Data Infrastructure v1** be designed. Its implementation requires a separately approved plan, guarded migrations, GitHub PR/CI, and Production postflight verification.

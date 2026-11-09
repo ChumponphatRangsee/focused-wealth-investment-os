@@ -2,6 +2,7 @@
 
 **Status:** DRAFT — PROVIDER SET REVISED; INFRASTRUCTURE PENDING APPROVAL  
 **Date:** 2026-11-06  
+**Runtime alignment checked:** 2026-11-09 (Alpha retirement deployed; Provider Strategy remains draft)  
 **Phase:** Research / architecture decision only  
 **Implementation authorized:** No
 
@@ -26,7 +27,7 @@ Recommended v1 stack:
 
 **Alpha Vantage is removed from Provider Strategy v1 by user decision on 2026-11-06.** It is not a primary, fallback, tertiary validator, or future dependency in this strategy. Historical production receipts that mention Alpha Vantage remain immutable historical evidence, but the future provider design must not require Alpha Vantage.
 
-This is a strategy/documentation decision only. The currently deployed runtime still contains the historical Alpha path until a separately approved implementation phase removes it safely; do not rewrite historical observations or manufacture a replacement PASS.
+**Production alignment as of 2026-11-09:** Alpha Vantage was retired from the *active* runtime under separate user authorization (Stock Cron #17/#18 now Twelve-only, Market Worker v14, Alpha Vault credential removed). Historical Alpha price observations, quota receipts and read-side compatibility remain preserved. Autonomous post-cutover Twelve-only Stock EOD 4/4 + Sheet readback acceptance is still pending; do not manually invoke the worker or claim a new PASS. The completed Alpha cutover does **not** approve this broader Provider Strategy or Multi-Provider Infrastructure design/implementation.
 
 ## Architecture principle: bulk vs focused providers
 
