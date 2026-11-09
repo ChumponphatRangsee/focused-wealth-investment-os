@@ -1,8 +1,9 @@
 # FWIOS API Provider Guide v1
 
-**Status:** DESIGN REFERENCE — NO IMPLEMENTATION YET  
+**Status:** APPROVED PROVIDER REFERENCE — ARCHITECTURE DESIGN ONLY, NOT DEPLOYED  
+**User authorization:** 2026-11-09; any implementation or paid-provider activation requires separate approval  
 **Verified:** 2026-11-06  
-**Scope:** Selected Provider Strategy v1 set; infrastructure still pending approval  
+**Scope:** Approved provider responsibilities for the Multi-Provider Infrastructure v1 architecture design; implementation remains NOT APPROVED  
 **Runtime alignment checked:** 2026-11-09 (Alpha retired in Production independently of strategy approval)  
 **Excluded:** Alpha Vantage
 
@@ -638,4 +639,4 @@ This document does **not** authorize:
 - portfolio accounting changes
 - trading
 
-Only after explicit user approval of **Provider Strategy v1** may **Multi-Provider Data Infrastructure v1** be designed. Its implementation requires a separately approved plan, guarded migrations, GitHub PR/CI, and Production postflight verification.
+**Provider Strategy v1 approval for architecture design was granted on 2026-11-09.** The planned architecture is documented under `docs/database/planned/DB-ARCH-2.0/`; none of those schemas or workers is deployed. Implementation still requires a separately approved plan, provider entitlements, guarded migrations, GitHub PR/CI, and Production postflight verification.
