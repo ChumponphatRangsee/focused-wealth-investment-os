@@ -1,5 +1,20 @@
 # Price Pipeline v1.1.0 — held US Stock EOD + Crypto + USD/THB FX
 
+## 2026-11-09 — Dashboard stale snapshot protection (live Google Sheets fix)
+
+The Investment Portfolio Tracker `Dashboard` previously selected an inactive `FWIOS Live Valuation` historical snapshot solely because `Gate=PASS`. That snapshot was last synced 2026-10-28 and differed from the latest price-backed Holdings by THB 37,684.30. Historical PASS did not establish freshness.
+
+**Live fix made in Google Sheets (native cells only):**
+
+- `Dashboard!J6` displays `SHEET HOLDINGS` only when `Checks!F12="OK"`, at least one position is `Open`, and the count of `Open` positions equals the count of `Open` positions with positive `Holdings!H5:H20` values. Otherwise `BLOCKED`.
+- `Dashboard!A7` uses an account-filtered `SUMIFS` of `Holdings!H5:H20` for open positions, using `Dashboard!J5`. If `J6` is not `SHEET HOLDINGS`, returns `NA()` instead of an unverified or stale portfolio valuation.
+- Verified result after the edit: `Dashboard!A7 = 298691.0421118036 THB` and `J6 = SHEET HOLDINGS`. The same update recalculated NVDA concentration to 33.7% and crypto allocation to 36.1%.
+- The hidden `FWIOS Live Valuation` tab is **preserved as historical evidence only**, never a live dashboard data source. Its `Gate=PASS` is not a time-sensitive freshness condition.
+- No changes to transaction/accounting source rows, Holdings quantities, Cost Basis, Manual Overrides, price observations, scheduled workers, Supabase, quota, or trading (`auto_trade=false`).
+
+This is a **Dashboard display-source correction**, not a resurrection of the retired Supabase portfolio valuation backend. The canonical pricing flow remains Supabase `market_observations` → `_Market_Data` → `Price Data` → `Holdings` → `Dashboard`.
+
+
 ## 2026-11-09 — Alpha Vantage retirement cutover
 
 The user authorized retirement of the active Alpha Vantage price path. Production Cron #17 was updated via migration `20261109040630_retire_alpha_vantage_cron_v1` to schedule only Twelve Data `TWELVE_STOCK_EOD_FALLBACK` at **01:55 America/New_York on weekdays** (previous New York business day's unadjusted regular close), DST-safe. Cron #18 now schedules its Stock Sheet follow-up only at **02:10 America/New_York**. Both retain their original job IDs and remain active. Neither Cron issues an Alpha request now.
