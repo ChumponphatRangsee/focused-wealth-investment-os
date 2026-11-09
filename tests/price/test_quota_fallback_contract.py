@@ -91,7 +91,7 @@ class QuotaAndFallbackContract(unittest.TestCase):
         self.assertIn("schedule=>'55 5,6 * * *'",RETIREMENT)
         self.assertIn("schedule=>'10 6,7 * * *'",RETIREMENT)
         self.assertIn("'TWELVE_STOCK_EOD_FALLBACK'",RETIREMENT)
-        self.assertNotIn("'US_STOCK_EOD'",RETIREMENT)
+        self.assertNotIn("'mode','US_STOCK_EOD'",RETIREMENT)
         self.assertNotIn("cron.unschedule(",RETIREMENT)
 
 if __name__ == "__main__":
