@@ -1,9 +1,10 @@
 # FWIOS Database Architecture
 
 **Architecture version:** DB-ARCH-1.0  
-**Doc revision:** DOC-REV-2  
+**Doc revision:** DOC-REV-3  
 **Status:** CURRENT  
-**Live snapshot:** 2026-11-06 10:26:42 UTC  
+**Live schema snapshot:** 2026-11-06 10:26:42 UTC  
+**Operational cutover verification:** 2026-11-09 04:16:58 UTC  
 **PostgreSQL:** 17.6.1.166  
 **Region:** ap-northeast-1
 
@@ -53,14 +54,7 @@ This schema is operational quota/idempotency state, not canonical market data.
 
 ### Runtime legacy note
 
-The live `api_call_ledger` constraints and quota functions still include Alpha Vantage provider/key/error-code branches because the runtime cutover has not yet removed them.
-
-Provider Strategy v1 excludes Alpha Vantage from future architecture. Therefore:
-
-- historical/live legacy references must be documented truthfully;
-- new architecture must not depend on Alpha Vantage;
-- removal requires a separate approved migration/runtime cutover;
-- historical observations and receipts must not be rewritten merely to remove the provider name.
+**Alpha runtime cutover completed 2026-11-09.** Active Market Worker v14 no longer fetches Alpha Vantage. Cron #17 schedules Twelve Data alone and Cron #18 follows up Twelve-only; the `ALPHA_VANTAGE_API_KEY` Supabase Vault credential was removed. Historical Alpha observations and quota receipts are immutable and preserved. Existing quota table CHECK constraints, SQL read functions, and Sheet read-side validation still recognize historical Alpha provider identifiers as legacy compatibility; **these do not constitute an active Alpha API provider path**. Autonomous post-cutover Twelve 4/4 + Sheet readback acceptance is pending.
 
 ## 3. Supabase/Postgres platform schemas used by FWIOS
 
@@ -78,8 +72,8 @@ Live active jobs at the snapshot:
 | 14 | `fwios-portfolio-crypto-daily-snapshot` | `10 21,22 * * *` |
 | 15 | `fwios-portfolio-stock-post-close-sync` | `10 21,22 * * 1-5` |
 | 16 | `fwios-portfolio-sheet-shadow-sync-native` | `20 21,22 * * *` |
-| 17 | `fwios-us-stock-eod-close-v1` | `0,55 0,5,6,23 * * *` |
-| 18 | `fwios-us-stock-eod-sheet-followup-v1` | `10,30 0,6,7,23 * * *` |
+| 17 | `fwios-us-stock-eod-close-v1` | `55 5,6 * * *` (01:55 NY) |
+| 18 | `fwios-us-stock-eod-sheet-followup-v1` | `10 6,7 * * *` (02:10 NY) |
 | 19 | `fwios-cron-run-details-retention-v1` | `15 3 * * *` |
 
 ### `net`
@@ -96,7 +90,7 @@ Live active jobs at the snapshot:
 
 Live Edge Functions:
 
-- `price-market-refresh-v1` — version 13.
+- `price-market-refresh-v1` — version 14.
 - `price-sheet-sync-v1` — version 7.
 
 These functions are runtime components, not database tables, but they are included in the data-flow documentation because they are primary readers/writers around the database.
