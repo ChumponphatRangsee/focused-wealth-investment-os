@@ -1,5 +1,5 @@
 # DB-ARCH-2.0 — Proposed Table & Contract Catalog
-**STATUS: PLANNED / NOT DEPLOYED**. This is a **conceptual schema**, not migration SQL, not an existing Supabase table inventory and not permission to implement. Future types, indexes, privileges and FK constraints require a separate review.
+**STATUS: PLANNED / NOT DEPLOYED**. This is a **conceptual schema**, not migration SQL, not an existing Supabase table inventory and not permission to implement. **Safety invariant:** `auto_trade=false`; current production prices and portfolio accounting remain unchanged. Future types, indexes, privileges and FK constraints require a separate review.
 
 ## 1. Schema and privilege ownership
 
