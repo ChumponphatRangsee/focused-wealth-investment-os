@@ -1,5 +1,5 @@
 # DB-ARCH-2.0 — Design Decisions / ADRs
-**STATUS: PLANNED / NOT DEPLOYED**. The **Provider Strategy v1 is approved** for architecture design. No subsequent decision in this design document authorizes implementation, procurement, credential activation or a production write.
+**STATUS: PLANNED / NOT DEPLOYED**. The **Provider Strategy v1 is approved** for architecture design. No subsequent decision in this design document authorizes implementation, procurement, credential activation or a production write. **Safety invariant:** `auto_trade=false`; no Transactions, Holdings quantities, Cost Basis, Manual Overrides, canonical price history or account mutation.
 
 ## ADR-001 — Keep existing Price Service independent
 **Selected:** Keep the current `ASSET-PRICE-CONTRACT-1.1.0` and its 3 `fwios` price tables, historical Alpha rows, 2 active workers and current Google Sheet accounting intact. Create planned Research and Provider domains outside the price-service schema. A separate approved, versioned bridge is required to import any Research data into priced holdings.
