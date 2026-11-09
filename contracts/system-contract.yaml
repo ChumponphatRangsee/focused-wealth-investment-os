@@ -4,7 +4,7 @@ contract:
   title: Asset Price Data Service
   date: "2026-10-30"
   timezone: Asia/Bangkok
-  status: fx_identity_normalized_production_e2e_pass_2026_11_03
+  status: alpha_vantage_cron_retired_2026_11_09_twelve_only_e2e_pending
   auto_trade: false
 objective:
   purpose: collect_validate_store_and_sync_held_asset_prices
@@ -23,9 +23,9 @@ providers:
     selection: active_crypto_symbols_from_google_sheet_holdings_read_only
     max_quote_age_hours: 2
   us_stock_eod:
-    name: ALPHA_VANTAGE_PRICE
-    endpoint: TIME_SERIES_DAILY
-    price: "4. close"
+    name: TWELVE_DATA
+    endpoint: time_series
+    price: "unadjusted daily close"
     adjustment: unadjusted
     quote_currency: USD
     selection: open_stock_symbols_from_google_sheet_holdings_read_only
@@ -33,7 +33,7 @@ providers:
     require_actual_current_us_trading_session: true
     only_post_close: true
     no_weekend_or_stale_backdating: true
-    daily_free_requests_planned: 4
+    daily_free_credits_planned: 4
     mark_price_only_stock_eod_provenance: true
   fx:
     name: FRANKFURTER_FX
@@ -58,12 +58,12 @@ workers:
     deployed_version: 13
     modes: [CRYPTO, FX, US_STOCK_EOD, TWELVE_STOCK_EOD_FALLBACK]
     scheduled_job_ids: [14, 15, 17]
-    us_stock_schedule: "19:00 Alpha Vantage and 01:55 following NY weekday Twelve Data, active Cron 17"
+    us_stock_schedule: "01:55 America/New_York weekdays Twelve Data (previous NY business day) via Cron 17; Alpha disabled"
   sheet_price_sync:
     edge_function: price-sheet-sync-v1
     deployed_version: 7
     scheduled_job_ids: [16, 18]
-    us_stock_followup: "19:30 Alpha EOD and 02:10 Twelve EOD NY weekdays, active Cron 18"
+    us_stock_followup: "02:10 America/New_York weekdays, Twelve-only EOD via Cron 18"
   require_server_authentication: true
 excluded:
   - stock_discovery
@@ -236,8 +236,22 @@ active_provider_fallback:
     raw_payload_legacy_string_normalization: read_only_compatibility
     future_eod_raw_payload: typed_jsonb_object
   remaining_monitoring:
-    - alpha_vantage_shared_key_daily_limit_still_unresolved
+    - alpha_vantage_historical_quota_issue_retired_from_active_schedule
     - twelve_provider_outcomes_and_eod_timeliness
   no_legacy_worker_resurrection: true
   no_unheld_stock_writes: true
   auto_trade: false
+
+alpha_vantage_retirement_v1:
+  approved_by_user: true
+  strategy_excluded: true
+  production_alpha_schedule_disabled: true
+  cron_migration_version: "20261109040630"
+  cron_stock_collector_id: 17
+  cron_stock_sheet_followup_id: 18
+  twelve_data_becomes_sole_scheduled_stock_eod_provider: true
+  preserve_historical_alpha_price_observations: true
+  preserve_historical_quota_ledger: true
+  natural_twelve_eod_and_sheet_readback_acceptance_pending: true
+  auto_trade: false
+  portfolio_accounting_mutation: false

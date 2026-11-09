@@ -206,185 +206,10 @@ function newYorkClock(now: Date) {
   weekday:get("weekday")};
 }
 
-/** Alpha Vantage provider-only response parser; never returns raw text, keys, URLs or secrets. */
-function alphaProviderRejection(data:any):string|null {
- if (!data || typeof data!=="object" || Array.isArray(data))
-  return "ALPHA_VANTAGE_UNEXPECTED_RESPONSE_NON_OBJECT";
- const field=["Information","Note","Error Message","message","error","detail"]
-  .find(k=>typeof data?.[k]==="string"&&String(data[k]).trim().length>0);
- if (!field) return null;
- const why=String(data[field]).toLowerCase();
- if (/invalid.{0,30}(api.{0,5}key|apikey)|api.{0,5}key.{0,30}invalid|unknown key|not valid|demo key/.test(why))
-  return "ALPHA_VANTAGE_KEY_REJECTED";
- if (/per day|daily.{0,20}(limit|quota|request)|25.{0,15}(api.{0,6})?requests/.test(why))
-  return "ALPHA_VANTAGE_DAILY_RATE_LIMIT";
- if (/frequency|per minute|requests.{0,15}minute|calls.{0,15}minute|too many requests|throttl/.test(why))
-  return "ALPHA_VANTAGE_FREQUENCY_RATE_LIMIT";
- if (/premium|subscription|subscribe|upgrade|plan|entitlement|not available on free/.test(why))
-  return "ALPHA_VANTAGE_PLAN_RESTRICTED";
- if (/rate limit|quota|limit|api calls/.test(why))
-  return "ALPHA_VANTAGE_RATE_LIMIT_UNSPECIFIED";
- return "ALPHA_VANTAGE_PROVIDER_REJECTED";
-}
-/** Only call from the US Stock EOD path, after quota/idempotency/dry-run guards. */
-async function alphaDailyFetch(uri:string):Promise<any> {
- const c=new AbortController(), timeout=setTimeout(()=>c.abort(),18000);
- let r:Response;
- let body:string;
- try {
-  r=await fetch(uri,{signal:c.signal,headers:{Accept:"application/json"}});
-  body=await r.text();
- } catch(e) {
-  throw new Error(e instanceof Error&&e.name==="AbortError"
-   ?"ALPHA_VANTAGE_PROVIDER_TIMEOUT":"ALPHA_VANTAGE_PROVIDER_NETWORK_ERROR");
- } finally{clearTimeout(timeout);}
- const contentType=String(r.headers.get("content-type")||"").toLowerCase();
- const kind=contentType.includes("json")?"JSON":
-  contentType.includes("html")?"HTML":contentType.includes("text")?"TEXT":"OTHER";
- if(r.status===429)throw new Error("ALPHA_VANTAGE_RATE_LIMIT_HTTP_429");
- if(!r.ok)throw new Error("ALPHA_VANTAGE_PROVIDER_HTTP_"+r.status+"_CONTENT_"+kind);
- let data:any;
- try{data=JSON.parse(body);}catch {
-  throw new Error("ALPHA_VANTAGE_NON_JSON_RESPONSE_CONTENT_"+kind);
- }
- const rejection=alphaProviderRejection(data);
- if(rejection)throw new Error(rejection);
- if(!data||typeof data!=="object"||Array.isArray(data))
-  throw new Error("ALPHA_VANTAGE_UNEXPECTED_RESPONSE_NON_OBJECT");
- if(!data?.["Meta Data"]||!data?.["Time Series (Daily)"])
-  throw new Error("ALPHA_VANTAGE_UNEXPECTED_RESPONSE_OBJECT_"+
-   (data?.["Meta Data"]?"META":"NO_META")+"_"+(data?.["Time Series (Daily)"]?"SERIES":"NO_SERIES")+
-   "_CONTENT_"+kind);
- return data;
-}
-
-
-async function stockCloseRefresh(dry:boolean){
- const ny=newYorkClock(new Date());
- if(["Sat","Sun"].includes(ny.weekday)){
-  return {source:"ALPHA_VANTAGE_PRICE",skipped:true,reason:"US_MARKET_WEEKEND",
-   session_date:ny.day,database_writes:0,dry_run:dry};
- }
- if(ny.hour<18){
-  return {source:"ALPHA_VANTAGE_PRICE",skipped:true,reason:"EOD_COLLECTION_BEFORE_18_ET",
-   session_date:ny.day,database_writes:0,dry_run:dry};
- }
- const credential=await vaultSecret("fwios_google_sheets_service_account_json");
- if(!credential)throw new Error("GOOGLE_CREDENTIAL_MISSING");
- const token=await getGoogleAccessToken(JSON.parse(credential));
- const holdings=parseLiveHoldings(await readLiveHoldings(token));
- const symbols=[...new Set(holdings.filter(x=>x.asset_class==="Stock")
-  .map(x=>x.asset_symbol))].sort();
- if(symbols.length===0)return {source:"ALPHA_VANTAGE_PRICE",skipped:true,
-  reason:"NO_OPEN_STOCK_HOLDINGS",asset_count:0,database_writes:0,dry_run:dry};
- if(symbols.length>15)throw new Error("STOCK_UNIVERSE_OVER_FREE_API_CAP");
- // Avoid redundant provider requests on repeat invocations or a manual dry run.
- // Protect partial certified sessions: do not mix old and newly fetched rows.
- const already=await sql!`select distinct s.symbol from fwios.market_observations o
-  join fwios.instrument_symbols s on s.instrument_id=o.instrument_id
-  cross join lateral (select case when jsonb_typeof(o.raw_payload)='string'
-    then (o.raw_payload #>> '{}')::jsonb else o.raw_payload end as payload) normalized
-  where s.active=true and s.is_primary=true and s.symbol=any(${symbols}::text[])
-    and o.session_date=${ny.day}::date and o.observation_type='REGULAR_CLOSE'
-    and o.market_status='CLOSED' and o.provider in ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')
-    and o.source_tier='A' and o.value_currency='USD' and o.provenance_status='PASS'
-    and o.observation_value>0 and normalized.payload->>'price_only_stock_eod'='true'
-    and normalized.payload->>'close_kind'='UNADJUSTED'
-    and ((o.provider='ALPHA_VANTAGE_PRICE' and normalized.payload->>'provider_function'='TIME_SERIES_DAILY')
-      or (o.provider='TWELVE_DATA' and normalized.payload->>'adjustment'='none'))`;
- const certified=new Set(already.map((x:any)=>String(x.symbol).toUpperCase()));
- if(certified.size===symbols.length)return {
-  source:"ALPHA_VANTAGE_PRICE",asset_count:symbols.length,symbols,session_date:ny.day,
-  skipped:true,reason:"EOD_SESSION_ALREADY_CERTIFIED",
-  provider_requests_attempted:0,database_writes:0,dry_run:dry
- };
- if(certified.size>0)return {
-  source:"ALPHA_VANTAGE_PRICE",skipped:true,
-  reason:"INCOMPLETE_CERTIFIED_SESSION_REQUIRES_REVIEW",
-  expected_count:symbols.length,certified_count:certified.size,
-  session_date:ny.day,provider_requests_attempted:0,database_writes:0,dry_run:dry
- };
- // Dry-run is a quota-free preflight, NOT a source EOD validation.
- if(dry)return {
-  source:"ALPHA_VANTAGE_PRICE",asset_count:symbols.length,symbols,
-  expected_session:ny.day,skipped:true,reason:"PREFLIGHT_NO_PROVIDER_REQUEST",
-  provider_called:false,provider_requests_attempted:0,database_writes:0,dry_run:true
- };
- // Official Alpha Vantage API is queried only from the protected Edge runtime.
- // Never persist or return its key or the query URL with key embedded.
- const apiKey=await vaultSecret("ALPHA_VANTAGE_API_KEY");
- if(!apiKey||apiKey.trim().length<8)throw new Error("ALPHA_VANTAGE_KEY_MISSING");
- const {gate,batch,key}=await reserveEod("ALPHA_VANTAGE_PRICE",ny.day,symbols);
- if(!gate.allowed)return {source:"ALPHA_VANTAGE_PRICE",skipped:true,reason:"QUOTA_GUARD_"+gate.reason,
-  provider_requests_attempted:0,database_writes:0,dry_run:false};
- const rows:StockEodRow[]=[];
- try {
- for(const symbol of symbols){
-  const url=new URL("https://www.alphavantage.co/query");
-  url.searchParams.set("function","TIME_SERIES_DAILY");
-  url.searchParams.set("symbol",symbol);
-  url.searchParams.set("outputsize","compact");
-  url.searchParams.set("apikey",apiKey);
-  // Do not include the private URL in any log, error, provenance or response.
-  let row:StockEodRow;
-  try {
-   row=await withReservedProviderCall("ALPHA_VANTAGE_PRICE",key,batch,symbol,async()=>{
-    const data=await alphaDailyFetch(url.toString());
-    const meta=String(data?.["Meta Data"]?.["2. Symbol"]||"").toUpperCase();
-    if(meta!==symbol)throw new Error("STOCK_EOD_SYMBOL_MISMATCH");
-    const series=data?.["Time Series (Daily)"];
-    if(!series||typeof series!=="object"||Array.isArray(series))
-     throw new Error("STOCK_EOD_RESPONSE_MISSING");
-    const days=Object.keys(series).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)
-     && x<=ny.day).sort().reverse();
-    const day=days[0]||"";
-    const close=Number(series?.[day]?.["4. close"]);
-    if(!day||!(close>0)||!Number.isFinite(close)||close>10000000)
-     throw new Error("STOCK_EOD_CLOSE_INVALID");
-    if(day!==ny.day)throw new Error("STOCK_EOD_SESSION_NOT_READY");
-    return {symbol,close,session_date:day};
-   });
-  }catch(e){
-   const code=e instanceof Error?e.message:"ALPHA_VANTAGE_PROVIDER_UNKNOWN";
-   throw new Error(code+"_SYMBOL_"+symbol+"_ATTEMPT_"+(rows.length+1));
-  }
-  rows.push(row);
- }
- } finally {await cancelUndispatched("ALPHA_VANTAGE_PRICE",key,batch)}
- // Never backdate a stale/previous-day quote as a fresh US closing price.
- const allCurrent=rows.every(x=>x.session_date===ny.day);
- if(!allCurrent){
-  return {source:"ALPHA_VANTAGE_PRICE",asset_count:rows.length,
-   symbols,available_sessions:[...new Set(rows.map(x=>x.session_date))],
-   expected_session:ny.day,skipped:true,reason:"CURRENT_SESSION_EOD_NOT_AVAILABLE",
-   database_writes:0,dry_run:dry};
- }
- if(dry)return {source:"ALPHA_VANTAGE_PRICE",asset_count:rows.length,
-  symbols,session_date:ny.day,close_kind:"UNADJUSTED",database_writes:0,dry_run:true};
- // One SQL statement so all held symbols commit together or none commit.
- // Observed_at is the actual collection time; provider reports only the session DATE.
- const tickers=rows.map(x=>x.symbol),closes=rows.map(x=>x.close);
- // Write typed JSONB object, never serialize it into JSONB string.
- const saved=await sql!`select x.symbol,fwios.ensure_market_observation_v1(
-  fwios.resolve_instrument_id_v1(x.symbol,'Stock',null,null),
-  'REGULAR_CLOSE',x.close,'USD',${ny.day}::date,now(),'CLOSED',
-  'ALPHA_VANTAGE_PRICE','A','https://www.alphavantage.co/query',
-  'PASS',jsonb_build_object('price_only',true,'price_only_stock_eod',true,
-    'provider_function','TIME_SERIES_DAILY','close_kind','UNADJUSTED',
-    'source_session_date',${ny.day}::text),null,null
- ) observation_id
- from unnest(${tickers}::text[],${closes}::numeric[]) AS x(symbol,close)`;
- if(saved.length!==rows.length||saved.some((x:any)=>!x.observation_id))
-  throw new Error("STOCK_EOD_DATABASE_PERSISTENCE_MISMATCH");
- return {source:"ALPHA_VANTAGE_PRICE",asset_count:rows.length,symbols,
-  session_date:ny.day,close_kind:"UNADJUSTED",
-  provider_requests_attempted:rows.length,database_writes:rows.length,dry_run:false};
-}
-
-
+// Historical Alpha observations remain immutable; the live collector is Twelve Data only.
 // Private quota ledger is not a price store. All external API calls require an atomic reservation.
-type EodProvider="ALPHA_VANTAGE_PRICE"|"TWELVE_DATA";
-function quotaKey(p:EodProvider){return p==="TWELVE_DATA"?"TWELVE_DATA_API_KEY":"ALPHA_VANTAGE_API_KEY";}
+type EodProvider="TWELVE_DATA";
+function quotaKey(_p:EodProvider){return "TWELVE_DATA_API_KEY";}
 async function reserveEod(p:EodProvider,day:string,symbols:string[]){
  const key=quotaKey(p),batch="EOD_V1:"+p+":"+day;
  const rows=await sql!`select fwios_quota.reserve_eod_batch_v1(${p},${key},${batch},${day}::date,${symbols}::text[]) gate`;
@@ -458,12 +283,11 @@ async function twelveFallbackRefresh(dry:boolean){
     then (o.raw_payload #>> '{}')::jsonb else o.raw_payload end as payload) normalized
   where s.active=true and s.is_primary=true and s.symbol=any(${symbols}::text[])
    and o.session_date=${day}::date and o.observation_type='REGULAR_CLOSE'
-   and o.market_status='CLOSED' and o.provider in ('ALPHA_VANTAGE_PRICE','TWELVE_DATA')
+   and o.market_status='CLOSED' and o.provider='TWELVE_DATA'
    and o.source_tier='A' and o.value_currency='USD' and o.provenance_status='PASS'
    and o.observation_value>0 and normalized.payload->>'price_only_stock_eod'='true'
     and normalized.payload->>'close_kind'='UNADJUSTED'
-    and ((o.provider='ALPHA_VANTAGE_PRICE' and normalized.payload->>'provider_function'='TIME_SERIES_DAILY')
-      or (o.provider='TWELVE_DATA' and normalized.payload->>'adjustment'='none'))`;
+    and (normalized.payload->>'adjustment'='none')`;
  const certified=new Set(certifiedRows.map((x:any)=>String(x.symbol).toUpperCase()));
  if(certified.size===symbols.length)return {source:"TWELVE_DATA",skipped:true,reason:"EOD_SESSION_ALREADY_CERTIFIED",session_date:day,provider_requests_attempted:0,database_writes:0,dry_run:dry};
  if(certified.size>0)return {source:"TWELVE_DATA",skipped:true,reason:"INCOMPLETE_CERTIFIED_SESSION_REQUIRES_REVIEW",certified_count:certified.size,provider_requests_attempted:0,database_writes:0,dry_run:dry};
@@ -512,10 +336,10 @@ Deno.serve(async(req:Request)=>{
  if(!want||got.length<32||!safeEqual(got,want))return new Response("Unauthorized",{status:401});
  let b:any={};try{b=await req.json()}catch{}
  const mode=String(b?.mode||"").toUpperCase(),dry=b?.dry_run===true;
- if(!["CRYPTO","FX","US_STOCK_EOD","TWELVE_STOCK_EOD_FALLBACK"].includes(mode))return Response.json({ok:false,error:"INVALID_MODE"},{status:400});
+ if(!["CRYPTO","FX","TWELVE_STOCK_EOD_FALLBACK"].includes(mode))return Response.json({ok:false,error:"INVALID_MODE"},{status:400});
  try{
   const x=mode==="CRYPTO"?await cryptoRefresh(dry):mode==="FX"?await fxRefresh(dry):
-   mode==="TWELVE_STOCK_EOD_FALLBACK"?await twelveFallbackRefresh(dry):await stockCloseRefresh(dry);
+   await twelveFallbackRefresh(dry);
   return Response.json({ok:true,worker:"price-market-refresh-v1",mode,...x,portfolio_writes:0,auto_trade:false});
  }catch(e){return Response.json({ok:false,worker:"price-market-refresh-v1",mode,error:String(e instanceof Error?e.message:e).slice(0,200)},{status:503});}
 });
