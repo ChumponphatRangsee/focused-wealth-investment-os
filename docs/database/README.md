@@ -2,7 +2,7 @@
 
 **Layout version:** DB-DOC-LAYOUT-2  
 **Current architecture:** DB-ARCH-1.0  
-**Current documentation revision:** DOC-REV-3  
+**Current documentation revision:** DOC-REV-4  
 **Production schema changed by this restructure:** No
 
 This directory separates **current production architecture**, **future design**, and **immutable historical snapshots** so AI and human maintainers do not confuse versions.
