@@ -6,31 +6,30 @@ COLLECTOR = (ROOT/"supabase/functions/price-market-refresh-v1/index.ts").read_te
 SHEET = (ROOT/"supabase/functions/price-sheet-sync-v1/index.ts").read_text()
 
 class ProviderDiagnosticsAndStockStaleness(unittest.TestCase):
-    def test_stock_fetch_uses_sanitized_diagnostics(self):
-        self.assertIn("async function alphaDailyFetch(uri:string)",COLLECTOR)
-        self.assertIn("function alphaProviderRejection(data:any)",COLLECTOR)
-        for code in ("ALPHA_VANTAGE_DAILY_RATE_LIMIT",
-                     "ALPHA_VANTAGE_FREQUENCY_RATE_LIMIT",
-                     "ALPHA_VANTAGE_PLAN_RESTRICTED",
-                     "ALPHA_VANTAGE_KEY_REJECTED",
-                     "ALPHA_VANTAGE_NON_JSON_RESPONSE_CONTENT_",
-                     "ALPHA_VANTAGE_UNEXPECTED_RESPONSE_OBJECT_"):
-            with self.subTest(code=code): self.assertIn(code,COLLECTOR)
-        self.assertIn("await withReservedProviderCall(",COLLECTOR)
-        self.assertIn("rows.length+1",COLLECTOR)
-        self.assertIn("if(r.status===429)",COLLECTOR)
-        self.assertIn("r.headers.get(\"content-type\")",COLLECTOR)
-        self.assertNotIn("throw new Error(why)",COLLECTOR)
-        self.assertNotIn("console.log(data)",COLLECTOR)
+    def test_twelve_stock_fetch_uses_sanitized_diagnostics(self):
+        self.assertIn("async function twelveDailyFetch(uri:string)", COLLECTOR)
+        for code in ("TWELVE_DATA_DAILY_RATE_LIMIT",
+                     "TWELVE_DATA_RATE_LIMIT",
+                     "TWELVE_DATA_PLAN_RESTRICTED",
+                     "TWELVE_DATA_KEY_REJECTED",
+                     "TWELVE_DATA_NON_JSON_RESPONSE",
+                     "TWELVE_DATA_MALFORMED_EOD"):
+            with self.subTest(code=code): self.assertIn(code, COLLECTOR)
+        self.assertIn("await withReservedProviderCall(", COLLECTOR)
+        self.assertIn("rows.length+1", COLLECTOR)
+        self.assertIn("res.status===429", COLLECTOR)
+        self.assertNotIn("throw new Error(message)", COLLECTOR)
+        self.assertNotIn("console.log(data)", COLLECTOR)
+        self.assertNotIn("ALPHA_VANTAGE", COLLECTOR)
 
-    def test_dry_run_still_prevents_provider_calls(self):
-        start=COLLECTOR.index("async function stockCloseRefresh(dry:boolean)")
+    def test_dry_run_prevents_twelve_provider_calls(self):
+        start=COLLECTOR.index("async function twelveFallbackRefresh(dry:boolean)")
         stock=COLLECTOR[start:]
         self.assertLess(stock.index('reason:"PREFLIGHT_NO_PROVIDER_REQUEST"'),
-                        stock.index('vaultSecret("ALPHA_VANTAGE_API_KEY")'))
-        self.assertLess(stock.index('vaultSecret("ALPHA_VANTAGE_API_KEY")'),
+                        stock.index('vaultSecret("TWELVE_DATA_API_KEY")'))
+        self.assertLess(stock.index('vaultSecret("TWELVE_DATA_API_KEY")'),
                         stock.index('await withReservedProviderCall('))
-        self.assertIn('normalized.payload->>\'price_only_stock_eod\'=\'true\'',stock)
+        self.assertIn("normalized.payload->>'price_only_stock_eod'='true'",stock)
         self.assertIn("from unnest(",stock)
 
     def test_stale_stock_status_only_uses_protected_lineage(self):
