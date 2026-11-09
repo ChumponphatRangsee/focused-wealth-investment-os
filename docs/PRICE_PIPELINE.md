@@ -1,5 +1,16 @@
 # Price Pipeline v1.1.0 — held US Stock EOD + Crypto + USD/THB FX
 
+## 2026-11-09 — Crypto Price Daily Refresh job name (LIVE)
+
+The user approved clarifying terminology: **Crypto daily price snapshot** and **US Stock regular-close EOD** are both canonical price observations, not per-account Portfolio Valuation Snapshots. The former Portfolio Valuation Snapshot is retired and preserved only as read-only historical evidence in the hidden `FWIOS Live Valuation` tab, without a live Dashboard dependency.
+
+Supabase Cron migration `20261109045146_rename_crypto_daily_snapshot_cron_to_price_refresh_v1` safely replaces active job `fwios-portfolio-crypto-daily-snapshot` (historical ID **14**) with `fwios-crypto-price-daily-refresh` (active ID **20**) using `cron.schedule` and `cron.unschedule` in one transaction. pg_cron job names are immutable; therefore job ID changes rather than mutating the protected extension table. **All operational behavior is identical:** mode `CRYPTO`, the same `price-market-refresh-v1` worker, command, `10 21,22 * * *` UTC schedule, owner, database, Vault-based server authorization, and downstream Sheet Sync via existing Cron #16.
+
+Postflight proves 6 jobs active (#15,#16,#17,#18,#19,#20), exactly one Crypto dispatcher, and the historical 46 receipts for #14 retained. No manual worker/provider invocation was performed. The canonical `fwios.market_observations` history remains intact for CoinGecko (936 rows) and Twelve Data (120 rows); the first automatically scheduled run under new #20 still requires natural observation.
+
+The Stock EOD schedule #17 and subsequent Sheet Sync #18, FX Cron #15, Sheet Sync #16, retention Cron #19, Holdings/Transactions accounting, Manual Overrides and `auto_trade=false` remain unchanged.
+
+
 ## 2026-11-09 — Dashboard stale snapshot protection (live Google Sheets fix)
 
 The Investment Portfolio Tracker `Dashboard` previously selected an inactive `FWIOS Live Valuation` historical snapshot solely because `Gate=PASS`. That snapshot was last synced 2026-10-28 and differed from the latest price-backed Holdings by THB 37,684.30. Historical PASS did not establish freshness.
