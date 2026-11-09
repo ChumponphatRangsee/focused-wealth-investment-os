@@ -1,5 +1,15 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
+## 2026-11-09 — Crypto price Cron name clarified (DEPLOYED; non-destructive)
+
+- **User-approved scope:** Crypto and US stock both retain canonical price history in `fwios.market_observations`; the retired Portfolio Valuation Snapshot is not required and remains historical-only in the Google Sheet. Only clarify misleading operational Crypto Cron naming; no extra portfolio or price-history snapshot pipeline is introduced.
+- **Guarded live migration:** `20261109045146_rename_crypto_daily_snapshot_cron_to_price_refresh_v1` replaced `fwios-portfolio-crypto-daily-snapshot` (Cron #14) with `fwios-crypto-price-daily-refresh` (Cron **#20**). Supabase/pg_cron cannot rename a job in place, so a single database migration created a new named job with the **identical command, schedule, owner and target database**, then unscheduled #14 atomically.
+- **Postflight 2026-11-09 04:54 UTC:** exactly **6 active jobs** (#15,#16,#17,#18,#19,#20), exactly **one Crypto dispatcher** (new #20; mode `CRYPTO`, schedule `10 21,22 * * *` UTC); original job #14 no longer scheduled. Prior **46** run receipts remain in `cron.job_run_details` under jobid 14, while new receipts will use #20. No worker was invoked manually and the next scheduled Crypto execution is still pending under the new job ID.
+- **Canonical observations retained:** CoinGecko **936** price rows and Twelve Data **120** regular-close rows at postflight; no historical price deletion/rewrite. Stock EOD Twelve Data Cron #17 and Sheet Follow-up Cron #18 unchanged; Crypto Sheet Sync #16 unchanged. Old `FWIOS Live Valuation` historical tab remains untouched and not read by Dashboard.
+- **No accounting mutations:** Transactions, Holdings quantities, Cost Basis, Manual Overrides, valuation formulas, portfolio accounting and `auto_trade=false` unchanged. `fwios.market_observations` remains the sole canonical price history store; the names `Snapshot` / `EOD` distinguish price collection timing, not a separate Portfolio Snapshot service.
+- **Current reference:** Cron ID #20 is the active Crypto price refresh going forward. All earlier references to Cron #14 in historical migrations/previous handoffs refer to the original immutable operational history, not an active job.
+
+
 ## 2026-11-09 — Fixed stale Dashboard portfolio valuation snapshot (PRODUCTION SHEET VERIFIED)
 
 - **User authorization:** fix outdated Investment Portfolio Tracker valuation snapshot before moving on to Multi-Provider Infrastructure.
