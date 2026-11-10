@@ -250,6 +250,8 @@ def build_evidence(
             accepted_at = iso_utc(entry["accepted_at"], "ACCEPTED_AT")
             if accepted_at > decision:
                 raise SECError("FILING_AFTER_AS_OF")
+            if observed < accepted_at:
+                raise SECError("SOURCE_OBSERVED_BEFORE_FILING_ACCEPTANCE")
             if observed > decision:
                 raise SECError("SOURCE_NOT_OBSERVED_AS_OF")
             base.update({"form": form, "filing_date": source_filed.isoformat(),
