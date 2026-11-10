@@ -1,5 +1,7 @@
 # Asset Price Data Service v1.1.0
 
+**2026-11-10 isolated research note:** A separately authorized SEC-first Research MVP offline prototype is being developed in `research/sec_first_mvp/` with its own `contracts/sec-first-research-mvp-v0.yaml` and offline CI. It is **not deployed** and does not extend this price-only Production service. For current price operations see `docs/CURRENT_STATUS.md`; for planned research see `docs/database/planned/DB-ARCH-2.0/`. Legacy deployment details below are historical only.
+
 **Latest production asset universe (2026-10-30):** exactly ten active identities: four OPEN-held US stocks **MSFT, NVDA, TLN, TTWO** and six Crypto **BTC, DOGE, ETH, HBAR, SOL, XRP**. User-directed permanent database cleanup removed 60 unheld stock instruments, their 60 symbol mappings, and 1,789 historical market observation rows (20,441 → 18,652 before post-cleanup new price data). The 10 retained instruments, their historical prices, five Crons, six SQL routines and three price tables remain intact. The price-only Sheet still owns holdings/transactions/cost basis.
 
 
