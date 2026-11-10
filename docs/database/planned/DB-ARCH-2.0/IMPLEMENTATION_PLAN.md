@@ -1,6 +1,6 @@
 # DB-ARCH-2.0 — Phased Implementation & Acceptance Plan
 **STATUS: PLANNED / NOT DEPLOYED.**
-**Authorization state:** Provider Strategy v1 **APPROVED**; Architecture Design **AUTHORIZED**; Architecture Review **PENDING**; subscription purchase, new secrets, isolated test deployments, new database schema, worker implementation and production rollout **NOT APPROVED**.
+**Authorization state (updated 2026-11-10):** Provider Strategy v1 **APPROVED**, architecture design **COMPLETED**. User explicitly authorized starting the **SEC-first Research MVP isolated code-only pilot** on 2026-11-10. Production database migrations, new secrets, Edge Worker/Cron, paid-provider subscription, production rollout, broader control-plane implementation and 17-table activation are **NOT APPROVED**. This separate pilot lives under `research/sec_first_mvp/` with contract `contracts/sec-first-research-mvp-v0.yaml` and is **NOT_DEPLOYED**.
 
 This is a **proposal for later separate implementation authorization**, not instructions to execute now.
 
@@ -18,13 +18,15 @@ This is a **proposal for later separate implementation authorization**, not inst
 |---|---|---|---|
 | **D0 — Strategy authorization** | Decide sources, roles, cost ceiling and exclusions | **APPROVED 2026-11-09**; Alpha excluded | Complete |
 | **D1 — Architecture documentation** | Registry, data contracts, lineage, security, limits, rollout plan, private schema design | Proposed `DB-ARCH-2.0`, reviewable PR and CI | **Authorized: design/documentation only** |
-| **I0 — Implementation permission** | Approve *specific* MVP objects/credentials/budgets/worker scope | Explicit user decision after D1 review; `APPROVED_FOR_IMPLEMENTATION` documented | **NO** |
+| **I0 — Implementation permission** | Approve *specific* MVP objects/credentials/budgets/worker scope | **SEC-first offline Python prototype only** authorized on 2026-11-10; no live creds, new schemas or deploy | **ONLY isolated offline SEC code** |
 | **I1 — Control-plane isolated test** | Provider and capability fixtures, route-policy schema, account budget/idempotency SQL, no live production route | Isolated schema/tests and Postgres concurrency proof, grants and failure cases | **NO** |
-| **I2 — SEC-first research pilot** | 3–5 issuers/securities with original SEC facts/filings and source lineage; optional Massive entitlement sample only if authorized | Exact CIK, fiscal periods, accession, first-public times, missing fields visible | **NO** |
+| **I2 — SEC-first research pilot** | 3–5 issuers/securities with original SEC facts/filings and source lineage; optional Massive entitlement sample only if authorized | **Offline parser + synthetic unit fixtures authorized and in progress**. Authentic 3–5-company probe, proven first-public availability, persistent data and any live deployment still require separate review | **Offline code only** |
 | **I3 — Bulk EOD + index membership pilot** | Current licensed constituents then date-valid historical membership, grouped EOD after NY midnight `adjusted=false` | Per-bar trace, share-class mapping, completeness and lossless source link; no survivor bias | **NO** |
 | **I4 — Optional paid fundamentals/news** | Massive Financials & Ratios / news only if justified and separately approved; validate provider semantics, coverage and license | Confidence + expense evidence, missing data rate, point-in-time gate | **NO** |
 | **I5 — Fallback + governed research reads** | Capability-specific failover policies, audit, queue/backpressure, read-only screening/evidence API | Replay/idempotency and negative-case evidence; no price or portfolio writes | **NO** |
 | **I6 — Production deployment/promotion** | Guarded migrations, services, ACLs, schedules if explicitly approved | Production postflight, rollback validation, `current` docs rebuilt from live state | **NO** |
+
+**Implementation update (2026-11-10):** The first offline SEC code pilot is now authorized and separately contracted. This does not authorize 17 table migrations, actual private research schema provisioning, new Edge functions, paid providers or Production deployment. The pilot deliberately marks `historical_backtest_certified=false` and `first_public_at=null` where independently proven timing is unavailable. No automated SEC fetch occurs in CI.
 
 **No automatic stage progression.** Approval of a design is **not** approval of I0–I6, and approval of one implementation phase is not approval of a new provider subscription or production promotion.
 
