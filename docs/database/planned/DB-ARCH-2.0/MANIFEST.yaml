@@ -7,7 +7,9 @@ approval:
   provider_strategy_v1: APPROVED_2026_11_09
   architecture_design: AUTHORIZED_2026_11_09
   architecture_review: PENDING
-  implementation: NOT_APPROVED
+  implementation: SEC_FIRST_OFFLINE_CODE_ONLY_AUTHORIZED_2026_11_10
+  full_infrastructure_implementation: NOT_APPROVED
+  production_deployment: NOT_APPROVED
   procurement_and_new_provider_credentials: NOT_APPROVED
   production_testing_and_deployment: NOT_APPROVED
 based_on:
@@ -24,6 +26,14 @@ current_production_unchanged:
   active_cron_ids: [15, 16, 17, 18, 19, 20]
   accounting_authority: Investment_Portfolio_Tracker_Google_Sheet
   auto_trade: false
+isolated_pilot:
+  contract: contracts/sec-first-research-mvp-v0.yaml
+  code_root: research/sec_first_mvp
+  test_root: tests/research
+  implementation_scope: offline_first_SEC_primary_evidence_only
+  production_status: NOT_DEPLOYED
+  historical_asof_backtest_certified: false
+  no_auto_fetch_or_live_db_writes: true
 future_design_only:
   private_schemas: [fwios_provider, fwios_research]
   excluded_provider: ALPHA_VANTAGE

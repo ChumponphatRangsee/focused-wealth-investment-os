@@ -1,5 +1,14 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
+## 2026-11-10 — SEC-first Research MVP implementation started (ISOLATED CODE ONLY, NOT DEPLOYED)
+
+- **User approval:** "งั้นเริ่มดำเนินการ SEC-first Research MVP ได้เลย" expressly authorizes beginning **SEC-first Research MVP implementation** as a separate, limited research proof-of-concept. This approval does **not** authorize all 17 future tables, full provider routing, paid subscriptions, a Production schema migration, a new Edge Worker/Cron, trading or portfolio accounting changes.
+- **Scope of implementation PR (not Production):** independent standard-library Python module `research/sec_first_mvp/` and new research-specific contract/workflow; default local SEC JSON offline parsing, optional explicit two-request SEC-only fetch with operator-supplied identifying User-Agent, typed USD US-GAAP 10-K/10-Q evidence extraction, source hash, accession, accepted-at/first-seen timing and quarantine. Offline negative-case tests do **not** hit SEC/Supabase/Sheets.
+- **As-of limitations:** original and amended filing data is preserved separately. SEC filed date or fiscal period end does not establish first-public availability; for this offline pilot, an accepted fact must have been observed by FWIOS at or before the requested as-of time. `first_public_at` remains unknown and historical point-in-time backtest is **NOT CERTIFIED**. Older Company Facts accessions outside the recent submissions array are quarantined.
+- **No Production writes or fetches:** The MVP code/CI does not dispatch the existing workers or issue automatic SEC provider requests; no new Supabase schema, Edge deploy, Cron, paid credential, canonical price history mutation, `fwios_quota` change, Sheet accounting change or `auto_trade` change. `docs/database/CURRENT.yaml` remains `DB-ARCH-1.0` and planned `DB-ARCH-2.0` remains NOT_DEPLOYED.
+- **Further gate:** separately review the 3–5 real-company evidence pilot, optional private persistence and Production deployment/security/rollback before any runtime activation. Existing Crypto #20 / Twelve-only Stock #17→#18 natural E2E and Issue #106 are independent, still pending unless separately verified.
+
+
 ## 2026-11-09 — Provider Strategy v1 APPROVED for design; Multi-Provider Architecture PLANNED ONLY
 
 - **User authorization:** approved FWIOS Provider Strategy v1 and instructed proceeding with Multi-Provider Infrastructure **Architecture Design**. This authorizes documentation/analysis and GitHub documentation PRs only; **no implementation, paid subscription purchase, additional provider credential, live API invocation, schema migrations, new Cron/Worker, portfolio accounting change, or trade** is authorized.

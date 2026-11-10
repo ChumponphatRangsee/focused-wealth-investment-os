@@ -1,0 +1,52 @@
+contract:
+  id: SEC-FIRST-RESEARCH-MVP-0.1
+  status: IMPLEMENTATION_IN_PROGRESS_OFFLINE_ONLY
+  approved_at: "2026-11-10"
+  scope: isolated_sec_primary_evidence_ingest_and_validation
+  deployment: NOT_DEPLOYED
+  auto_trade: false
+authority:
+  source: SEC_EDGAR_data.sec.gov
+  current_price_contract: contracts/system-contract.yaml
+  current_price_production_state: docs/database/CURRENT.yaml
+  plan: docs/database/planned/DB-ARCH-2.0/IMPLEMENTATION_PLAN.md
+data:
+  inputs: [submissions_CIK_JSON, companyfacts_CIK_JSON]
+  eligible_forms: [10-K, 10-Q, 10-K/A, 10-Q/A]
+  taxonomy_scope: us-gaap
+  unit_scope: USD
+  allowed_metric_tags: [Assets, Liabilities, StockholdersEquity, NetIncomeLoss, OperatingIncomeLoss, NetCashProvidedByUsedInOperatingActivities, Revenues, RevenueFromContractWithCustomerExcludingAssessedTax]
+  accepted_filing_requirements: [same_CIK, valid_accession, source_filing_form_and_date_match, verified_acceptance_timestamp, observed_at_not_later_than_as_of]
+  first_public_at: unknown_unless_future_distinct_proof
+  historical_as_of_certified: false
+  source_hash: sha256_canonical_json
+  source_scope: recent_submissions_only
+  max_examined_rows: 500
+  output: validated_current_research_evidence_and_quarantine
+transport:
+  default: local_json_no_network
+  live_sec_fetch: manual_opt_in_only
+  required_user_agent: identifying_organization_and_contact_email
+  request_count_per_one_CIK: 2
+  pacing_per_process: 250_ms_between_gets
+  no_automated_retries: true
+  sec_fair_access_upper_bound_rps: 10
+persistence:
+  default: stdout_json
+  optional_explicit_export: new_local_file_exclusive_create_0600
+  supersede_overwrite: prohibited
+  supabase_schema_or_storage: NONE
+  production_write: forbidden
+excluded:
+  - additional_paid_provider_cost
+  - new_cron
+  - new_edge_worker
+  - supabase_migration
+  - portfolio_or_sheet_accounting_mutation
+  - valuation_or_scoring_or_trade
+  - historical_point_in_time_backtest_certification
+promotion:
+  require_explicit_production_deployment_authorization: true
+  require_private_schema_acl_rls_review: true
+  require_live_provider_evidence_postflight: true
+  require_no_implicit_price_promotion: true

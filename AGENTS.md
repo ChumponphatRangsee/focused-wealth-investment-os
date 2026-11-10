@@ -1,5 +1,10 @@
 # Agent Instructions — Asset Price Data Service v1.0.0
 
+## 2026-11-10 explicitly authorized isolated SEC Research MVP exception
+
+The user **separately authorized starting SEC-first Research MVP implementation** on 2026-11-10 after planned DB-ARCH-2.0 documentation. This grants **code-only, offline-first research prototyping** exclusively in `research/sec_first_mvp/`, `tests/research/` and a dedicated research contract/workflow. Its read-only SEC HTTP collector is **manual opt-in only**; no provider requests are performed by CI. This is not authorization to expand or repurpose the existing price Edge Functions, Cron, Database, Google Sheet, portfolio-accounting or trading. No research tables/migrations/deployments, public gateway, new API key, paid service, automated research schedule or backtest certification are authorized. Production **remains price-only** and all prohibitions below continue to apply to Production and its existing workers. The new isolated contract is `contracts/sec-first-research-mvp-v0.yaml`; the planned architecture remains NOT_DEPLOYED.
+
+
 **This contract replaces the old FWIOS investment agent instructions.** Current project purpose: **Crypto + USD/THB FX prices → Supabase → Google Sheet**. Never initiate or revive Stock Discovery, technical screening, thesis research, fair-value calculation, investment decisions, portfolio analytics, stock rankings or automated trading.
 
 ## Authority

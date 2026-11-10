@@ -1,0 +1,32 @@
+name: SEC-first Research MVP (offline, no provider calls)
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  sec-first-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile isolated SEC research code
+        run: python -m compileall -q research/sec_first_mvp
+      - name: SEC-first fixture/negative-case unit tests (no external HTTP)
+        run: python -m unittest discover -s tests/research -p 'test_*.py' -v
+      - name: Ensure separate research MVP never edits production price sources
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          code = "\n".join(p.read_text() for p in Path("research/sec_first_mvp").glob("*.py"))
+          forbidden = ("supabase_client", "SUPABASE_SERVICE_ROLE", "from supabase",
+                       "import supabase", "price-market-refresh-v1", "price-sheet-sync-v1",
+                       "fwios.market_observations", "auto_trade=true")
+          for word in forbidden:
+              assert word not in code, f"Price domain or secret reference forbidden: {word}"
+          print("Isolation guard PASS")
+          PY
