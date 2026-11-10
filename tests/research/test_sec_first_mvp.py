@@ -161,6 +161,27 @@ class SECFirstEvidenceTests(unittest.TestCase):
         self.assertTrue(any(x["reason"] == "ACCEPTANCE_NOT_VERIFIED_IN_RECENT"
                             for x in v["quarantined"]))
 
+    def test_retrieved_before_sec_acceptance_is_not_proof(self):
+        s, f = fixture()
+        v = build_evidence(CIK, s, f,
+                           retrieved_at="2025-11-01T00:00:00Z", as_of=NOW)
+        self.assertEqual(v["coverage"]["accepted"], 0)
+        self.assertTrue(any(x["reason"] == "SOURCE_OBSERVED_BEFORE_FILING_ACCEPTANCE"
+                            for x in v["quarantined"]))
+
+    def test_unsafe_url_never_sent(self):
+        from research.sec_first_mvp.core import _fetch_json
+        with self.assertRaisesRegex(SECError, "NON_SEC_URL_BLOCKED"):
+            _fetch_json("https://attacker.example/api", "Example Org user@example.org")
+        with self.assertRaisesRegex(SECError, "NON_SEC_URL_BLOCKED"):
+            _fetch_json("http://data.sec.gov/submissions/CIK0000320193.json",
+                        "Example Org user@example.org")
+
+    def test_identifying_user_agent_mandatory(self):
+        from research.sec_first_mvp.core import _fetch_json
+        with self.assertRaisesRegex(SECError, "IDENTIFYING_USER_AGENT_REQUIRED"):
+            _fetch_json(sec_urls(CIK)[0], "anonymous-robot")
+
     def test_retrieved_at_naive_rejected(self):
         s, f = fixture()
         with self.assertRaisesRegex(SECError, "RETRIEVED_AT_MISSING_TZ"):
