@@ -12,7 +12,7 @@ class PriceContractScope(unittest.TestCase):
             self.assertTrue((root / name / "index.ts").exists())
 
     def test_only_two_docs(self):
-        self.assertEqual({p.name for p in (ROOT / "docs").iterdir() if p.is_file()}, {"CURRENT_STATUS.md", "PRICE_PIPELINE.md", "DATA_PROVIDER_STRATEGY_V1.md", "API_PROVIDER_GUIDE_V1.md"})
+        self.assertEqual({p.name for p in (ROOT / "docs").iterdir() if p.is_file()}, {"CURRENT_STATUS.md", "PRICE_PIPELINE.md", "DATA_PROVIDER_STRATEGY_V1.md", "API_PROVIDER_GUIDE_V1.md", "SEC_FIRST_PRODUCTION_CAPTURE_2026-11-13.md"})
 
     def test_legacy_runtime_directories_absent(self):
         for name in ("migrations", "queries", "examples", "scripts"):
@@ -182,7 +182,23 @@ class PriceContractScope(unittest.TestCase):
     def test_only_current_migration_receipts(self):
         files = [p.name for p in (ROOT / "supabase" / "migrations").glob("*.sql")]
         self.assertTrue(files)
-        self.assertTrue(all(name.startswith(("20261029", "20261030", "20261103", "20261109")) for name in files))
+        self.assertTrue(all(
+            name.startswith(("20261029", "20261030", "20261103", "20261109"))
+            or name == "20261113025052_sec_primary_json_capture_v1.sql"
+            for name in files
+        ))
+
+    def test_one_shot_sec_research_migration_cannot_touch_price_or_portfolio(self):
+        path = ROOT / "supabase" / "migrations" / "20261113025052_sec_primary_json_capture_v1.sql"
+        sql = path.read_text(encoding="utf-8")
+        self.assertIn("CREATE TABLE fwios_research.sec_primary_json_captures_v1", sql)
+        self.assertIn("ALTER TABLE fwios_research.sec_primary_json_captures_v1 ENABLE ROW LEVEL SECURITY", sql)
+        self.assertIn("BEFORE UPDATE OR DELETE ON fwios_research.sec_primary_json_captures_v1", sql)
+        self.assertIn("REVOKE ALL ON SCHEMA fwios_research FROM PUBLIC, anon, authenticated, service_role", sql)
+        for forbidden in ("fwios.market_observations", "fwios_quota.", "cron.schedule(",
+                          "net.http_get(", "DELETE FROM fwios.", "UPDATE fwios.",
+                          "INSERT INTO fwios.", "ALTER TABLE fwios.", "DROP SCHEMA"):
+            self.assertNotIn(forbidden, sql)
 
 if __name__ == "__main__":
     unittest.main()

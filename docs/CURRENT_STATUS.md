@@ -1,5 +1,17 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
+## 2026-11-13 — SEC-primary Research one-shot Production capture 8/8 (ADDITIVE PRIVATE EVIDENCE ONLY)
+
+- **User authorization:** allowed Production for the narrow SEC-first MSFT/NVDA/TTWO/TLN one-time Submissions + Company Facts capture and supplied a real contact for SEC Fair Access; operator contact is not committed or stored in research rows. No standing automation, new Price Service path, broad DB-ARCH-2.0 deployment, Portfolio Accounting mutation or trading authorized.
+- **Actual SEC receipts:** exactly eight `data.sec.gov` HTTP 200 responses, `pg_net` request IDs `12073`–`12080`, four CIKs each with `submissions` and `companyfacts`; raw UTF-8 response bytes total **14,295,595**. Date: **2026-11-13**, UTC receipts 02:44:18.374224 to 02:47:40.434280.
+- **Production migration:** `20261113025052_sec_primary_json_capture_v1`; new isolated private `fwios_research.sec_primary_json_captures_v1` only, with RLS, no `anon`/`authenticated`/`service_role` usage or select grants, immutable UPDATE/DELETE trigger, eight full JSON UTF-8 bodies and source URLs/sha256/time/id receipts. No Cron or Edge Worker created.
+- **Postflight verified from persistent rows:** 8/8 SHA-256 recompute PASS; 8/8 CIK PASS; 8/8 Submissions/Company Facts top-level structures PASS; unique request IDs 8. Historical `first_public_at=NULL` and `historical_asof_certified=false` for all eight. No genuine-JSON Phase-1 parser acceptance or historical backtest certification claimed.
+- **Price Service intact:** `fwios.market_observations` **1,212** rows pre/post, `fwios_quota.api_call_ledger` **44** pre/post, six existing Crons #15–#20, Edge `price-market-refresh-v1` v14 and `price-sheet-sync-v1` v7. No Google Sheet or Portfolio Accounting writes, no activation of a research-to-price bridge; `auto_trade=false`.
+- **Architecture ownership:** the one-table additive Research capture is LIVE, but the 17-table `DB-ARCH-2.0` design is still **NOT DEPLOYED** and `docs/database/CURRENT.yaml` continues to identify `DB-ARCH-1.0` as the existing Price Service architecture. Keep the research evidence plane separate.
+- **Detailed receipt evidence and non-destructive rollback:** `docs/SEC_FIRST_PRODUCTION_CAPTURE_2026-11-13.md`. The mirrored migration is `supabase/migrations/20261113025052_sec_primary_json_capture_v1.sql`. Existing `fwios_quota.api_call_ledger` RLS-disabled security advisory remains unrelated to this task and was not altered.
+
+
+
 ## 2026-11-10 — SEC-first Research MVP implementation started (ISOLATED CODE ONLY, NOT DEPLOYED)
 
 - **User approval:** "งั้นเริ่มดำเนินการ SEC-first Research MVP ได้เลย" expressly authorizes beginning **SEC-first Research MVP implementation** as a separate, limited research proof-of-concept. This approval does **not** authorize all 17 future tables, full provider routing, paid subscriptions, a Production schema migration, a new Edge Worker/Cron, trading or portfolio accounting changes.
