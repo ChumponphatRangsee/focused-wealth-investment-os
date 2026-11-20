@@ -42,8 +42,8 @@ Closed or returned historical cash whose downstream use cannot be proven is quar
 
 This is recorded as:
 
-- Event: `CE-20260903-BEST-CONTRIB-001`
-- Event Type: CONTRIBUTION
+- Source: `Performance!D18` / `PERF-20260903-BEST`
+- External Capital Flow: +฿10,000
 - Confidence: VERIFIED
 - Fresh lot: `LOT-FRESH-BEST-USD-20260903`
 - conversion attribution: 33.00 THB/USD
@@ -144,3 +144,22 @@ The Shadow Mode reference migration passes:
 ## Remaining gate before Production automation
 
 This receipt does **not** declare automatic Capital Lineage processing Production-ready. Future-transaction automation and mixed-origin partial-SELL mutation logic remain to be implemented and tested fail-closed.
+
+
+## Same-day UX simplification — reuse-first architecture
+
+After the reference migration passed, the user-facing design was reviewed for cognitive load.
+
+The original temporary `Capital Events` and `Capital Dashboard` sheets were removed because they duplicated existing information.
+
+Current presentation:
+
+- `Dashboard` shows only two additional summary metrics: **Invested from New Money** and **Invested from Profit**.
+- `Holdings` shows **Capital Mix** and **Profit From** per position.
+- `Performance` is reused as the explicit external-capital-flow history.
+- `_Capital Lots` and `_Capital Allocations` remain hidden as the minimum internal lineage engine.
+- lineage integrity checks are placed in the existing hidden `Checks` sheet and remain independent from core portfolio valuation status.
+
+The verified Best contribution is now referenced directly as `PERF-20260903-BEST` / `Performance!D18`.
+
+This simplification made no change to transaction accounting, Holdings quantity, Cost Basis, Realized/Unrealized P&L, market prices, FWIOS runtime, or trading.
