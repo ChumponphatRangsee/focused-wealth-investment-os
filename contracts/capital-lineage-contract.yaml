@@ -1,42 +1,60 @@
 contract:
-  id: CAPITAL-LINEAGE-CONTRACT-1.0.0
-  document_version: "1.0.0"
+  id: CAPITAL-LINEAGE-CONTRACT-1.1.0
+  document_version: "1.1.0"
   title: Capital Lineage & Rebalance Attribution
   date: "2026-11-20"
   timezone: Asia/Bangkok
-  status: shadow_mode_reference_migration_verified_automation_not_enabled
+  status: shadow_mode_reuse_first_ui_automation_not_enabled
   auto_trade: false
   portfolio_mutation: false
 
 objective:
-  purpose: attribute invested capital to fresh external capital, inherited/recycled principal, realized profit, income, or explicitly unknown historical origin
+  purpose: explain where invested cost basis came from without replacing portfolio accounting
   accounting_replacement: false
   analytical_layer_only: true
+  reuse_existing_user_tabs_first: true
+  avoid_duplicate_user_surfaces: true
 
 authority:
   canonical_transactions: Investment Portfolio Tracker Google Sheet / Transactions
   holdings_quantity_cost_basis_realized_unrealized_pnl: existing Google Sheet formulas
-  performance_contributions: Investment Portfolio Tracker Google Sheet / Performance
-  capital_lineage_surfaces: Investment Portfolio Tracker Google Sheet
+  external_capital_flow: Investment Portfolio Tracker Google Sheet / Performance
   market_prices: Supabase fwios.market_observations
   price_contract: contracts/system-contract.yaml
 
-surfaces:
-  capital_events:
-    sheet: Capital Events
-    purpose: external portfolio cash events
-    event_types: [CONTRIBUTION, WITHDRAWAL, OPENING_CASH, ADJUSTMENT]
+user_surfaces:
+  dashboard:
+    sheet: Dashboard
+    additions:
+      - invested_from_new_money
+      - invested_from_realized_profit
+  holdings:
+    sheet: Holdings
+    additions:
+      - capital_mix
+      - profit_from
+    wording:
+      FRESH_CAPITAL: New
+      REALIZED_PROFIT: Profit
+      LEGACY_UNKNOWN: Old/Unknown
+  performance:
+    sheet: Performance
+    purpose: explicit external capital flow history
+    positive_value: contribution
+    negative_value: withdrawal
+    buy_sell_inference_forbidden: true
+
+internal_surfaces:
   capital_lots:
     sheet: _Capital Lots
     hidden: true
-    purpose: capital-source ledger
+    purpose: capital-source and returned-cash lineage
   capital_allocations:
     sheet: _Capital Allocations
     hidden: true
-    purpose: many-to-many investment funding attribution
-  capital_dashboard:
-    sheet: Capital Dashboard
-    purpose: user-facing attribution and integrity checks
+    purpose: many-to-many funding attribution between lots and investments
+  separate_capital_events_sheet: false
+  separate_capital_dashboard_sheet: false
 
 origin_classes:
   allowed: [FRESH_CAPITAL, REALIZED_PROFIT, INCOME, LEGACY_UNKNOWN]
@@ -46,7 +64,7 @@ origin_classes:
 
 confidence:
   allowed: [VERIFIED, HIGH, MEDIUM, UNKNOWN]
-  verified: direct contribution/withdrawal evidence or directly calculated transaction-ledger profit
+  verified: direct external-capital evidence or directly calculated transaction-ledger profit
   high: strong same-account same-currency transaction linkage
   medium: likely relationship with incomplete evidence
   unknown: cannot safely reconstruct
@@ -57,7 +75,7 @@ currency:
     account_boundary_required: true
     currency_boundary_required: true
   thb_attribution:
-    purpose: portfolio reporting and holding-cost-basis reconciliation
+    purpose: portfolio reporting and cost-basis attribution
     investment_date_fx_used_for_current_exposure: true
   cross_currency_allocation_without_conversion: forbidden
 
@@ -86,15 +104,18 @@ historical_migration:
     account: Best
     chain: NVDA_to_TLN_and_TTWO
     dates: ["2026-08-31", "2026-09-03", "2026-10-07"]
+    external_capital_source: "Performance!D18"
     contribution_2026_09_03_thb: 10000
     status: reconciled_in_shadow_mode
 
 integrity:
+  core_operational_checks_remain_independent: true
+  capital_lineage_checks_location: Checks
+  capital_lineage_checks_block_core_dashboard: false
   existing_transactions_unchanged: required
   existing_holdings_quantity_unchanged: required
   existing_cost_basis_unchanged: required
   existing_realized_unrealized_pnl_unchanged: required
-  operational_checks_remain_ok: required
   native_buy_reconciliation: required
   current_holding_attribution_reconciliation: required
   cross_account_contamination: forbidden
@@ -103,19 +124,19 @@ automation:
   enabled: false
   state: NOT_IMPLEMENTED
   future_behavior:
-    contribution: create_fresh_capital_lot
+    contribution: create_fresh_capital_lot_from_explicit_external_flow
     sell: return_inherited_lineage_and_create_realized_profit_lot
     buy: allocate_available_lots
     withdrawal: reduce_available_capital
   ambiguity_behavior: fail_closed
-  production_gate: historical_migration_and_reconciliation_must_be_proven_before_enablement
+  production_gate: mixed_origin_partial_sell_and_future_transaction_tests_required
 
 safety:
   modify_historical_transactions_to_manufacture_result: forbidden
   manually_modify_holdings_quantity: forbidden
   manually_modify_cost_basis: forbidden
   manually_modify_realized_unrealized_pnl: forbidden
-  modify_historical_performance_snapshots: forbidden
+  infer_external_capital_from_buy_sell: forbidden
   modify_market_prices: forbidden
   modify_fwios_price_workers_or_cron_for_capital_lineage: forbidden
   add_supabase_tables_for_mvp: forbidden
