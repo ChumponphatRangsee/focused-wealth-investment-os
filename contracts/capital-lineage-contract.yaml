@@ -1,0 +1,122 @@
+contract:
+  id: CAPITAL-LINEAGE-CONTRACT-1.0.0
+  document_version: "1.0.0"
+  title: Capital Lineage & Rebalance Attribution
+  date: "2026-11-20"
+  timezone: Asia/Bangkok
+  status: shadow_mode_reference_migration_verified_automation_not_enabled
+  auto_trade: false
+  portfolio_mutation: false
+
+objective:
+  purpose: attribute invested capital to fresh external capital, inherited/recycled principal, realized profit, income, or explicitly unknown historical origin
+  accounting_replacement: false
+  analytical_layer_only: true
+
+authority:
+  canonical_transactions: Investment Portfolio Tracker Google Sheet / Transactions
+  holdings_quantity_cost_basis_realized_unrealized_pnl: existing Google Sheet formulas
+  performance_contributions: Investment Portfolio Tracker Google Sheet / Performance
+  capital_lineage_surfaces: Investment Portfolio Tracker Google Sheet
+  market_prices: Supabase fwios.market_observations
+  price_contract: contracts/system-contract.yaml
+
+surfaces:
+  capital_events:
+    sheet: Capital Events
+    purpose: external portfolio cash events
+    event_types: [CONTRIBUTION, WITHDRAWAL, OPENING_CASH, ADJUSTMENT]
+  capital_lots:
+    sheet: _Capital Lots
+    hidden: true
+    purpose: capital-source ledger
+  capital_allocations:
+    sheet: _Capital Allocations
+    hidden: true
+    purpose: many-to-many investment funding attribution
+  capital_dashboard:
+    sheet: Capital Dashboard
+    purpose: user-facing attribution and integrity checks
+
+origin_classes:
+  allowed: [FRESH_CAPITAL, REALIZED_PROFIT, INCOME, LEGACY_UNKNOWN]
+  recycled_principal_is_new_origin: false
+  unknown_is_allowed: true
+  guessing_unknown_as_fresh_capital_forbidden: true
+
+confidence:
+  allowed: [VERIFIED, HIGH, MEDIUM, UNKNOWN]
+  verified: direct contribution/withdrawal evidence or directly calculated transaction-ledger profit
+  high: strong same-account same-currency transaction linkage
+  medium: likely relationship with incomplete evidence
+  unknown: cannot safely reconstruct
+
+currency:
+  native_currency:
+    purpose: broker-cash reconciliation
+    account_boundary_required: true
+    currency_boundary_required: true
+  thb_attribution:
+    purpose: portfolio reporting and holding-cost-basis reconciliation
+    investment_date_fx_used_for_current_exposure: true
+  cross_currency_allocation_without_conversion: forbidden
+
+accounting_rules:
+  buy:
+    consumes_available_or_migrated_capital_lots: true
+    allocation_must_reconcile_to_native_cash_requirement: true
+    change_existing_cost_basis_formula: false
+  sell_profit:
+    returned_inherited_capital_preserves_lineage: true
+    realized_profit_creates_new_profit_lot: true
+    realized_profit_origin_asset_is_sold_asset: true
+  sell_loss:
+    manufacture_missing_capital: false
+    returned_capital_cannot_exceed_net_proceeds: true
+  mixed_origin_sell:
+    preserve_proportional_origin_mix: true
+  double_allocation_forbidden: true
+  negative_lot_balance_forbidden: true
+
+historical_migration:
+  mode: evidence_first
+  ambiguous_funding: LEGACY_UNKNOWN
+  rewrite_transactions_to_force_reconciliation: false
+  current_reference_case:
+    account: Best
+    chain: NVDA_to_TLN_and_TTWO
+    dates: ["2026-08-31", "2026-09-03", "2026-10-07"]
+    contribution_2026_09_03_thb: 10000
+    status: reconciled_in_shadow_mode
+
+integrity:
+  existing_transactions_unchanged: required
+  existing_holdings_quantity_unchanged: required
+  existing_cost_basis_unchanged: required
+  existing_realized_unrealized_pnl_unchanged: required
+  operational_checks_remain_ok: required
+  native_buy_reconciliation: required
+  current_holding_attribution_reconciliation: required
+  cross_account_contamination: forbidden
+
+automation:
+  enabled: false
+  state: NOT_IMPLEMENTED
+  future_behavior:
+    contribution: create_fresh_capital_lot
+    sell: return_inherited_lineage_and_create_realized_profit_lot
+    buy: allocate_available_lots
+    withdrawal: reduce_available_capital
+  ambiguity_behavior: fail_closed
+  production_gate: historical_migration_and_reconciliation_must_be_proven_before_enablement
+
+safety:
+  modify_historical_transactions_to_manufacture_result: forbidden
+  manually_modify_holdings_quantity: forbidden
+  manually_modify_cost_basis: forbidden
+  manually_modify_realized_unrealized_pnl: forbidden
+  modify_historical_performance_snapshots: forbidden
+  modify_market_prices: forbidden
+  modify_fwios_price_workers_or_cron_for_capital_lineage: forbidden
+  add_supabase_tables_for_mvp: forbidden
+  trade_execution: forbidden
