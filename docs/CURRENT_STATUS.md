@@ -1,5 +1,16 @@
 # Current Production Status — Asset Price Data Service v1.1.0
 
+## 2026-11-20 — Capital Lineage v1 Shadow Mode implemented in Investment Portfolio Tracker (NOT AUTOMATED)
+
+- **Scope:** added Capital Lineage & Rebalance Attribution v1 as an analytical layer over the canonical Google Sheet `Transactions` ledger. Existing Holdings quantity, Cost Basis, Realized/Unrealized P&L, Performance history, market prices, FWIOS workers/Cron, and trading settings remain authoritative and unchanged.
+- **New Sheet surfaces:** `Capital Events`, hidden `_Capital Lots`, hidden `_Capital Allocations`, and `Capital Dashboard`. A pre-change Drive backup/reference copy was created before writes.
+- **Historical policy:** ambiguous historical funding is explicitly `LEGACY_UNKNOWN`; it is never promoted to Fresh Capital merely because it funded a historical BUY. Unresolved historical returned cash may be quarantined rather than shown as available cash.
+- **Verified Fresh Capital evidence:** `Performance` records a Best-account ฿10,000 contribution on 2026-09-03. The reference migration reconciles this against the NVDA SELL → TTWO BUY cash chain in native USD before attributing it as Fresh Capital.
+- **Reference validation:** NVDA → TLN (2026-08-31) and NVDA → TTWO (2026-09-03 and 2026-10-07) reconcile in native USD and THB attribution. Current TTWO Cost Basis ฿46,371.76 is attributed approximately as Fresh ฿10,000.01 + recycled NVDA principal ฿20,958.86 + NVDA realized-profit capital ฿15,221.97 + Legacy/Unknown ฿190.91. TLN Cost Basis ฿19,962.36 is similarly reconciled.
+- **Postflight:** existing Operational Checks remain OK; baseline Holdings quantities and Cost Basis remain unchanged; Realized P&L remains unchanged; no negative lot balances or duplicate allocation IDs; current holding attribution and reference BUY native-cash checks pass.
+- **Documentation:** separate `contracts/capital-lineage-contract.yaml`, `docs/CAPITAL_LINEAGE.md`, and `docs/CAPITAL_LINEAGE_MIGRATION.md` define the lineage boundary without expanding the price-service contract into portfolio accounting.
+- **Not Production automation:** transaction-triggered lot creation/allocation and mixed-origin partial-SELL mutation logic are not enabled yet. Ambiguous future lineage must fail closed. `auto_trade=false` and `portfolio_mutation=false` remain unchanged.
+
 ## 2026-11-10 — SEC-first Research MVP implementation started (ISOLATED CODE ONLY, NOT DEPLOYED)
 
 - **User approval:** "งั้นเริ่มดำเนินการ SEC-first Research MVP ได้เลย" expressly authorizes beginning **SEC-first Research MVP implementation** as a separate, limited research proof-of-concept. This approval does **not** authorize all 17 future tables, full provider routing, paid subscriptions, a Production schema migration, a new Edge Worker/Cron, trading or portfolio accounting changes.
