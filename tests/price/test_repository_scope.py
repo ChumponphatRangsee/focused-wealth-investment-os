@@ -11,8 +11,18 @@ class PriceContractScope(unittest.TestCase):
         for name in CORE_WORKERS:
             self.assertTrue((root / name / "index.ts").exists())
 
-    def test_only_two_docs(self):
-        self.assertEqual({p.name for p in (ROOT / "docs").iterdir() if p.is_file()}, {"CURRENT_STATUS.md", "PRICE_PIPELINE.md", "DATA_PROVIDER_STRATEGY_V1.md", "API_PROVIDER_GUIDE_V1.md"})
+    def test_only_approved_top_level_docs(self):
+        self.assertEqual(
+            {p.name for p in (ROOT / "docs").iterdir() if p.is_file()},
+            {
+                "CURRENT_STATUS.md",
+                "PRICE_PIPELINE.md",
+                "DATA_PROVIDER_STRATEGY_V1.md",
+                "API_PROVIDER_GUIDE_V1.md",
+                "CAPITAL_LINEAGE.md",
+                "CAPITAL_LINEAGE_MIGRATION.md",
+            },
+        )
 
     def test_legacy_runtime_directories_absent(self):
         for name in ("migrations", "queries", "examples", "scripts"):
